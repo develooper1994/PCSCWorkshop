@@ -8,6 +8,9 @@
 
 namespace DESFire {
 
+	const BYTEV GETVERSIONAPDU = { 0x90, 0x60, 0x00, 0x00, 0x00 };
+	const BYTEV GETUIDAPDU = { 0xFF, 0xCA, 0x00, 0x00, 0x00 };
+
 // --- Yardýmcý eþleme fonksiyonlarý ---
 
 inline const char* vendorName(BYTE v) {
@@ -43,13 +46,11 @@ inline const char* protocolName(BYTE p) {
 // --- Komutlar ---
 
 inline BYTEV getVersion(const CardConnection& card) {
-    BYTEV cmd = { 0x90, 0x60, 0x00, 0x00, 0x00 };
-    return card.sendCommand(cmd);
+    return card.sendCommand(GETVERSIONAPDU);
 }
 
 inline BYTEV getUid(const CardConnection& card) {
-    BYTEV cmd = { 0xFF, 0xCA, 0x00, 0x00, 0x00 };
-    return card.sendCommand(cmd, false);
+    return card.sendCommand(GETUIDAPDU, false);
 }
 
 // --- Parse ve yazdýrma ---
@@ -131,6 +132,12 @@ inline void printUid(const CardConnection& card) {
     catch (const std::exception&) {
         std::cerr << "Failed to get UID\n";
     }
+}
+
+inline void testDESFire(const CardConnection& card) {
+    std::cout << "\n--- " << __func__ << ": ---\n";
+    printUid(card);
+    printVersionInfo(card);
 }
 
 } // namespace DESFire
