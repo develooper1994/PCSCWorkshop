@@ -14,13 +14,9 @@ struct Reader::Impl {
 // Reader — base class implementation
 // ============================================================
 
-Reader::Reader(CardConnection& c)
-    : pImpl(std::make_unique<Impl>(c))
-{}
-
-Reader::~Reader() = default;
-
+Reader::Reader(CardConnection& c) : pImpl(std::make_unique<Impl>(c)){}
 Reader::Reader(Reader&&) noexcept = default;
+Reader::~Reader() = default;
 Reader& Reader::operator=(Reader&&) noexcept = default;
 
 CardConnection& Reader::card() { return pImpl->card; }
@@ -125,12 +121,10 @@ void Reader::writeDataEncrypted(BYTE startPage, const std::string& s, const ICip
 BYTEV Reader::readDataDecrypted(BYTE startPage, size_t length, const ICipher& cipher) {
     BYTEV out;
     size_t remaining = length;
-    BYTE page = startPage;
-    while (remaining > 0) {
+    for (BYTE page = startPage; remaining > 0; ++page) {
         auto p = readPageDecrypted(page, cipher);
         if (!p.empty()) out.insert(out.end(), p.begin(), p.end());
         remaining = (remaining > 4) ? (remaining - 4) : 0;
-        ++page;
     }
     out.resize(length);
     return out;
