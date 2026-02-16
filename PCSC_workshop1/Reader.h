@@ -37,6 +37,14 @@ public:
 
     virtual BYTEV readData(BYTE startPage, size_t length);
 
+    // Multi-page encrypted write/read
+    void writeDataEncrypted(BYTE startPage, const BYTEV& data, const ICipher& cipher);
+    void writeDataEncrypted(BYTE startPage, const std::string& s, const ICipher& cipher);
+    BYTEV readDataDecrypted(BYTE startPage, size_t length, const ICipher& cipher);
+
+    // Read all pages until card returns error
+    BYTEV readAll(BYTE startPage = 0);
+
 protected:
     struct Impl;
     std::unique_ptr<Impl> pImpl;

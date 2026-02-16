@@ -95,6 +95,61 @@ BYTEV Reader::readData(BYTE startPage, size_t length) {
         remaining = (remaining > 4) ? (remaining - 4) : 0;
         ++page;
     }
+    out.resize(length);
+    return out;
+}
+
+// --- Multi-page encrypted write/read ---
+
+void Reader::writeDataEncrypted(BYTE startPage, const BYTEV& data, const ICipher& cipher) {
+    size_t total = data.size();
+    size_t pages = (total + 3) / 4;
+    for (size_t i = 0; i < pages; ++i) {
+        BYTE page = static_cast<BYTE>(startPage + i);
+        BYTE chunk[4] = { 0, 0, 0, 0 };
+        for (size_t b = 0; b < 4; ++b) {
+            size_t idx = i * 4 + b;
+            if (idx < total) chunk[b] = data[idx];
+        }
+        writePageEncrypted(page, chunk, cipher);
+    }
+}
+
+void Reader::writeDataEncrypted(BYTE startPage, const std::string& s, const ICipher& cipher) {
+    BYTEV data(s.begin(), s.end());
+    writeDataEncrypted(startPage, data, cipher);
+}
+
+BYTEV Reader::readDataDecrypted(BYTE startPage, size_t length, const ICipher& cipher) {
+    BYTEV out;
+    size_t remaining = length;
+    BYTE page = startPage;
+    while (remaining > 0) {
+        auto p = readPageDecrypted(page, cipher);
+        if (!p.empty()) out.insert(out.end(), p.begin(), p.end());
+        remaining = (remaining > 4) ? (remaining - 4) : 0;
+        ++page;
+    }
+    out.resize(length);
+    return out;
+}
+
+// --- Read all pages until error ---
+
+BYTEV Reader::readAll(BYTE startPage) {
+    BYTEV out;
+    BYTE page = startPage;
+    while (true) {
+        try {
+            auto p = readPage(page);
+            if (p.empty()) break;
+            out.insert(out.end(), p.begin(), p.end());
+            ++page;
+        }
+        catch (...) {
+            break;
+        }
+    }
     return out;
 }
 
@@ -172,11 +227,23 @@ void ACR1281UReader::testACR1281UReader(CardConnection& card) {
 void ACR1281UReader::testACR1281UReaderUnsecured(ACR1281UReader& acr1281u) {
     std::cout << "\n--- " << __func__ << ": ---\n";
     try {
-        int page = 4;
-        BYTE data4[4] = { 'A','B','C','D' };
-        acr1281u.writePage(page, data4);
-        auto p = acr1281u.readPage(page);
-        std::cout << "Read back: "; printHex(p.data(), (DWORD)p.size());
+        BYTE startPage = 4;
+        std::string text = "Mustafa Selcuk Caglar 10/08/1994";
+
+        std::cout << "Writing " << text.size() << " bytes ("
+                  << ((text.size() + 3) / 4) << " pages) starting at page "
+                  << (int)startPage << '\n';
+
+        acr1281u.writeData(startPage, text);
+
+        auto readBack = acr1281u.readData(startPage, text.size());
+        std::cout << "Read back: " << std::string(readBack.begin(), readBack.end()) << '\n';
+
+        std::cout << "\nreadAll from page 0:\n";
+        auto all = acr1281u.readAll(0);
+        std::cout << "Total bytes read: " << all.size()
+                  << " (" << (all.size() / 4) << " pages)\n";
+        printHex(all.data(), (DWORD)all.size());
     }
     catch (const std::exception& ex) {
         std::cerr << "RW test failed: " << ex.what() << std::endl;
@@ -186,32 +253,32 @@ void ACR1281UReader::testACR1281UReaderUnsecured(ACR1281UReader& acr1281u) {
 void ACR1281UReader::testACR1281UReaderSecured(ACR1281UReader& acr1281u) {
     std::cout << "\n--- " << __func__ << ": ---\n";
     try {
-        // XorCipher oluþtur — ileride baþka ICipher türevleri de kullanýlabilir
         XorCipher::Key4 key = {{ 0xDE, 0xAD, 0xBE, 0xEF }};
         XorCipher cipher(key);
 
-        // Cipher kendi kendini test etsin
         const ICipher& ic = cipher;
         if (!ic.test()) {
             std::cerr << "Cipher self-test FAILED — aborting secured RW test\n";
             return;
         }
 
-        int page = 4;
-        BYTE data4[4] = { 'A','B','C','D' };
+        BYTE startPage = 4;
+        std::string text = "Mustafa Selcuk Caglar 10/08/1994";
+        size_t len = text.size();
 
-        std::cout << "Original:  "; printHex(data4, 4);
+        std::cout << "Original (" << len << " bytes, "
+                  << ((len + 3) / 4) << " pages): " << text << '\n';
 
-        // Þifreli yaz — cipher veriyi þifreleyip karta gönderir
-        acr1281u.writePageEncrypted(page, data4, cipher);
+        // Çoklu page þifreli yazma
+        acr1281u.writeDataEncrypted(startPage, text, cipher);
 
-        // Ham oku — karttaki þifreli byte'larý gösterir
-        auto raw = acr1281u.readPage(page);
+        // Ham okuma — karttaki þifreli byte'larý göster
+        auto raw = acr1281u.readData(startPage, len);
         std::cout << "On card (encrypted): "; printHex(raw.data(), (DWORD)raw.size());
 
-        // Þifreli oku ve çöz — cipher ile orijinal veriye dönüþtürür
-        auto dec = acr1281u.readPageDecrypted(page, cipher);
-        std::cout << "Decrypted: "; printHex(dec.data(), (DWORD)dec.size());
+        // Çoklu page þifreli okuma ve çözme
+        auto dec = acr1281u.readDataDecrypted(startPage, len, cipher);
+        std::cout << "Decrypted: " << std::string(dec.begin(), dec.end()) << '\n';
     }
     catch (const std::exception& ex) {
         std::cerr << "Secured RW test failed: " << ex.what() << std::endl;
