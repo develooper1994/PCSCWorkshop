@@ -1,7 +1,6 @@
 #pragma once
 #include "PcscUtils.h"
 #include <memory>
-#include <array>
 
 // ============================================================
 // ICipher — þifreleme stratejisi arayüzü
@@ -22,32 +21,4 @@ public:
 
     // Her cipher kendi testini implemente eder
     virtual bool test() const = 0;
-};
-
-// ============================================================
-// XorCipher — 4-byte XOR þifreleme (NFC page boyutuna uygun)
-// ============================================================
-class XorCipher : public ICipher {
-public:
-    using Key4 = std::array<BYTE, 4>;
-
-    explicit XorCipher(const Key4& key);
-    ~XorCipher() override;
-
-    // Non-copyable, movable
-    XorCipher(const XorCipher&) = delete;
-    XorCipher& operator=(const XorCipher&) = delete;
-    XorCipher(XorCipher&&) noexcept;
-    XorCipher& operator=(XorCipher&&) noexcept;
-
-    BYTEV encrypt(const BYTE* data, size_t len) const override;
-    BYTEV decrypt(const BYTE* data, size_t len) const override;
-
-    bool test() const override;
-
-    const Key4& key() const;
-
-private:
-    struct Impl;
-    std::unique_ptr<Impl> pImpl;
 };

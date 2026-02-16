@@ -1,5 +1,5 @@
 ﻿#include "DESFire.h"
-#include "Reader.h"
+#include "Reader/Readers.h"
 
 void TEST(CardConnection& card) {
     // 5. Kart bilgilerini oku

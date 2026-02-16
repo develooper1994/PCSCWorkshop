@@ -123,16 +123,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Cipher.cpp" />
+    <ClCompile Include="Cipher\CaesarCipher.cpp" />
+    <ClCompile Include="Cipher\XorCipher.cpp" />
     <ClCompile Include="PCSC_workshop1.cpp" />
-    <ClCompile Include="Reader.cpp" />
+    <ClCompile Include="Reader\ACR1281UReader.cpp" />
+    <ClCompile Include="Reader\Reader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CardConnection.h" />
     <ClInclude Include="Cipher.h" />
+    <ClInclude Include="Cipher\CaesarCipher.h" />
+    <ClInclude Include="Cipher\Ciphers.h" />
+    <ClInclude Include="Cipher\XorCipher.h" />
     <ClInclude Include="DESFire.h" />
     <ClInclude Include="PcscUtils.h" />
     <ClInclude Include="Reader.h" />
+    <ClInclude Include="Reader\ACR1281UReader.h" />
+    <ClInclude Include="Reader\Readers.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\Desktop\AN11340.pdf" />
