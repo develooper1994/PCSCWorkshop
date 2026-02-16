@@ -129,6 +129,10 @@
     <ClInclude Include="CardConnection.h" />
     <ClInclude Include="DESFire.h" />
     <ClInclude Include="PcscUtils.h" />
+    <ClInclude Include="Reader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\..\Desktop\AN11340.pdf" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

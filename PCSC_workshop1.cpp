@@ -1,4 +1,5 @@
 ﻿#include "DESFire.h"
+#include "Reader.h"
 
 int main()
 {
@@ -24,9 +25,24 @@ int main()
     CardConnection card(hContext, readers.names[index]);
     card.waitAndConnect(500);
 
+    // Demo: use ACR1281U reader class
+    ACR1281UReader acr1281u(card);
+
     // 5. Kart bilgilerini oku
     DESFire::printUid(card);
     DESFire::printVersionInfo(card);
+
+    // Example write/read test on page 5
+    try {
+        int page = 4;
+        BYTE data4[4] = { 'A','B','C','D' };
+        acr1281u.writePage(page, data4);
+        auto p = acr1281u.readPage(page);
+        std::cout << "Read back: "; printHex(p.data(), (DWORD)p.size());
+    }
+    catch (const std::exception& ex) {
+        std::cerr << "RW test failed: " << ex.what() << std::endl;
+    }
 
     // 6. Temizlik
     card.disconnect();

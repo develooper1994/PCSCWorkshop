@@ -1,5 +1,6 @@
 #pragma once
 #include "CardConnection.h"
+#include <algorithm>
 
 // ============================================================
 // DESFire komutlarý ve parse
