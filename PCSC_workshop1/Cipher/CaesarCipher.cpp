@@ -1,8 +1,15 @@
 #include "CaesarCipher.h"
+#include <numeric>
 
 struct CaesarCipher::Impl { BYTE shift; explicit Impl(BYTE s): shift(s) {} };
 
+// Doðrudan shift ile oluþtur
 CaesarCipher::CaesarCipher(BYTE shift): pImpl(std::make_unique<Impl>(shift)) {}
+
+// Anahtar verisinden shift hesapla
+CaesarCipher::CaesarCipher(const std::vector<BYTE>& key)
+    : pImpl(std::make_unique<Impl>(shiftFromKey(key))) {}
+
 CaesarCipher::~CaesarCipher() = default;
 CaesarCipher::CaesarCipher(CaesarCipher&&) noexcept = default;
 CaesarCipher& CaesarCipher::operator=(CaesarCipher&&) noexcept = default;
@@ -20,6 +27,12 @@ BYTEV CaesarCipher::decrypt(const BYTE* data, size_t len) const {
 }
 
 BYTE CaesarCipher::shift() const { return pImpl->shift; }
+BYTE CaesarCipher::shiftFromKey(const std::vector<BYTE>& key) {
+    if (key.empty()) return 1;
+    // Tüm byte'larýn toplamý mod 256; sýfýrsa 1 yap (shift=0 þifreleme yapmaz)
+    BYTE s = static_cast<BYTE>(std::accumulate(key.begin(), key.end(), 0u) & 0xFF);
+    return (s == 0) ? 1 : s;
+}
 
 bool CaesarCipher::test() const {
     BYTE sample[8] = { 'T','e','s','t','D','a','t','a' };

@@ -49,6 +49,18 @@ void ACR1281UReader::testACR1281UReader(CardConnection& card) {
     testACR1281UReaderSecured(acr1281u);
 }
 
+void ACR1281UReader::testACR1281UReaderSecured(ACR1281UReader& acr1281u) {
+    // Unified runner: call all available cipher-specific tests
+    std::cout << "\n--- " << __func__ << ": invoking per-cipher secured tests ---\n";
+    testACR1281UReaderXorCipher(acr1281u);
+    testACR1281UReaderCaesarCipher(acr1281u);
+#ifdef _WIN32
+    testACR1281UReaderCng3DES(acr1281u);
+    testACR1281UReaderCngAES(acr1281u);
+    testACR1281UReaderCngAESGcm(acr1281u);
+#endif
+}
+
 void ACR1281UReader::testACR1281UReaderUnsecured(ACR1281UReader& acr1281u) {
     std::cout << "\n--- " << __func__ << ": ---\n";
     try {
@@ -248,15 +260,3 @@ void ACR1281UReader::testACR1281UReaderCngAESGcm(ACR1281UReader& acr1281u) {
     }
 }
 #endif
-
-void ACR1281UReader::testACR1281UReaderSecured(ACR1281UReader& acr1281u) {
-    // Unified runner: call all available cipher-specific tests
-    std::cout << "\n--- " << __func__ << ": invoking per-cipher secured tests ---\n";
-    testACR1281UReaderXorCipher(acr1281u);
-    testACR1281UReaderCaesarCipher(acr1281u);
-#ifdef _WIN32
-    testACR1281UReaderCngAES(acr1281u);
-    testACR1281UReaderCng3DES(acr1281u);
-    testACR1281UReaderCngAESGcm(acr1281u);
-#endif
-}

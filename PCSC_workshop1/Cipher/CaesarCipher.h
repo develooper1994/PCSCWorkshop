@@ -2,10 +2,16 @@
 #define PCSC_WORKSHOP1_CIPHER_CAESARCIPHER_H
 
 #include "Cipher.h"
+#include <vector>
 
 class CaesarCipher : public ICipher {
 public:
+    // Doðrudan shift deðeri ile oluþtur
     explicit CaesarCipher(BYTE shift);
+
+    // Anahtar verisinden shift hesapla
+    explicit CaesarCipher(const std::vector<BYTE>& key);
+
     ~CaesarCipher() override;
 
     CaesarCipher(const CaesarCipher&) = delete;
@@ -19,6 +25,9 @@ public:
     bool test() const override;
 
     BYTE shift() const;
+
+    // Anahtar -> shift dönüþümü (static yardýmcý)
+    static BYTE shiftFromKey(const std::vector<BYTE>& key);
 
 private:
     struct Impl;
