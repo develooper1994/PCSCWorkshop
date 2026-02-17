@@ -1,7 +1,7 @@
 #ifndef PCSC_WORKSHOP1_READER_READERS_H
 #define PCSC_WORKSHOP1_READER_READERS_H
 
-#include "ACR1281UReader.h"
+#include "ACR1281U/ACR1281UReader.h"
 
 // Convenience header to include all reader implementations
 

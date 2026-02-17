@@ -1,7 +1,7 @@
 #ifndef PCSC_WORKSHOP1_READER_ACR1281UREADER_H
 #define PCSC_WORKSHOP1_READER_ACR1281UREADER_H
 
-#include "Reader.h"
+#include "../Reader.h"
 
 // ACR1281U specific reader declaration (implementation in separate file)
 class ACR1281UReader : public Reader {
@@ -20,6 +20,9 @@ public:
 
     /********************  TEST ********************/
     static void testACR1281UReader(CardConnection& card);
+
+private:
+    static void testACR1281UReaderSecured(ACR1281UReader& acr1281u); // Unified secured runner that invokes the per-cipher tests
     static void testACR1281UReaderUnsecured(ACR1281UReader& acr1281u);
 
     // Per-cipher test routines. The old secured method is split into per-cipher
@@ -31,9 +34,6 @@ public:
     static void testACR1281UReaderCng3DES(ACR1281UReader& acr1281u);
     static void testACR1281UReaderCngAESGcm(ACR1281UReader& acr1281u);
 #endif
-
-    // Unified secured runner that invokes the per-cipher tests
-    static void testACR1281UReaderSecured(ACR1281UReader& acr1281u);
 };
 
 #endif // PCSC_WORKSHOP1_READER_ACR1281UREADER_H
