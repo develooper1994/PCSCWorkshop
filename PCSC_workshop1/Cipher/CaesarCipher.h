@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PCSC_WORKSHOP1_CIPHER_CAESARCIPHER_H
+#define PCSC_WORKSHOP1_CIPHER_CAESARCIPHER_H
+
 #include "../Cipher.h"
 
 class CaesarCipher : public ICipher {
@@ -22,3 +24,5 @@ private:
     struct Impl;
     std::unique_ptr<Impl> pImpl;
 };
+
+#endif // PCSC_WORKSHOP1_CIPHER_CAESARCIPHER_H

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PCSC_WORKSHOP1_DESFIRE_H
+#define PCSC_WORKSHOP1_DESFIRE_H
+
 #include "CardConnection.h"
 #include <algorithm>
 
@@ -141,3 +143,5 @@ inline void testDESFire(const CardConnection& card) {
 }
 
 } // namespace DESFire
+
+#endif // PCSC_WORKSHOP1_DESFIRE_H

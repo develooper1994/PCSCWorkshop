@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PCSC_WORKSHOP1_READER_H
+#define PCSC_WORKSHOP1_READER_H
+
 #include "CardConnection.h"
 #include "Cipher.h"
 #include <string>
@@ -53,3 +55,5 @@ protected:
     CardConnection& card();
     const CardConnection& card() const;
 };
+
+#endif // PCSC_WORKSHOP1_READER_H

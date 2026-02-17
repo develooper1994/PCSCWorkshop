@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PCSC_WORKSHOP1_CIPHER_H
+#define PCSC_WORKSHOP1_CIPHER_H
+
 #include "PcscUtils.h"
 #include <memory>
 
@@ -22,3 +24,5 @@ public:
     // Her cipher kendi testini implemente eder
     virtual bool test() const = 0;
 };
+
+#endif // PCSC_WORKSHOP1_CIPHER_H

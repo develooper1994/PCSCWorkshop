@@ -144,6 +144,9 @@
   <ItemGroup>
     <None Include="..\..\..\..\Desktop\AN11340.pdf" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PCSC_WORKSHOP1_CIPHER_XORCIPHER_H
+#define PCSC_WORKSHOP1_CIPHER_XORCIPHER_H
+
 #include "../Cipher.h"
 #include <array>
 
@@ -24,3 +26,5 @@ private:
     struct Impl;
     std::unique_ptr<Impl> pImpl;
 };
+
+#endif // PCSC_WORKSHOP1_CIPHER_XORCIPHER_H

@@ -1,25 +1,28 @@
-<?xml version="1.0" encoding="utf-8"?>
+ï»¿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Kaynak Dosyalar"><UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier><Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions></Filter>
-    <Filter Include="Üst Bilgi Dosyalarý"><UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier><Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions></Filter>
-    <Filter Include="Kaynak Dosyalarý"><UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier><Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions></Filter>
-    <Filter Include="document"><UniqueIdentifier>{6335bd22-8dbb-4c1b-a8fd-8bcb31e8bead}</UniqueIdentifier></Filter>
+    <ClCompile Include="Cipher\CaesarCipher.cpp" />
+    <ClCompile Include="Cipher\XorCipher.cpp" />
+    <ClCompile Include="PCSC_workshop1.cpp" />
+    <ClCompile Include="Reader\ACR1281UReader.cpp" />
+    <ClCompile Include="Reader\Reader.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="PCSC_workshop1.cpp"><Filter>Kaynak Dosyalar</Filter></ClCompile>
-    <ClCompile Include="Reader.cpp">`r`n      <Filter>Kaynak Dosyalar</Filter>`r`n    </ClCompile>`r`n    <ClCompile Include="Cipher\\XorCipher.cpp">`r`n      <Filter>Kaynak Dosyalar</Filter>`r`n    </ClCompile>`r`n    <ClCompile Include="Cipher\\CaesarCipher.cpp">`r`n      <Filter>Kaynak Dosyalar</Filter>`r`n    </ClCompile>
-    <ClCompile Include="Cipher.cpp"><Filter>Kaynak Dosyalar</Filter></ClCompile>
+    <ClInclude Include="CardConnection.h" />
+    <ClInclude Include="Cipher.h" />
+    <ClInclude Include="Cipher\CaesarCipher.h" />
+    <ClInclude Include="Cipher\Ciphers.h" />
+    <ClInclude Include="Cipher\XorCipher.h" />
+    <ClInclude Include="DESFire.h" />
+    <ClInclude Include="PcscUtils.h" />
+    <ClInclude Include="Reader.h" />
+    <ClInclude Include="Reader\ACR1281UReader.h" />
+    <ClInclude Include="Reader\Readers.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="PcscUtils.h"><Filter>Üst Bilgi Dosyalarý</Filter></ClInclude>
-    <ClInclude Include="CardConnection.h"><Filter>Üst Bilgi Dosyalarý</Filter></ClInclude>
-    <ClInclude Include="DESFire.h"><Filter>Üst Bilgi Dosyalarý</Filter></ClInclude>
-    <ClInclude Include="Reader.h"><Filter>Üst Bilgi Dosyalarý</Filter></ClInclude>
-    <ClInclude Include="Cipher.h"><Filter>Üst Bilgi Dosyalarý</Filter></ClInclude>
+    <None Include="..\..\..\..\Desktop\AN11340.pdf" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\..\Desktop\AN11340.pdf"><Filter>document</Filter></None>
+    <Text Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>
-

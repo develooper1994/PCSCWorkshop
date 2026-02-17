@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PCSC_WORKSHOP1_PCSCUTILS_H
+#define PCSC_WORKSHOP1_PCSCUTILS_H
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -87,3 +89,5 @@ inline size_t selectReader(const std::vector<std::wstring>& readerList,
         }
     }
 }
+
+#endif // PCSC_WORKSHOP1_PCSCUTILS_H

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PCSC_WORKSHOP1_CARDCONNECTION_H
+#define PCSC_WORKSHOP1_CARDCONNECTION_H
+
 #include "PcscUtils.h"
 #include <thread>
 #include <chrono>
@@ -77,6 +79,7 @@ public:
         return BYTEV(recv, recv + recvLen);
     }
 
+
     // APDU gönder — DESFire chaining (0xAF) desteðiyle
     BYTEV sendCommand(BYTEV cmd, bool followChaining = true) const {
         BYTEV full;
@@ -120,3 +123,5 @@ private:
     DWORD        m_activeProtocol;
     bool         m_connected;
 };
+
+#endif // PCSC_WORKSHOP1_CARDCONNECTION_H

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PCSC_WORKSHOP1_READER_ACR1281UREADER_H
+#define PCSC_WORKSHOP1_READER_ACR1281UREADER_H
+
 #include "../Reader.h"
 
 // ACR1281U specific reader declaration (implementation in separate file)
@@ -21,3 +23,5 @@ public:
     static void testACR1281UReaderUnsecured(ACR1281UReader& acr1281u);
     static void testACR1281UReaderSecured(ACR1281UReader& acr1281u);
 };
+
+#endif // PCSC_WORKSHOP1_READER_ACR1281UREADER_H
