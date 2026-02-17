@@ -3,26 +3,37 @@
   <ItemGroup>
     <ClCompile Include="Cipher\CaesarCipher.cpp" />
     <ClCompile Include="Cipher\XorCipher.cpp" />
-    <ClCompile Include="PCSC_workshop1.cpp" />
     <ClCompile Include="Reader\ACR1281UReader.cpp" />
     <ClCompile Include="Reader\Reader.cpp" />
+    <ClCompile Include="Cipher\CngAES.cpp" />
+    <ClCompile Include="Cipher\Cng3DES.cpp" />
+    <ClCompile Include="Cipher\CngAESGcm.cpp" />
+    <ClCompile Include="tests\cipher_test.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Cipher\CipherAadFallback.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CardConnection.h" />
-    <ClInclude Include="Cipher.h" />
     <ClInclude Include="Cipher\CaesarCipher.h" />
     <ClInclude Include="Cipher\Ciphers.h" />
     <ClInclude Include="Cipher\XorCipher.h" />
-    <ClInclude Include="DESFire.h" />
-    <ClInclude Include="PcscUtils.h" />
-    <ClInclude Include="Reader.h" />
     <ClInclude Include="Reader\ACR1281UReader.h" />
     <ClInclude Include="Reader\Readers.h" />
+    <ClInclude Include="Cipher\CngAES.h" />
+    <ClInclude Include="Cipher\Cng3DES.h" />
+    <ClInclude Include="Cipher\Cipher.h" />
+    <ClInclude Include="Reader\Reader.h" />
+    <ClInclude Include="Cipher\CngAESGcm.h" />
+    <ClInclude Include="Cipher\ICipherAAD.h" />
+    <ClInclude Include="Cipher\CngAESGcmUtil.h" />
+    <ClInclude Include="utils\PcscUtils.h" />
+    <ClInclude Include="utils\DESFire.h" />
+    <ClInclude Include="utils\CardConnection.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\Desktop\AN11340.pdf" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
+    <Text Include="utils\README.txt" />
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 #ifndef PCSC_WORKSHOP1_CIPHER_XORCIPHER_H
 #define PCSC_WORKSHOP1_CIPHER_XORCIPHER_H
 
-#include "../Cipher.h"
+#include "Cipher.h"
 #include <array>
 
 class XorCipher : public ICipher {

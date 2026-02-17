@@ -1,5 +1,5 @@
 #include "ACR1281UReader.h"
-#include "../PcscUtils.h"
+#include "../utils/PcscUtils.h"
 #include "../Cipher/Ciphers.h"
 #include <sstream>
 
@@ -83,7 +83,7 @@ void ACR1281UReader::testACR1281UReaderSecured(ACR1281UReader& acr1281u) {
 
         const ICipher& ic = cipher;
         if (!ic.test()) {
-            std::cerr << "Cipher self-test FAILED — aborting secured RW test\n";
+            std::cerr << "Cipher self-test FAILED \u2014 aborting secured RW test\n";
             return;
         }
 
@@ -94,14 +94,14 @@ void ACR1281UReader::testACR1281UReaderSecured(ACR1281UReader& acr1281u) {
         std::cout << "Original (" << len << " bytes, "
                   << ((len + 3) / 4) << " pages): " << text << '\n';
 
-        // Çoklu page þifreli yazma
+        // çoklu page þifreli yazma
         acr1281u.writeDataEncrypted(startPage, text, cipher);
 
         // Ham okuma — karttaki þifreli byte'larý göster
         auto raw = acr1281u.readData(startPage, len);
         std::cout << "On card (encrypted): "; printHex(raw.data(), (DWORD)raw.size());
 
-        // Çoklu page þifreli okuma ve çözme
+        // çoklu page þifreli okuma ve çözme
         auto dec = acr1281u.readDataDecrypted(startPage, len, cipher);
         std::cout << "Decrypted: " << std::string(dec.begin(), dec.end()) << '\n';
     }

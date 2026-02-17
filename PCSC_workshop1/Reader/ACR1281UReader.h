@@ -1,7 +1,7 @@
 #ifndef PCSC_WORKSHOP1_READER_ACR1281UREADER_H
 #define PCSC_WORKSHOP1_READER_ACR1281UREADER_H
 
-#include "../Reader.h"
+#include "Reader.h"
 
 // ACR1281U specific reader declaration (implementation in separate file)
 class ACR1281UReader : public Reader {

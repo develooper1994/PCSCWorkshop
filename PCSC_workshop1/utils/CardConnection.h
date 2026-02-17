@@ -20,7 +20,6 @@ public:
         disconnect();
     }
 
-    // Baðlantý kur — kart yoksa false döner, exception atmaz
     bool connect() {
         LONG rc = SCardConnect(
             m_context,
@@ -40,7 +39,6 @@ public:
         return true;
     }
 
-    // Baðlantý kur — kart gelene kadar bekle
     bool waitAndConnect(int retryMs = 500, int maxRetries = 0) {
         int attempt = 0;
         while (true) {
@@ -63,7 +61,6 @@ public:
     SCARDHANDLE handle() const { return m_hCard; }
     DWORD protocol() const { return m_activeProtocol; }
 
-    // Ham APDU gönder — tek yanýt
     BYTEV transmit(const BYTEV& cmd) const {
         BYTE recv[512];
         DWORD recvLen = sizeof(recv);
@@ -79,8 +76,6 @@ public:
         return BYTEV(recv, recv + recvLen);
     }
 
-
-    // APDU gönder — DESFire chaining (0xAF) desteðiyle
     BYTEV sendCommand(BYTEV cmd, bool followChaining = true) const {
         BYTEV full;
 
@@ -92,18 +87,15 @@ public:
             BYTE sw1 = resp[resp.size() - 2];
             BYTE sw2 = resp[resp.size() - 1];
 
-            // Veri kýsmýný ekle (SW hariç)
             if (resp.size() > 2)
                 full.insert(full.end(), resp.begin(), resp.end() - 2);
 
             if (sw2 == 0xAF && (sw1 == 0x91 || sw1 == 0x90)) {
-                // Devam var
                 if (!followChaining) break;
                 cmd = { 0x90, 0xAF, 0x00, 0x00, 0x00 };
                 continue;
             }
             else if (sw2 == 0x00 && (sw1 == 0x91 || sw1 == 0x90)) {
-                // Tamamlandý
                 break;
             }
             else {
