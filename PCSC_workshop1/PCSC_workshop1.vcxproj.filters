@@ -1,39 +1,116 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="Cipher\CaesarCipher.cpp" />
-    <ClCompile Include="Cipher\XorCipher.cpp" />
-    <ClCompile Include="Reader\ACR1281UReader.cpp" />
-    <ClCompile Include="Reader\Reader.cpp" />
-    <ClCompile Include="Cipher\CngAES.cpp" />
-    <ClCompile Include="Cipher\Cng3DES.cpp" />
-    <ClCompile Include="Cipher\CngAESGcm.cpp" />
-    <ClCompile Include="tests\cipher_test.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="Cipher\CipherAadFallback.cpp" />
+    <Filter Include="Cipher">
+      <UniqueIdentifier>{B0E2A9A1-1C2B-4F6D-9E3A-111111111111}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Reader">
+      <UniqueIdentifier>{C1F3B8B2-2D3C-5A7E-8F4B-222222222222}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils">
+      <UniqueIdentifier>{D2A4C7C3-3E4D-6B8F-9A5C-333333333333}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tests">
+      <UniqueIdentifier>{E3B5D6D4-4F5E-7C9A-0B6D-444444444444}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{F4C6E7E5-506F-8DA1-1C7E-555555555555}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
+
   <ItemGroup>
-    <ClInclude Include="Cipher\CaesarCipher.h" />
-    <ClInclude Include="Cipher\Ciphers.h" />
-    <ClInclude Include="Cipher\XorCipher.h" />
-    <ClInclude Include="Reader\ACR1281UReader.h" />
-    <ClInclude Include="Reader\Readers.h" />
-    <ClInclude Include="Cipher\CngAES.h" />
-    <ClInclude Include="Cipher\Cng3DES.h" />
-    <ClInclude Include="Cipher\Cipher.h" />
-    <ClInclude Include="Reader\Reader.h" />
-    <ClInclude Include="Cipher\CngAESGcm.h" />
-    <ClInclude Include="Cipher\ICipherAAD.h" />
-    <ClInclude Include="Cipher\CngAESGcmUtil.h" />
-    <ClInclude Include="utils\PcscUtils.h" />
-    <ClInclude Include="utils\DESFire.h" />
-    <ClInclude Include="utils\CardConnection.h" />
+    <ClCompile Include="Cipher\CaesarCipher.cpp">
+      <Filter>Cipher</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\XorCipher.cpp">
+      <Filter>Cipher</Filter>
+    </ClCompile>
+    <ClCompile Include="Reader\ACR1281UReader.cpp">
+      <Filter>Reader</Filter>
+    </ClCompile>
+    <ClCompile Include="Reader\Reader.cpp">
+      <Filter>Reader</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\CngAES.cpp">
+      <Filter>Cipher</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\Cng3DES.cpp">
+      <Filter>Cipher</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\CngAESGcm.cpp">
+      <Filter>Cipher</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\cipher_test.cpp">
+      <Filter>tests</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>\\</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\CipherAadFallback.cpp">
+      <Filter>Cipher</Filter>
+    </ClCompile>
   </ItemGroup>
+
   <ItemGroup>
-    <None Include="..\..\..\..\Desktop\AN11340.pdf" />
+    <ClInclude Include="Cipher\CaesarCipher.h">
+      <Filter>Cipher</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\Ciphers.h">
+      <Filter>Cipher</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\XorCipher.h">
+      <Filter>Cipher</Filter>
+    </ClInclude>
+    <ClInclude Include="Reader\ACR1281UReader.h">
+      <Filter>Reader</Filter>
+    </ClInclude>
+    <ClInclude Include="Reader\Readers.h">
+      <Filter>Reader</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\CngAES.h">
+      <Filter>Cipher</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\Cng3DES.h">
+      <Filter>Cipher</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\Cipher.h">
+      <Filter>Cipher</Filter>
+    </ClInclude>
+    <ClInclude Include="Reader\Reader.h">
+      <Filter>Reader</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\CngAESGcm.h">
+      <Filter>Cipher</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\ICipherAAD.h">
+      <Filter>Cipher</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\CngAESGcmUtil.h">
+      <Filter>Cipher</Filter>
+    </ClInclude>
+    <ClInclude Include="utils\PcscUtils.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="utils\DESFire.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="utils\CardConnection.h">
+      <Filter>utils</Filter>
+    </ClInclude>
   </ItemGroup>
+
   <ItemGroup>
-    <Text Include="CMakeLists.txt" />
-    <Text Include="utils\README.txt" />
+    <None Include="..\..\..\..\Desktop\AN11340.pdf">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Text Include="CMakeLists.txt">
+      <Filter>\\</Filter>
+    </Text>
+    <Text Include="utils\README.txt">
+      <Filter>utils</Filter>
+    </Text>
   </ItemGroup>
 </Project>

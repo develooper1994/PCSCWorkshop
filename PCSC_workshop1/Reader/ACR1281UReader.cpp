@@ -75,7 +75,7 @@ void ACR1281UReader::testACR1281UReaderUnsecured(ACR1281UReader& acr1281u) {
     }
 }
 
-void ACR1281UReader::testACR1281UReaderSecured(ACR1281UReader& acr1281u) {
+void ACR1281UReader::testACR1281UReaderXorCipher(ACR1281UReader& acr1281u) {
     std::cout << "\n--- " << __func__ << ": ---\n";
     try {
         XorCipher::Key4 key = {{ 0xDE, 0xAD, 0xBE, 0xEF }};
@@ -88,7 +88,7 @@ void ACR1281UReader::testACR1281UReaderSecured(ACR1281UReader& acr1281u) {
         }
 
         BYTE startPage = 4;
-        std::string text = "Mustafa Selcuk Caglar 10/08/1994";
+        std::string text = "Xor cipher test string"; // "Mustafa Selcuk Caglar 10/08/1994"
         size_t len = text.size();
 
         std::cout << "Original (" << len << " bytes, "
@@ -108,4 +108,155 @@ void ACR1281UReader::testACR1281UReaderSecured(ACR1281UReader& acr1281u) {
     catch (const std::exception& ex) {
         std::cerr << "Secured RW test failed: " << ex.what() << std::endl;
     }
+}
+
+void ACR1281UReader::testACR1281UReaderCaesarCipher(ACR1281UReader& acr1281u) {
+    std::cout << "\n--- " << __func__ << ": ---\n";
+    try {
+        CaesarCipher cipher(3);
+        const ICipher& ic = cipher;
+        if (!ic.test()) {
+            std::cerr << "Caesar cipher self-test FAILED \u2014 skipping.\n";
+            return;
+        }
+
+        BYTE startPage = 4;
+        std::string text = "Caesar cipher test string";
+        size_t len = text.size();
+
+        std::cout << "Original (" << len << " bytes, "
+                  << ((len + 3) / 4) << " pages): " << text << '\n';
+
+        acr1281u.writeDataEncrypted(startPage, text, cipher);
+        auto raw = acr1281u.readData(startPage, len);
+        std::cout << "On card (encrypted): "; printHex(raw.data(), (DWORD)raw.size());
+        auto dec = acr1281u.readDataDecrypted(startPage, len, cipher);
+        std::cout << "Decrypted: " << std::string(dec.begin(), dec.end()) << '\n';
+    }
+    catch (const std::exception& ex) {
+        std::cerr << "Caesar secured RW test failed: " << ex.what() << std::endl;
+    }
+}
+
+#ifdef _WIN32
+void ACR1281UReader::testACR1281UReaderCngAES(ACR1281UReader& acr1281u) {
+    std::cout << "\n--- " << __func__ << ": ---\n";
+    try {
+        std::vector<BYTE> key(16, 0x01);
+        std::vector<BYTE> iv(16, 0x00);
+        CngAES cipher(key, iv);
+        if (!cipher.test()) {
+            std::cerr << "CngAES self-test FAILED \u2014 skipping.\n";
+            return;
+        }
+
+        BYTE startPage = 4;
+        std::string text = "CngAES test data";
+        size_t len = text.size();
+
+        std::cout << "Original (" << len << " bytes): " << text << '\n';
+
+        // Block cipher output is larger than input (padding).
+        // Encrypt entire plaintext at once, write ciphertext blob to card,
+        // read it back, then decrypt at once.
+        auto enc = cipher.encrypt(reinterpret_cast<const BYTE*>(text.data()), len);
+        std::cout << "Encrypted blob (" << enc.size() << " bytes): ";
+        printHex(enc.data(), (DWORD)enc.size());
+
+        acr1281u.writeData(startPage, enc);
+        auto raw = acr1281u.readData(startPage, enc.size());
+        std::cout << "On card: "; printHex(raw.data(), (DWORD)raw.size());
+
+        auto dec = cipher.decrypt(raw.data(), raw.size());
+        std::cout << "Decrypted: " << std::string(dec.begin(), dec.end()) << '\n';
+    }
+    catch (const std::exception& ex) {
+        std::cerr << "CngAES secured RW test failed: " << ex.what() << std::endl;
+    }
+}
+
+void ACR1281UReader::testACR1281UReaderCng3DES(ACR1281UReader& acr1281u) {
+    std::cout << "\n--- " << __func__ << ": ---\n";
+    try {
+        std::vector<BYTE> key(24, 0x02);
+        std::vector<BYTE> iv(8, 0x00);
+        Cng3DES cipher(key, iv);
+        if (!cipher.test()) {
+            std::cerr << "Cng3DES self-test FAILED \u2014 skipping.\n";
+            return;
+        }
+
+        BYTE startPage = 4;
+        std::string text = "3DES test data!!";  // 16 bytes
+        size_t len = text.size();
+
+        std::cout << "Original (" << len << " bytes): " << text << '\n';
+
+        // Encrypt entire plaintext, write ciphertext blob, read back, decrypt
+        auto enc = cipher.encrypt(reinterpret_cast<const BYTE*>(text.data()), len);
+        std::cout << "Encrypted blob (" << enc.size() << " bytes): ";
+        printHex(enc.data(), (DWORD)enc.size());
+
+        acr1281u.writeData(startPage, enc);
+        auto raw = acr1281u.readData(startPage, enc.size());
+        std::cout << "On card: "; printHex(raw.data(), (DWORD)raw.size());
+
+        auto dec = cipher.decrypt(raw.data(), raw.size());
+        std::cout << "Decrypted: " << std::string(dec.begin(), dec.end()) << '\n';
+    }
+    catch (const std::exception& ex) {
+        std::cerr << "Cng3DES secured RW test failed: " << ex.what() << std::endl;
+    }
+}
+
+void ACR1281UReader::testACR1281UReaderCngAESGcm(ACR1281UReader& acr1281u) {
+    std::cout << "\n--- " << __func__ << ": ---\n";
+    try {
+        std::vector<BYTE> key(16, 0x03);
+        CngAESGcm cipher(key);
+        if (!cipher.test()) {
+            std::cerr << "CngAESGcm self-test FAILED \u2014 skipping.\n";
+            return;
+        }
+
+        BYTE startPage = 4;
+        std::string text = "AES-GCM test str";
+        std::string aadStr = "header";
+        size_t len = text.size();
+
+        std::cout << "Original (" << len << " bytes): " << text << '\n';
+
+        // GCM output = nonce(12) + ciphertext(N) + tag(16).
+        // Encrypt entire plaintext, write blob to card, read back, decrypt.
+        auto enc = cipher.encrypt(
+            reinterpret_cast<const BYTE*>(text.data()), len,
+            reinterpret_cast<const BYTE*>(aadStr.data()), aadStr.size());
+        std::cout << "Encrypted blob (" << enc.size() << " bytes): ";
+        printHex(enc.data(), (DWORD)enc.size());
+
+        acr1281u.writeData(startPage, enc);
+        auto raw = acr1281u.readData(startPage, enc.size());
+        std::cout << "On card: "; printHex(raw.data(), (DWORD)raw.size());
+
+        auto dec = cipher.decrypt(
+            raw.data(), raw.size(),
+            reinterpret_cast<const BYTE*>(aadStr.data()), aadStr.size());
+        std::cout << "Decrypted: " << std::string(dec.begin(), dec.end()) << '\n';
+    }
+    catch (const std::exception& ex) {
+        std::cerr << "CngAESGcm secured RW test failed: " << ex.what() << std::endl;
+    }
+}
+#endif
+
+void ACR1281UReader::testACR1281UReaderSecured(ACR1281UReader& acr1281u) {
+    // Unified runner: call all available cipher-specific tests
+    std::cout << "\n--- " << __func__ << ": invoking per-cipher secured tests ---\n";
+    testACR1281UReaderXorCipher(acr1281u);
+    testACR1281UReaderCaesarCipher(acr1281u);
+#ifdef _WIN32
+    testACR1281UReaderCngAES(acr1281u);
+    testACR1281UReaderCng3DES(acr1281u);
+    testACR1281UReaderCngAESGcm(acr1281u);
+#endif
 }

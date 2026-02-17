@@ -1,4 +1,4 @@
-#include "../Reader.h"
+#include "Reader.h"
 #include <sstream>
 
 // ============================================================
@@ -36,16 +36,19 @@ BYTEV Reader::readPageDecrypted(BYTE page, const ICipher& cipher) {
     return cipher.decrypt(raw);
 }
 
-void Reader::writePageEncrypted(BYTE page, const BYTEV& data, const ICipher& cipher) {
-    BYTE tmp[4] = {0,0,0,0};
-    for (size_t i = 0; i < 4 && i < data.size(); ++i) tmp[i] = data[i];
-    writePageEncrypted(page, tmp, cipher);
+// --- AAD-capable single-page operations ---
+
+void Reader::writePageEncryptedAAD(BYTE page, const BYTE* data4, const ICipher& cipher, const BYTE* aad, size_t aad_len) {
+    // Prefer AAD-capable encrypt; ICipher default forwards to non-AAD if unsupported
+    auto enc = cipher.encrypt(data4, 4, aad, aad_len);
+    BYTE buf[4] = {0,0,0,0};
+    for (size_t i = 0; i < 4 && i < enc.size(); ++i) buf[i] = enc[i];
+    writePage(page, buf);
 }
 
-void Reader::writePageEncrypted(BYTE page, const std::string& s, const ICipher& cipher) {
-    BYTE tmp[4] = {0,0,0,0};
-    for (size_t i = 0; i < 4 && i < s.size(); ++i) tmp[i] = static_cast<BYTE>(s[i]);
-    writePageEncrypted(page, tmp, cipher);
+BYTEV Reader::readPageDecryptedAAD(BYTE page, const ICipher& cipher, const BYTE* aad, size_t aad_len) {
+    BYTEV raw = readPage(page);
+    return cipher.decrypt(raw.data(), raw.size(), aad, aad_len);
 }
 
 // --- Plain convenience overloads ---
@@ -60,6 +63,30 @@ void Reader::writePage(BYTE page, const std::string& s) {
     BYTE tmp[4] = {0,0,0,0};
     for (size_t i = 0; i < 4 && i < s.size(); ++i) tmp[i] = static_cast<BYTE>(s[i]);
     writePage(page, tmp);
+}
+
+void Reader::writePageEncrypted(BYTE page, const BYTEV& data, const ICipher& cipher) {
+    BYTE tmp[4] = {0,0,0,0};
+    for (size_t i = 0; i < 4 && i < data.size(); ++i) tmp[i] = data[i];
+    writePageEncrypted(page, tmp, cipher);
+}
+
+void Reader::writePageEncrypted(BYTE page, const std::string& s, const ICipher& cipher) {
+    BYTE tmp[4] = {0,0,0,0};
+    for (size_t i = 0; i < 4 && i < s.size(); ++i) tmp[i] = static_cast<BYTE>(s[i]);
+    writePageEncrypted(page, tmp, cipher);
+}
+
+void Reader::writePageEncryptedAAD(BYTE page, const BYTEV& data, const ICipher& cipher, const BYTEV& aad) {
+    BYTE tmp[4] = {0,0,0,0};
+    for (size_t i = 0; i < 4 && i < data.size(); ++i) tmp[i] = data[i];
+    writePageEncryptedAAD(page, tmp, cipher, aad.data(), aad.size());
+}
+
+void Reader::writePageEncryptedAAD(BYTE page, const std::string& s, const ICipher& cipher, const BYTEV& aad) {
+    BYTE tmp[4] = {0,0,0,0};
+    for (size_t i = 0; i < 4 && i < s.size(); ++i) tmp[i] = static_cast<BYTE>(s[i]);
+    writePageEncryptedAAD(page, tmp, cipher, aad.data(), aad.size());
 }
 
 // --- Multi-page plain write/read ---
@@ -123,6 +150,39 @@ BYTEV Reader::readDataDecrypted(BYTE startPage, size_t length, const ICipher& ci
     size_t remaining = length;
     for (BYTE page = startPage; remaining > 0; ++page) {
         auto p = readPageDecrypted(page, cipher);
+        if (!p.empty()) out.insert(out.end(), p.begin(), p.end());
+        remaining = (remaining > 4) ? (remaining - 4) : 0;
+    }
+    out.resize(length);
+    return out;
+}
+
+// --- Multi-page AAD-capable encrypted write/read ---
+
+void Reader::writeDataEncryptedAAD(BYTE startPage, const BYTEV& data, const ICipher& cipher, const BYTE* aad, size_t aad_len) {
+    size_t total = data.size();
+    size_t pages = (total + 3) / 4;
+    for (size_t i = 0; i < pages; ++i) {
+        BYTE page = static_cast<BYTE>(startPage + i);
+        BYTE chunk[4] = { 0, 0, 0, 0 };
+        for (size_t b = 0; b < 4; ++b) {
+            size_t idx = i * 4 + b;
+            if (idx < total) chunk[b] = data[idx];
+        }
+        writePageEncryptedAAD(page, chunk, cipher, aad, aad_len);
+    }
+}
+
+void Reader::writeDataEncryptedAAD(BYTE startPage, const std::string& s, const ICipher& cipher, const BYTE* aad, size_t aad_len) {
+    BYTEV data(s.begin(), s.end());
+    writeDataEncryptedAAD(startPage, data, cipher, aad, aad_len);
+}
+
+BYTEV Reader::readDataDecryptedAAD(BYTE startPage, size_t length, const ICipher& cipher, const BYTE* aad, size_t aad_len) {
+    BYTEV out;
+    size_t remaining = length;
+    for (BYTE page = startPage; remaining > 0; ++page) {
+        auto p = readPageDecryptedAAD(page, cipher, aad, aad_len);
         if (!p.empty()) out.insert(out.end(), p.begin(), p.end());
         remaining = (remaining > 4) ? (remaining - 4) : 0;
     }

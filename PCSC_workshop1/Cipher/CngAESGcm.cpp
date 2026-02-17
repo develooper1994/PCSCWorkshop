@@ -18,7 +18,11 @@ struct CngAESGcm::Impl {
     Impl(const std::vector<BYTE>& k) : key(k) {
         NTSTATUS st = BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_AES_ALGORITHM, nullptr, 0);
         if (!BCRYPT_SUCCESS(st)) throw std::runtime_error("BCryptOpenAlgorithmProvider failed");
-        // For AES-GCM we'll use BCryptEncrypt/Decrypt with BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO
+        // Set GCM chaining mode — required before using authenticated cipher info
+        st = BCryptSetProperty(hAlg, BCRYPT_CHAINING_MODE,
+            (PUCHAR)BCRYPT_CHAIN_MODE_GCM,
+            static_cast<ULONG>(sizeof(BCRYPT_CHAIN_MODE_GCM)), 0);
+        if (!BCRYPT_SUCCESS(st)) throw std::runtime_error("BCryptSetProperty(GCM) failed");
     }
 
     ~Impl() {
@@ -55,14 +59,14 @@ BYTEV encrypt_with_aad(const CngAESGcm::Impl* impl, const BYTE* data, size_t len
     auto nonce = randomBytes(impl->nonceSize);
     ULONG cipherTextSize = static_cast<ULONG>(len);
     ULONG resultSize = 0;
-    ULONG outBufferSize = cipherTextSize + impl->tagSize;
-    std::vector<BYTE> out(outBufferSize);
+    std::vector<BYTE> cipherText(cipherTextSize);
+    std::vector<BYTE> tag(impl->tagSize);
 
     BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
     BCRYPT_INIT_AUTH_MODE_INFO(authInfo);
     authInfo.pbNonce = nonce.data();
     authInfo.cbNonce = static_cast<ULONG>(nonce.size());
-    authInfo.pbTag = out.data() + cipherTextSize; // tag placed after ciphertext
+    authInfo.pbTag = tag.data();
     authInfo.cbTag = impl->tagSize;
 
     if (aad && aad_len > 0) {
@@ -74,8 +78,8 @@ BYTEV encrypt_with_aad(const CngAESGcm::Impl* impl, const BYTE* data, size_t len
         hKey,
         const_cast<PUCHAR>(data), static_cast<ULONG>(len),
         &authInfo,
-        nonce.data(), static_cast<ULONG>(nonce.size()),
-        out.data(), outBufferSize,
+        nullptr, 0,    // IV is handled via authInfo.pbNonce for GCM
+        cipherText.data(), cipherTextSize,
         &resultSize,
         0
     );
@@ -83,10 +87,12 @@ BYTEV encrypt_with_aad(const CngAESGcm::Impl* impl, const BYTE* data, size_t len
     BCryptDestroyKey(hKey);
     if (!BCRYPT_SUCCESS(st)) throwStatusG(st);
 
+    // Output format: nonce || ciphertext || tag
     BYTEV ret;
-    ret.reserve(nonce.size() + resultSize);
+    ret.reserve(nonce.size() + resultSize + impl->tagSize);
     ret.insert(ret.end(), nonce.begin(), nonce.end());
-    ret.insert(ret.end(), out.begin(), out.begin() + resultSize);
+    ret.insert(ret.end(), cipherText.begin(), cipherText.begin() + resultSize);
+    ret.insert(ret.end(), tag.begin(), tag.end());
     return ret;
 }
 
@@ -94,23 +100,22 @@ BYTEV encrypt_with_aad(const CngAESGcm::Impl* impl, const BYTE* data, size_t len
 BYTEV decrypt_with_aad(const CngAESGcm::Impl* impl, const BYTE* data, size_t len, const BYTE* aad, size_t aad_len) {
     if (len < impl->nonceSize + impl->tagSize) throw std::runtime_error("Input too short for nonce+tag");
     const BYTE* nonce = data;
-    const BYTE* ctAndTag = data + impl->nonceSize;
-    ULONG ctAndTagLen = static_cast<ULONG>(len - impl->nonceSize);
-    if (ctAndTagLen < impl->tagSize) throw std::runtime_error("Ciphertext too short");
-    ULONG cipherTextLen = ctAndTagLen - impl->tagSize;
+    const BYTE* ct = data + impl->nonceSize;
+    ULONG ctLen = static_cast<ULONG>(len - impl->nonceSize - impl->tagSize);
+    const BYTE* tagPtr = data + impl->nonceSize + ctLen;
 
     BCRYPT_KEY_HANDLE hKey = nullptr;
     NTSTATUS st = BCryptGenerateSymmetricKey(impl->hAlg, &hKey, nullptr, 0, const_cast<PUCHAR>(impl->key.data()), static_cast<ULONG>(impl->key.size()), 0);
     if (!BCRYPT_SUCCESS(st)) throwStatusG(st);
 
-    std::vector<BYTE> out(cipherTextLen);
+    std::vector<BYTE> out(ctLen);
     ULONG resultSize = 0;
 
     BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo;
     BCRYPT_INIT_AUTH_MODE_INFO(authInfo);
     authInfo.pbNonce = const_cast<PUCHAR>(nonce);
     authInfo.cbNonce = static_cast<ULONG>(impl->nonceSize);
-    authInfo.pbTag = const_cast<PUCHAR>(ctAndTag + cipherTextLen);
+    authInfo.pbTag = const_cast<PUCHAR>(tagPtr);
     authInfo.cbTag = impl->tagSize;
 
     if (aad && aad_len > 0) {
@@ -120,10 +125,10 @@ BYTEV decrypt_with_aad(const CngAESGcm::Impl* impl, const BYTE* data, size_t len
 
     st = BCryptDecrypt(
         hKey,
-        const_cast<PUCHAR>(ctAndTag), ctAndTagLen,
+        const_cast<PUCHAR>(ct), ctLen,
         &authInfo,
-        const_cast<PUCHAR>(nonce), static_cast<ULONG>(impl->nonceSize),
-        out.data(), cipherTextLen,
+        nullptr, 0,    // IV is handled via authInfo.pbNonce for GCM
+        out.data(), ctLen,
         &resultSize,
         0
     );

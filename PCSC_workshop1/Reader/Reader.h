@@ -26,12 +26,19 @@ public:
     void writePageEncrypted(BYTE page, const BYTE* data4, const ICipher& cipher);
     BYTEV readPageDecrypted(BYTE page, const ICipher& cipher);
 
+    // AAD-capable single-page encrypted write/read
+    void writePageEncryptedAAD(BYTE page, const BYTE* data4, const ICipher& cipher, const BYTE* aad, size_t aad_len);
+    BYTEV readPageDecryptedAAD(BYTE page, const ICipher& cipher, const BYTE* aad, size_t aad_len);
+
     // Convenience overloads for common container types
     void writePage(BYTE page, const BYTEV& data);
     void writePage(BYTE page, const std::string& s);
 
     void writePageEncrypted(BYTE page, const BYTEV& data, const ICipher& cipher);
     void writePageEncrypted(BYTE page, const std::string& s, const ICipher& cipher);
+
+    void writePageEncryptedAAD(BYTE page, const BYTEV& data, const ICipher& cipher, const BYTEV& aad);
+    void writePageEncryptedAAD(BYTE page, const std::string& s, const ICipher& cipher, const BYTEV& aad);
 
     // convenience: write multi-page data
     virtual void writeData(BYTE startPage, const BYTEV& data);
@@ -43,6 +50,10 @@ public:
     void writeDataEncrypted(BYTE startPage, const BYTEV& data, const ICipher& cipher);
     void writeDataEncrypted(BYTE startPage, const std::string& s, const ICipher& cipher);
     BYTEV readDataDecrypted(BYTE startPage, size_t length, const ICipher& cipher);
+
+    void writeDataEncryptedAAD(BYTE startPage, const BYTEV& data, const ICipher& cipher, const BYTE* aad, size_t aad_len);
+    void writeDataEncryptedAAD(BYTE startPage, const std::string& s, const ICipher& cipher, const BYTE* aad, size_t aad_len);
+    BYTEV readDataDecryptedAAD(BYTE startPage, size_t length, const ICipher& cipher, const BYTE* aad, size_t aad_len);
 
     // Read all pages until card returns error
     BYTEV readAll(BYTE startPage = 0);

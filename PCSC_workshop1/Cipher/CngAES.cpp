@@ -4,10 +4,6 @@
 #include <algorithm>
 #include <cstring>
 
-#ifndef BCRYPT_CHAINING_MODE_CBC
-#define BCRYPT_CHAINING_MODE_CBC "ChainingModeCBC"
-#endif
-
 struct CngAES::Impl {
     BCRYPT_ALG_HANDLE hAlg = nullptr;
     BCRYPT_KEY_HANDLE hKey = nullptr;
@@ -18,9 +14,10 @@ struct CngAES::Impl {
     Impl(const std::vector<BYTE>& k, const std::vector<BYTE>& i) : key(k), iv(i) {
         NTSTATUS st = BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_AES_ALGORITHM, nullptr, 0);
         if (!BCRYPT_SUCCESS(st)) throw std::runtime_error("BCryptOpenAlgorithmProvider failed");
-        // set CBC mode
-        ULONG modeLen = static_cast<ULONG>(std::strlen(BCRYPT_CHAINING_MODE_CBC) + 1);
-        st = BCryptSetProperty(hAlg, BCRYPT_CHAINING_MODE, (PUCHAR)BCRYPT_CHAINING_MODE_CBC, modeLen, 0);
+        // set CBC mode — BCRYPT_CHAIN_MODE_CBC is a wide string (L"ChainingModeCBC")
+        st = BCryptSetProperty(hAlg, BCRYPT_CHAINING_MODE,
+            (PUCHAR)BCRYPT_CHAIN_MODE_CBC,
+            static_cast<ULONG>(sizeof(BCRYPT_CHAIN_MODE_CBC)), 0);
         if (!BCRYPT_SUCCESS(st)) throw std::runtime_error("BCryptSetProperty(CHAINING_MODE) failed");
         // generate symmetric key object
         st = BCryptGenerateSymmetricKey(hAlg, &hKey, nullptr, 0, key.data(), static_cast<ULONG>(key.size()), 0);
@@ -49,6 +46,8 @@ static void throwStatus(NTSTATUS st) {
 }
 
 BYTEV CngAES::encrypt(const BYTE* data, size_t len) const {
+    // Copy IV — BCrypt modifies the IV buffer in-place
+    std::vector<BYTE> ivCopy = pImpl->iv;
     ULONG outSize = static_cast<ULONG>(len) + pImpl->blockSize + 16;
     BYTEV out(outSize);
     ULONG result = 0;
@@ -57,8 +56,8 @@ BYTEV CngAES::encrypt(const BYTE* data, size_t len) const {
         const_cast<PUCHAR>(data),
         static_cast<ULONG>(len),
         nullptr,
-        const_cast<PUCHAR>(pImpl->iv.data()),
-        static_cast<ULONG>(pImpl->iv.size()),
+        ivCopy.data(),
+        static_cast<ULONG>(ivCopy.size()),
         out.data(),
         outSize,
         &result,
@@ -70,6 +69,8 @@ BYTEV CngAES::encrypt(const BYTE* data, size_t len) const {
 }
 
 BYTEV CngAES::decrypt(const BYTE* data, size_t len) const {
+    // Copy IV — BCrypt modifies the IV buffer in-place
+    std::vector<BYTE> ivCopy = pImpl->iv;
     ULONG outSize = static_cast<ULONG>(len) + pImpl->blockSize;
     BYTEV out(outSize);
     ULONG result = 0;
@@ -78,8 +79,8 @@ BYTEV CngAES::decrypt(const BYTE* data, size_t len) const {
         const_cast<PUCHAR>(data),
         static_cast<ULONG>(len),
         nullptr,
-        const_cast<PUCHAR>(pImpl->iv.data()),
-        static_cast<ULONG>(pImpl->iv.size()),
+        ivCopy.data(),
+        static_cast<ULONG>(ivCopy.size()),
         out.data(),
         outSize,
         &result,
