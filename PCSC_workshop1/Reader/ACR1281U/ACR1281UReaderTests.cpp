@@ -1,3 +1,10 @@
+#include "ACR1281UReader.h"
+#include "ACR1281UReaderTestHelpers.h"
+#include "../../utils/PcscUtils.h"
+#include "../../Cipher/Ciphers.h"
+#include <iostream>
+#include <vector>
+#include <string>
 
 /********************  TESTS ********************/
 
@@ -13,8 +20,8 @@ void ACR1281UReader::testACR1281UReaderUnsecured(ACR1281UReader& acr1281u) {
     try {
         BYTE startPage = 4;
         std::string text = "Mustafa Selcuk Caglar 10/08/1994";
-
-        std::cout << "Original " << text.size() << " bytes ("
+        // Print original and original as hex
+        std::cout << "Original " << text << " || Size: " << text.size() << " bytes ("
             << ((text.size() + 3) / 4) << " pages) starting at page "
             << (int)startPage << '\n';
 

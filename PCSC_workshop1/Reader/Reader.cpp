@@ -127,17 +127,9 @@ BYTEV Reader::readData(BYTE startPage, size_t length) {
 // --- Multi-page encrypted write/read ---
 
 void Reader::writeDataEncrypted(BYTE startPage, const BYTEV& data, const ICipher& cipher) {
-    size_t total = data.size();
-    size_t pages = (total + 3) / 4;
-    for (size_t i = 0; i < pages; ++i) {
-        BYTE page = static_cast<BYTE>(startPage + i);
-        BYTE chunk[4] = { 0, 0, 0, 0 };
-        for (size_t b = 0; b < 4; ++b) {
-            size_t idx = i * 4 + b;
-            if (idx < total) chunk[b] = data[idx];
-        }
-        writePageEncrypted(page, chunk, cipher);
-    }
+    // Encrypt the entire blob first, then write raw encrypted bytes page-by-page
+    auto encrypted = cipher.encrypt(data);
+    writeData(startPage, encrypted);
 }
 
 void Reader::writeDataEncrypted(BYTE startPage, const std::string& s, const ICipher& cipher) {
@@ -146,31 +138,55 @@ void Reader::writeDataEncrypted(BYTE startPage, const std::string& s, const ICip
 }
 
 BYTEV Reader::readDataDecrypted(BYTE startPage, size_t length, const ICipher& cipher) {
-    BYTEV out;
-    size_t remaining = length;
-    for (BYTE page = startPage; remaining > 0; ++page) {
-        auto p = readPageDecrypted(page, cipher);
-        if (!p.empty()) out.insert(out.end(), p.begin(), p.end());
-        remaining = (remaining > 4) ? (remaining - 4) : 0;
+    // For block ciphers with PKCS7 padding, encrypted size = ((length / blockSize) + 1) * blockSize
+    // AES blockSize=16, 3DES blockSize=8. We don't know the block size, so try common sizes.
+    // For XorCipher/CaesarCipher (stream-like), encrypted size == length.
+    // Strategy: try to encrypt a same-length dummy to determine the actual encrypted size,
+    // or simply read enough pages and let the decrypt handle trimming.
+    
+    // First pass: try with exact length (for stream ciphers)
+    // Second pass: try with additional blocks (for block ciphers: +16 covers AES, +8 covers 3DES)
+    // We try encrypted sizes in order and return the first successful decrypt.
+    
+    // Determine how many bytes were actually written by doing a trial encrypt
+    BYTEV dummy(length, 0);
+    size_t encLen;
+    try {
+        auto trial = cipher.encrypt(dummy);
+        encLen = trial.size();
     }
-    out.resize(length);
-    return out;
+    catch (...) {
+        encLen = length; // fallback for stream ciphers
+    }
+
+    size_t pages = (encLen + 3) / 4;
+    BYTEV raw;
+    for (size_t i = 0; i < pages; ++i) {
+        try {
+            auto p = readPage(static_cast<BYTE>(startPage + i));
+            raw.insert(raw.end(), p.begin(), p.end());
+        }
+        catch (...) {
+            break;
+        }
+    }
+
+    if (raw.empty()) return raw;
+
+    // Trim to exact encrypted size (pages may have trailing zeros)
+    if (raw.size() > encLen) raw.resize(encLen);
+
+    auto decrypted = cipher.decrypt(raw);
+    if (decrypted.size() > length) decrypted.resize(length);
+    return decrypted;
 }
 
 // --- Multi-page AAD-capable encrypted write/read ---
 
 void Reader::writeDataEncryptedAAD(BYTE startPage, const BYTEV& data, const ICipher& cipher, const BYTE* aad, size_t aad_len) {
-    size_t total = data.size();
-    size_t pages = (total + 3) / 4;
-    for (size_t i = 0; i < pages; ++i) {
-        BYTE page = static_cast<BYTE>(startPage + i);
-        BYTE chunk[4] = { 0, 0, 0, 0 };
-        for (size_t b = 0; b < 4; ++b) {
-            size_t idx = i * 4 + b;
-            if (idx < total) chunk[b] = data[idx];
-        }
-        writePageEncryptedAAD(page, chunk, cipher, aad, aad_len);
-    }
+    // Encrypt the entire blob with AAD, then write raw encrypted bytes page-by-page
+    auto encrypted = cipher.encrypt(data.data(), data.size(), aad, aad_len);
+    writeData(startPage, encrypted);
 }
 
 void Reader::writeDataEncryptedAAD(BYTE startPage, const std::string& s, const ICipher& cipher, const BYTE* aad, size_t aad_len) {
@@ -179,15 +195,36 @@ void Reader::writeDataEncryptedAAD(BYTE startPage, const std::string& s, const I
 }
 
 BYTEV Reader::readDataDecryptedAAD(BYTE startPage, size_t length, const ICipher& cipher, const BYTE* aad, size_t aad_len) {
-    BYTEV out;
-    size_t remaining = length;
-    for (BYTE page = startPage; remaining > 0; ++page) {
-        auto p = readPageDecryptedAAD(page, cipher, aad, aad_len);
-        if (!p.empty()) out.insert(out.end(), p.begin(), p.end());
-        remaining = (remaining > 4) ? (remaining - 4) : 0;
+    // Determine encrypted blob size by trial encrypt
+    BYTEV dummy(length, 0);
+    size_t encLen;
+    try {
+        auto trial = cipher.encrypt(dummy.data(), dummy.size(), aad, aad_len);
+        encLen = trial.size();
     }
-    out.resize(length);
-    return out;
+    catch (...) {
+        encLen = length;
+    }
+
+    size_t pages = (encLen + 3) / 4;
+    BYTEV raw;
+    for (size_t i = 0; i < pages; ++i) {
+        try {
+            auto p = readPage(static_cast<BYTE>(startPage + i));
+            raw.insert(raw.end(), p.begin(), p.end());
+        }
+        catch (...) {
+            break;
+        }
+    }
+
+    if (raw.empty()) return raw;
+
+    if (raw.size() > encLen) raw.resize(encLen);
+
+    auto decrypted = cipher.decrypt(raw.data(), raw.size(), aad, aad_len);
+    if (decrypted.size() > length) decrypted.resize(length);
+    return decrypted;
 }
 
 // --- Read all pages until error ---

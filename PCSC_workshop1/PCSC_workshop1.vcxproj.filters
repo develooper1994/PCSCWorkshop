@@ -73,15 +73,13 @@
     <ClCompile Include="tests\cipher_test.cpp">
       <Filter>tests\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Reader\ACR1281U\ACR1281UReaderTests.cpp">
-      <Filter>Reader\ACR1281U\Source</Filter>
-    </ClCompile>
     <ClCompile Include="Reader\ACR1281U\ACR1281UReader.cpp">
       <Filter>Reader\ACR1281U\Source</Filter>
     </ClCompile>
     <ClCompile Include="Reader\ACR1281U\ACR1281UReaderTestHelpers.cpp">
       <Filter>Reader\ACR1281U\Source</Filter>
     </ClCompile>
+    <ClCompile Include="Reader\ACR1281U\ACR1281UReaderTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Cipher\CaesarCipher.h">
