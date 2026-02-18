@@ -46,6 +46,8 @@ int run_cipher_tests() {
     return 0;
 }
 
+//#define BUILD_CIPHER_TEST_MAIN
+
 #ifdef BUILD_CIPHER_TEST_MAIN
 int main() { return run_cipher_tests(); }
 #endif

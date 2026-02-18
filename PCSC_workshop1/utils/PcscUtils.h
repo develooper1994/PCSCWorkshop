@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
+#include <windows.h>
 #include <winscard.h>
 
 #pragma comment(lib, "winscard.lib")
@@ -39,7 +40,9 @@ inline ReaderListResult listReaders(SCARDCONTEXT hContext) {
     ReaderListResult result = { nullptr, {}, false };
 
     DWORD readersLen = SCARD_AUTOALLOCATE;
-    LONG rc = SCardListReaders(hContext, nullptr,
+    // When using SCARD_AUTOALLOCATE the API expects a LPWSTR cast of the address of
+    // the LPWSTR variable (this is the documented usage pattern).
+    LONG rc = SCardListReadersW(hContext, nullptr,
                                reinterpret_cast<LPWSTR>(&result.rawBuffer),
                                &readersLen);
     if (rc != SCARD_S_SUCCESS) {

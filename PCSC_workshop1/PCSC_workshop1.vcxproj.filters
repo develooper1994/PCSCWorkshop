@@ -79,7 +79,15 @@
     <ClCompile Include="Reader\ACR1281U\ACR1281UReaderTestHelpers.cpp">
       <Filter>Reader\ACR1281U\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Reader\ACR1281U\ACR1281UReaderTests.cpp" />
+    <ClCompile Include="Reader\ACR1281U\ACR1281UReaderTests.cpp">
+      <Filter>Reader\ACR1281U\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\TestCiphers.cpp">
+      <Filter>tests\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\AffineCipher.cpp">
+      <Filter>Cipher\Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Cipher\CaesarCipher.h">
@@ -133,11 +141,17 @@
     <ClInclude Include="Reader\ACR1281U\ACR1281UReader.h">
       <Filter>Reader\ACR1281U\Header</Filter>
     </ClInclude>
+    <ClInclude Include="Cipher\CipherUtil.h" />
+    <ClInclude Include="Cipher\AffineCipher.h">
+      <Filter>Cipher\Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\CipherTypes.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\Desktop\AN11340.pdf">
       <Filter>Docs</Filter>
     </None>
+    <None Include="build_and_run_tests.bat" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="utils\README.txt">

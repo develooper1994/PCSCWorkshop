@@ -123,6 +123,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Cipher\AffineCipher.cpp" />
     <ClCompile Include="Cipher\CaesarCipher.cpp" />
     <ClCompile Include="Cipher\CipherAadFallback.cpp" />
     <ClCompile Include="Cipher\Cng3DES.cpp" />
@@ -135,11 +136,15 @@
     <ClCompile Include="Reader\ACR1281U\ACR1281UReaderTests.cpp" />
     <ClCompile Include="Reader\Reader.cpp" />
     <ClCompile Include="tests\cipher_test.cpp" />
+    <ClCompile Include="Tests\TestCiphers.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Cipher\AffineCipher.h" />
     <ClInclude Include="Cipher\CaesarCipher.h" />
     <ClInclude Include="Cipher\Cipher.h" />
     <ClInclude Include="Cipher\Ciphers.h" />
+    <ClInclude Include="Cipher\CipherTypes.h" />
+    <ClInclude Include="Cipher\CipherUtil.h" />
     <ClInclude Include="Cipher\Cng3DES.h" />
     <ClInclude Include="Cipher\CngAES.h" />
     <ClInclude Include="Cipher\CngAESGcm.h" />
@@ -157,6 +162,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\Desktop\AN11340.pdf" />
+    <None Include="build_and_run_tests.bat" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

@@ -3,13 +3,17 @@
 
 #include "Cipher.h"
 #include <vector>
+#include <cstddef>
 
 class CaesarCipher : public ICipher {
 public:
-    // Doðrudan shift deðeri ile oluþtur
+    // Doðrudan shift deðeri ile oluþtur (a=1)
     explicit CaesarCipher(BYTE shift);
 
-    // Anahtar verisinden shift hesapla
+    // Ýsteðe baðlý olarak multiplier (a) ve shift (b) ile oluþtur
+    explicit CaesarCipher(BYTE a, BYTE shift);
+
+    // Anahtar verisinden shift hesapla (compatibility)
     explicit CaesarCipher(const std::vector<BYTE>& key);
 
     ~CaesarCipher() override;
@@ -22,11 +26,16 @@ public:
     BYTEV encrypt(const BYTE* data, size_t len) const override;
     BYTEV decrypt(const BYTE* data, size_t len) const override;
 
+    // optimized output-into overrides
+    void encryptInto(const BYTE* data, size_t len, BYTE* out) const override;
+    void decryptInto(const BYTE* data, size_t len, BYTE* out) const override;
+
     bool test() const override;
 
-    BYTE shift() const;
+    BYTE shift() const; // b
+    BYTE multiplier() const; // a
 
-    // Anahtar -> shift dönüþümü (static yardýmcý)
+    // Anahtar -> shift dönüþümü (mevcut kodla uyumlu kalmasý için býrakýldý)
     static BYTE shiftFromKey(const std::vector<BYTE>& key);
 
 private:
