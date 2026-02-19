@@ -75,7 +75,8 @@
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode><AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -89,7 +90,8 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode><AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -101,7 +103,8 @@
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode><AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -115,7 +118,8 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode><AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -123,34 +127,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    
-    
-    
-    
-    
-    
-    
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Reader\ACR1281U\ACR1281UReader.cpp" />
     <ClCompile Include="Reader\ACR1281U\ACR1281UReaderTestHelpers.cpp" />
     <ClCompile Include="Reader\ACR1281U\ACR1281UReaderTests.cpp" />
     <ClCompile Include="Reader\Reader.cpp" />
-    <ClCompile Include="tests\cipher_test.cpp" />
-    <ClCompile Include="Tests\TestCiphers.cpp" />
   </ItemGroup>
   <ItemGroup>
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     <ClInclude Include="Reader\ACR1281U\ACR1281U.h" />
     <ClInclude Include="Reader\ACR1281U\ACR1281UReader.h" />
     <ClInclude Include="Reader\ACR1281U\ACR1281UReaderTestHelpers.h" />

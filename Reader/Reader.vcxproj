@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{28dbe5cb-73ed-4703-8c7a-ab482ad59c29}</ProjectGuid>
-    <RootNamespace>Cipher</RootNamespace>
+    <ProjectGuid>{94e046f9-d110-488b-a778-0b19f94848f7}</ProjectGuid>
+    <RootNamespace>Reader</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -78,7 +78,6 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -96,7 +95,6 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -112,7 +110,6 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -130,7 +127,6 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -139,39 +135,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Cipher\AffineCipher.h" />
-    <ClInclude Include="Cipher\CaesarCipher.h" />
-    <ClInclude Include="Cipher\Cipher.h" />
-    <ClInclude Include="Cipher\Ciphers.h" />
-    <ClInclude Include="Cipher\CipherTypes.h" />
-    <ClInclude Include="Cipher\CipherUtil.h" />
-    <ClInclude Include="Cipher\Cng3DES.h" />
-    <ClInclude Include="Cipher\CngAES.h" />
-    <ClInclude Include="Cipher\CngAESGcm.h" />
-    <ClInclude Include="Cipher\CngAESGcmUtil.h" />
-    <ClInclude Include="Cipher\ICipherAAD.h" />
-    <ClInclude Include="Cipher\XorCipher.h" />
+    <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Cipher\AffineCipher.cpp" />
-    <ClCompile Include="Cipher\CaesarCipher.cpp" />
-    <ClCompile Include="Cipher\CipherAadFallback.cpp" />
-    <ClCompile Include="Cipher\Cng3DES.cpp" />
-    <ClCompile Include="Cipher\CngAES.cpp" />
-    <ClCompile Include="Cipher\CngAESGcm.cpp" />
-    <ClCompile Include="Cipher\XorCipher.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="tests\cipher_test.cpp" />
-    <ClCompile Include="tests\TestCiphers.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="CMakeLists.txt" />
+    <ClCompile Include="Reader.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
