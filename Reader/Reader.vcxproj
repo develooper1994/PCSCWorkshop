@@ -116,13 +116,10 @@
     <ClInclude Include="Reader\Reader.h" />
     <ClInclude Include="Reader\Readers.h" />
     <ClInclude Include="Reader\ACR1281U\ACR1281UReader.h" />
-    <ClInclude Include="Reader\ACR1281U\ACR1281UReaderTestHelpers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Reader\Reader.cpp" />
     <ClCompile Include="Reader\ACR1281U\ACR1281UReader.cpp" />
-    <ClCompile Include="Reader\ACR1281U\ACR1281UReaderTestHelpers.cpp" />
-    <ClCompile Include="Reader\ACR1281U\ACR1281UReaderTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Cipher\Cipher.vcxproj">

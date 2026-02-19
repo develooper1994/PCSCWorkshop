@@ -131,10 +131,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ACR1281UReaderTestHelpers.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="cipher_test.cpp" />
     <ClCompile Include="TestCiphers.cpp" />
-    <ClCompile Include="ACR1281UReaderTestHelpers.cpp" />
     <ClCompile Include="ACR1281UReaderTests.cpp" />
   </ItemGroup>
   <ItemGroup>

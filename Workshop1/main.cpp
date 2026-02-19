@@ -10,7 +10,8 @@ int main() {
     return pcsc.run([](PCSC& p) {
         // Workshop1 testleri
         DESFire::testDESFire(p.cardConnection());
-        ACR1281UReader::testACR1281UReader(p.cardConnection());
+        // ACR1281UReader test moved to Tests project
+        // ACR1281UReader::testACR1281UReader(p.cardConnection());
     });
 }
 #endif

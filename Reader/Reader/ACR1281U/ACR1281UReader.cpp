@@ -1,5 +1,4 @@
 #include "ACR1281UReader.h"
-#include "ACR1281UReaderTestHelpers.h"
 #include "PcscUtils.h"
 #include "Ciphers.h"
 #include <sstream>

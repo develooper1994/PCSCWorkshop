@@ -4,12 +4,21 @@
 #include <vector>
 #include <memory>
 #include <iterator>
+#include <type_traits>
 
-typedef unsigned char       BYTE;
-using BYTEV = std::vector<BYTE>;
+#include "CipherTypes.h"
 
 // Forward declare ICipherAAD so we can reference it in implementation file
 class ICipherAAD;
+
+// helper trait to detect presence of data() member
+template<typename T>
+class has_data {
+    template<typename U> static auto test(int) -> decltype(std::declval<U>().data(), std::true_type());
+    template<typename> static std::false_type test(...);
+public:
+    static constexpr bool value = decltype(test<T>(0))::value;
+};
 
 // ============================================================
 // ICipher — þifreleme stratejisi arayüzü
@@ -40,11 +49,19 @@ public:
     }
 
     // Generic contiguous container overloads (vector, array, string, C-array via wrapper)
-    template<typename Container>
+    template<typename Container,
+             typename = typename std::enable_if<
+                 has_data<Container>::value &&
+                 std::is_pointer<decltype(std::declval<Container>().data())>::value
+             >::type>
     BYTEV encrypt(const Container& c) const {
         return encrypt(reinterpret_cast<const BYTE*>(c.data()), c.size());
     }
-    template<typename Container>
+    template<typename Container,
+             typename = typename std::enable_if<
+                 has_data<Container>::value &&
+                 std::is_pointer<decltype(std::declval<Container>().data())>::value
+             >::type>
     BYTEV decrypt(const Container& c) const {
         return decrypt(reinterpret_cast<const BYTE*>(c.data()), c.size());
     }

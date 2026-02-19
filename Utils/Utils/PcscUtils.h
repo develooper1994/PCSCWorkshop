@@ -12,7 +12,7 @@
 
 #pragma comment(lib, "winscard.lib")
 
-using BYTEV = std::vector<BYTE>;
+#include "../Cipher/CipherTypes.h"
 
 // ============================================================
 // Yardimci fonksiyonlar
@@ -24,6 +24,11 @@ inline void printHex(const BYTE* data, DWORD len) {
                   << std::setw(2) << std::setfill('0')
                   << static_cast<int>(data[i]) << " ";
     std::cout << std::dec << std::endl;
+}
+
+inline void printHex(const BYTEV& data) {
+    if (data.empty()) { std::cout << "<empty>\n"; return; }
+    printHex(data.data(), static_cast<DWORD>(data.size()));
 }
 
 #endif // PCSC_WORKSHOP1_PCSCUTILS_H
