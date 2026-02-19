@@ -7,7 +7,7 @@
 #include <iostream>
 
 // ============================================================
-// DESFire komutlar? ve parse
+// DESFire komutlarý ve parse
 // ============================================================
 
 namespace DESFire {
