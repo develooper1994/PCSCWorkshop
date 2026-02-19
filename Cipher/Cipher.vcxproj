@@ -21,32 +21,32 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{82de335e-2189-4910-954c-ee486374061d}</ProjectGuid>
-    <RootNamespace>PCSCworkshop1</RootNamespace>
+    <ProjectGuid>{28dbe5cb-73ed-4703-8c7a-ab482ad59c29}</ProjectGuid>
+    <RootNamespace>Cipher</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -74,11 +74,14 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode><AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile><AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>
+      </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -88,11 +91,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode><AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile><AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>
+      </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -100,11 +106,14 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode><AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile><AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>
+      </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -114,64 +123,51 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode><AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile><AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>
+      </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    
-    
-    
-    
-    
-    
-    
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="Reader\ACR1281U\ACR1281UReader.cpp" />
-    <ClCompile Include="Reader\ACR1281U\ACR1281UReaderTestHelpers.cpp" />
-    <ClCompile Include="Reader\ACR1281U\ACR1281UReaderTests.cpp" />
-    <ClCompile Include="Reader\Reader.cpp" />
-    <ClCompile Include="tests\cipher_test.cpp" />
-    <ClCompile Include="Tests\TestCiphers.cpp" />
+    <ClInclude Include="Cipher\AffineCipher.h" />
+    <ClInclude Include="Cipher\CaesarCipher.h" />
+    <ClInclude Include="Cipher\Cipher.h" />
+    <ClInclude Include="Cipher\Ciphers.h" />
+    <ClInclude Include="Cipher\CipherTypes.h" />
+    <ClInclude Include="Cipher\CipherUtil.h" />
+    <ClInclude Include="Cipher\Cng3DES.h" />
+    <ClInclude Include="Cipher\CngAES.h" />
+    <ClInclude Include="Cipher\CngAESGcm.h" />
+    <ClInclude Include="Cipher\CngAESGcmUtil.h" />
+    <ClInclude Include="Cipher\ICipherAAD.h" />
+    <ClInclude Include="Cipher\XorCipher.h" />
+    <ClInclude Include="framework.h" />
+    <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    <ClInclude Include="Reader\ACR1281U\ACR1281U.h" />
-    <ClInclude Include="Reader\ACR1281U\ACR1281UReader.h" />
-    <ClInclude Include="Reader\ACR1281U\ACR1281UReaderTestHelpers.h" />
-    <ClInclude Include="Reader\Reader.h" />
-    <ClInclude Include="Reader\Readers.h" />
-    <ClInclude Include="utils\CardConnection.h" />
-    <ClInclude Include="utils\DESFire.h" />
-    <ClInclude Include="utils\PcscUtils.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\..\..\Desktop\AN11340.pdf" />
-    <None Include="build_and_run_tests.bat" />
+    <ClCompile Include="Cipher.cpp" />
+    <ClCompile Include="Cipher\AffineCipher.cpp" />
+    <ClCompile Include="Cipher\CaesarCipher.cpp" />
+    <ClCompile Include="Cipher\CipherAadFallback.cpp" />
+    <ClCompile Include="Cipher\Cng3DES.cpp" />
+    <ClCompile Include="Cipher\CngAES.cpp" />
+    <ClCompile Include="Cipher\CngAESGcm.cpp" />
+    <ClCompile Include="Cipher\XorCipher.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
-    <Text Include="utils\README.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Cipher\Cipher.vcxproj">
-      <Project>{28dbe5cb-73ed-4703-8c7a-ab482ad59c29}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

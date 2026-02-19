@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "AffineCipher.h"
 #include "CipherUtil.h"
 #include <numeric>

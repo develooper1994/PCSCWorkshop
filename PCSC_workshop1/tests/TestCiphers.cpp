@@ -4,8 +4,8 @@
 #include <random>
 #include <algorithm>
 #include <cstdint>
-#include "../Cipher/CaesarCipher.h"
-#include "../Cipher/AffineCipher.h"
+#include "CaesarCipher.h"
+#include "AffineCipher.h"
 
 using namespace std;
 
@@ -123,7 +123,7 @@ bool testFull() {
     return true;
 }
 
-#define BUILD_CIPHER_TEST_MAIN
+//#define BUILD_CIPHER_TEST_MAIN
 
 #ifdef BUILD_CIPHER_TEST_MAIN
 int main() {

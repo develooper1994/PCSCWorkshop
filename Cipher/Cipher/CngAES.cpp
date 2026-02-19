@@ -1,5 +1,9 @@
+#include "pch.h"
 #include "CngAES.h"
 #include <stdexcept>
+#include <vector>
+#include <windows.h>
+#include <bcrypt.h>
 #include <sstream>
 #include <algorithm>
 #include <cstring>

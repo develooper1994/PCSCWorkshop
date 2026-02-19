@@ -85,7 +85,7 @@ class SmartCardApp {
     }
 };
 
-//#define BUILD_MAIN_APP
+#define BUILD_MAIN_APP
 
 #ifdef BUILD_MAIN_APP
 int main() {

@@ -1,9 +1,12 @@
 #ifndef PCSC_WORKSHOP1_CIPHER_H
 #define PCSC_WORKSHOP1_CIPHER_H
 
-#include "../utils/PcscUtils.h"
+#include <vector>
 #include <memory>
 #include <iterator>
+
+typedef unsigned char       BYTE;
+using BYTEV = std::vector<BYTE>;
 
 // Forward declare ICipherAAD so we can reference it in implementation file
 class ICipherAAD;

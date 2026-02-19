@@ -5,16 +5,16 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # -----------------------------------------------------------------------------
-# cipher library
+# Use Cipher project as a separate subdirectory (located in ../Cipher)
 # -----------------------------------------------------------------------------
-file(GLOB CIPHER_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Cipher/*.cpp")
-add_library(cipher STATIC ${CIPHER_SOURCES})
-# Public include dirs so users of the library can include headers
-target_include_directories(cipher PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/Cipher
-    ${CMAKE_CURRENT_SOURCE_DIR}/utils
-)
+# Previously this project built the cipher sources from its local Cipher/ folder.
+# Now delegate building the cipher library to the separate Cipher project's CMake.
+
+# Path to the external Cipher project directory (relative to this project)
+set(EXTERNAL_CIPHER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Cipher")
+
+# Add the external Cipher project as a subdirectory so it builds its own 'cipher' target
+add_subdirectory(${EXTERNAL_CIPHER_DIR} ${CMAKE_CURRENT_BINARY_DIR}/cipher_build)
 
 # -----------------------------------------------------------------------------
 # application executable (sources excluding Cipher/ and tests/)
@@ -28,7 +28,7 @@ foreach(f ${ALL_SRC})
 endforeach()
 
 add_executable(PCSC_workshop1 ${APP_SOURCES})
-# Link the cipher library
+# Link the cipher library (target provided by the Cipher project)
 target_link_libraries(PCSC_workshop1 PRIVATE cipher)
 
 # Link platform libs on Windows

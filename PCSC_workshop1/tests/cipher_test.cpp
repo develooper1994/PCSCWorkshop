@@ -2,7 +2,7 @@
 #include <vector>
 #include <memory>
 
-#include "../Cipher/Ciphers.h"
+#include "Ciphers.h"
 
 int run_cipher_tests() {
 #ifdef _WIN32

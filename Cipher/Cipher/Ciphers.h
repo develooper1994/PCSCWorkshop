@@ -3,6 +3,7 @@
 
 #include "XorCipher.h"
 #include "CaesarCipher.h"
+#include "AffineCipher.h"
 #include "ICipherAAD.h"
 
 #ifdef _WIN32

@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Kaynak Dosyalar">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Üst Bilgi Dosyaları">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Kaynak Dosyaları">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Cipher">
+      <UniqueIdentifier>{df88da51-1ee2-4559-a6e9-645929bc1a75}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cipher\Header">
+      <UniqueIdentifier>{fe2754bd-1225-43f5-ab83-339eac930223}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cipher\Source">
+      <UniqueIdentifier>{7c148715-1435-4a5e-a086-ddee63673f2e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="framework.h">
+      <Filter>Üst Bilgi Dosyaları</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Üst Bilgi Dosyaları</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\AffineCipher.h">
+      <Filter>Cipher\Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\CaesarCipher.h">
+      <Filter>Cipher\Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\Cipher.h">
+      <Filter>Cipher\Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\Ciphers.h">
+      <Filter>Cipher\Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\CipherTypes.h">
+      <Filter>Cipher\Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\CipherUtil.h">
+      <Filter>Cipher\Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\Cng3DES.h">
+      <Filter>Cipher\Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\CngAES.h">
+      <Filter>Cipher\Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\CngAESGcm.h">
+      <Filter>Cipher\Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\CngAESGcmUtil.h">
+      <Filter>Cipher\Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\ICipherAAD.h">
+      <Filter>Cipher\Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\XorCipher.h">
+      <Filter>Cipher\Header</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Cipher.cpp">
+      <Filter>Kaynak Dosyalar</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Kaynak Dosyalar</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\AffineCipher.cpp">
+      <Filter>Cipher\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\CaesarCipher.cpp">
+      <Filter>Cipher\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\CipherAadFallback.cpp">
+      <Filter>Cipher\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\Cng3DES.cpp">
+      <Filter>Cipher\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\CngAES.cpp">
+      <Filter>Cipher\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\CngAESGcm.cpp">
+      <Filter>Cipher\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\XorCipher.cpp">
+      <Filter>Cipher\Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
+  </ItemGroup>
+</Project>

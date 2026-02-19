@@ -1,9 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Cipher">
-      <UniqueIdentifier>{B0E2A9A1-1C2B-4F6D-9E3A-111111111111}</UniqueIdentifier>
-    </Filter>
+
     <Filter Include="Reader">
       <UniqueIdentifier>{C1F3B8B2-2D3C-5A7E-8F4B-222222222222}</UniqueIdentifier>
     </Filter>
@@ -16,12 +14,8 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{F4C6E7E5-506F-8DA1-1C7E-555555555555}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Cipher\Source">
-      <UniqueIdentifier>{cccfc5f6-d52b-404f-b184-18ac074fc1bd}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Cipher\Header">
-      <UniqueIdentifier>{8374c6a3-41d1-477c-851a-2c20cf853995}</UniqueIdentifier>
-    </Filter>
+
+
     <Filter Include="Reader\Header">
       <UniqueIdentifier>{ee254dbe-3b8f-474b-8cf5-eaee62c86062}</UniqueIdentifier>
     </Filter>
@@ -49,24 +43,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Cipher\CaesarCipher.cpp">
-      <Filter>Cipher\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Cipher\CipherAadFallback.cpp">
-      <Filter>Cipher\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Cipher\Cng3DES.cpp">
-      <Filter>Cipher\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Cipher\CngAES.cpp">
-      <Filter>Cipher\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Cipher\CngAESGcm.cpp">
-      <Filter>Cipher\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Cipher\XorCipher.cpp">
-      <Filter>Cipher\Source</Filter>
-    </ClCompile>
+
+
+
+
+
+
     <ClCompile Include="Reader\Reader.cpp">
       <Filter>Reader\Source</Filter>
     </ClCompile>
@@ -85,38 +67,13 @@
     <ClCompile Include="Tests\TestCiphers.cpp">
       <Filter>tests\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Cipher\AffineCipher.cpp">
-      <Filter>Cipher\Source</Filter>
-    </ClCompile>
+
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Cipher\CaesarCipher.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Cipher\Cipher.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Cipher\Ciphers.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Cipher\Cng3DES.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Cipher\CngAES.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Cipher\CngAESGcm.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Cipher\CngAESGcmUtil.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Cipher\ICipherAAD.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Cipher\XorCipher.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
+
+
+
+
     <ClInclude Include="Reader\Reader.h">
       <Filter>Reader\Header</Filter>
     </ClInclude>
@@ -141,11 +98,9 @@
     <ClInclude Include="Reader\ACR1281U\ACR1281UReader.h">
       <Filter>Reader\ACR1281U\Header</Filter>
     </ClInclude>
-    <ClInclude Include="Cipher\CipherUtil.h" />
-    <ClInclude Include="Cipher\AffineCipher.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Cipher\CipherTypes.h" />
+
+
+
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\Desktop\AN11340.pdf">
