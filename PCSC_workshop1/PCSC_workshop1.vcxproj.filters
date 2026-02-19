@@ -1,117 +1,25 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-
-    <Filter Include="Reader">
-      <UniqueIdentifier>{C1F3B8B2-2D3C-5A7E-8F4B-222222222222}</UniqueIdentifier>
-    </Filter>
     <Filter Include="utils">
       <UniqueIdentifier>{D2A4C7C3-3E4D-6B8F-9A5C-333333333333}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="tests">
-      <UniqueIdentifier>{E3B5D6D4-4F5E-7C9A-0B6D-444444444444}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Docs">
-      <UniqueIdentifier>{F4C6E7E5-506F-8DA1-1C7E-555555555555}</UniqueIdentifier>
-    </Filter>
-
-
-    <Filter Include="Reader\Header">
-      <UniqueIdentifier>{ee254dbe-3b8f-474b-8cf5-eaee62c86062}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Reader\Source">
-      <UniqueIdentifier>{b907bccd-7b0f-4cfa-b7a2-3242da611423}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="tests\Source">
-      <UniqueIdentifier>{e17d326b-eb06-42dc-a810-d2e6aef0397d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="utils\Source">
-      <UniqueIdentifier>{ced45a00-6391-49ac-b7f5-8d7bb1d2b00f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="utils\Header">
-      <UniqueIdentifier>{5a8ee8c4-1615-4b7b-9d49-e249a6c7a37e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Reader\ACR1281U">
-      <UniqueIdentifier>{dbfbd3d3-13f0-4b38-8e9a-2b44eabca2a7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Reader\ACR1281U\Header">
-      <UniqueIdentifier>{41bf29f9-d94e-4dab-9564-096e8864f2b8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Reader\ACR1281U\Source">
-      <UniqueIdentifier>{d5da991a-5746-478d-bb1c-6d04f8530ff7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-
-
-
-
-
-
-    <ClCompile Include="Reader\Reader.cpp">
-      <Filter>Reader\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="tests\cipher_test.cpp">
-      <Filter>tests\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Reader\ACR1281U\ACR1281UReader.cpp">
-      <Filter>Reader\ACR1281U\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Reader\ACR1281U\ACR1281UReaderTestHelpers.cpp">
-      <Filter>Reader\ACR1281U\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Reader\ACR1281U\ACR1281UReaderTests.cpp">
-      <Filter>Reader\ACR1281U\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Tests\TestCiphers.cpp">
-      <Filter>tests\Source</Filter>
-    </ClCompile>
-
   </ItemGroup>
   <ItemGroup>
-
-
-
-
-    <ClInclude Include="Reader\Reader.h">
-      <Filter>Reader\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Reader\Readers.h">
-      <Filter>Reader\Header</Filter>
-    </ClInclude>
     <ClInclude Include="utils\CardConnection.h">
-      <Filter>utils\Header</Filter>
+      <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="utils\DESFire.h">
-      <Filter>utils\Header</Filter>
+      <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="utils\PcscUtils.h">
-      <Filter>utils\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Reader\ACR1281U\ACR1281UReaderTestHelpers.h">
-      <Filter>Reader\ACR1281U\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Reader\ACR1281U\ACR1281U.h">
-      <Filter>Reader\ACR1281U\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Reader\ACR1281U\ACR1281UReader.h">
-      <Filter>Reader\ACR1281U\Header</Filter>
-    </ClInclude>
-
-
-
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\..\..\Desktop\AN11340.pdf">
-      <Filter>Docs</Filter>
-    </None>
-    <None Include="build_and_run_tests.bat" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="utils\README.txt">
       <Filter>utils</Filter>
-    </Text>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

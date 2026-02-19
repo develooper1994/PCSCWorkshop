@@ -1,8 +1,8 @@
 #ifndef PCSC_WORKSHOP1_READER_H
 #define PCSC_WORKSHOP1_READER_H
 
-#include "../utils/CardConnection.h"
-#include "../Cipher/Cipher.h"
+#include "CardConnection.h"
+#include "Cipher.h"
 #include <string>
 #include <memory>
 
