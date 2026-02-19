@@ -1,10 +1,10 @@
-#include "SmartCardApp.h"
+#include "PCSC.h"
 
 #define BUILD_MAIN_APP
 
 #ifdef BUILD_MAIN_APP
 int main() {
-    SmartCardApp app;
+    PCSC app;
     return app.run();
 }
 #endif
