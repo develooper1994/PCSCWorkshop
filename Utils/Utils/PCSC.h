@@ -1,8 +1,7 @@
 #ifndef PCSC_WORKSHOP1_PCSC_H
 #define PCSC_WORKSHOP1_PCSC_H
 
-#include "DESFire.h"
-#include "Readers.h"
+#include "CardConnection.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -16,11 +15,22 @@
 //   2. Reader kesfetme    (SCardListReaders / SCardFreeMemory)
 //   3. Kart baglantisi    (SCardConnect / SCardDisconnect)
 //   4. APDU iletimi       (SCardTransmit — CardConnection uzerinden)
-//   5. Ust-seviye erisim  (CardConnection&, DESFire, Reader testleri)
+//   5. Ust-seviye erisim  (CardConnection&)
+//
+// Kullanim:
+//   PCSC pcsc;
+//   pcsc.run([](PCSC& p) {
+//       // workshop'a ozel testler
+//       DESFire::testDESFire(p.cardConnection());
+//   });
 // ============================================================
 
 class PCSC {
 public:
+    /// Disaridan verilen callback tipi.
+    /// Callback, baglanti kurulduktan sonra PCSC referansiyla cagirilir.
+    using TestCallback = std::function<void(PCSC&)>;
+
     PCSC() = default;
     ~PCSC();
 
@@ -55,20 +65,20 @@ public:
     BYTEV sendCommand(const BYTEV& apdu, bool followChaining = true) const;
 
     // ---- 5. Ust-seviye erisim ----
-    /// Alt siniflar (Reader, DESFire vb.) icin aktif CardConnection referansi
     CardConnection& cardConnection();
     const CardConnection& cardConnection() const;
 
     // ---- Hazir akis ----
-    /// establishContext + chooseReader + connectToCard + runTests
-    int run();
+    /// establishContext + chooseReader + connectToCard + callback
+    /// @param callback  Baglanti kurulduktan sonra calistirilacak fonksiyon.
+    ///                  Verilmezse sadece baglanti kurar, test calistirmaz.
+    int run(TestCallback callback = nullptr);
 
 private:
     SCARDCONTEXT hContext_{0};
     std::wstring readerName_;
     std::unique_ptr<CardConnection> card_;
 
-    void runTests();
     void cleanup();
 };
 

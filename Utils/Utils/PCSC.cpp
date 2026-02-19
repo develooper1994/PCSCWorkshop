@@ -199,21 +199,15 @@ const CardConnection& PCSC::cardConnection() const {
 // Hazir akis
 // ============================================================
 
-int PCSC::run() {
+int PCSC::run(TestCallback callback) {
     if (!establishContext()) return 1;
     if (!chooseReader())     return 1;
     if (!connectToCard(500)) return 1;
 
-    runTests();
+    if (callback) {
+        callback(*this);
+    }
     return 0;
-}
-
-void PCSC::runTests() {
-    if (!card_) return;
-    // 1) DESFire bilgilerini oku
-    DESFire::testDESFire(*card_);
-    // 2) ACR1281U okuyucu yardimci sinifi kullanarak ornek read/write testi
-    ACR1281UReader::testACR1281UReader(*card_);
 }
 
 // ============================================================
