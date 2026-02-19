@@ -65,18 +65,35 @@ PCSC::ReaderList PCSC::listReaders() const {
         return result;
     }
 
-    // PcscUtils.h icindeki global listReaders fonksiyonunu cagir
-    auto raw = ::listReaders(hContext_);
-    if (!raw.ok) {
-        std::cerr << "No smartcard readers found or listReaders failed.\n";
+    LPWSTR rawBuffer = nullptr;
+    DWORD readersLen = SCARD_AUTOALLOCATE;
+    LONG rc = SCardListReadersW(hContext_, nullptr,
+                                reinterpret_cast<LPWSTR>(&rawBuffer),
+                                &readersLen);
+    if (rc != SCARD_S_SUCCESS) {
+        std::cerr << "SCardListReaders failed: 0x"
+                  << std::hex << rc << std::dec << std::endl;
         return result;
     }
 
-    result.names = raw.names;
-    result.ok    = true;
+    // Multi-string parse: her string NUL ile biter, son string cift NUL
+    wchar_t* p = rawBuffer;
+    while (p && *p != L'\0') {
+        result.names.emplace_back(p);
+        std::wcout << L"[" << result.names.size() - 1
+                   << L"] " << p << std::endl;
+        p += wcslen(p) + 1;
+    }
 
     // rawBuffer'i serbest birak
-    SCardFreeMemory(hContext_, raw.rawBuffer);
+    SCardFreeMemory(hContext_, rawBuffer);
+
+    if (result.names.empty()) {
+        std::cerr << "No readers found.\n";
+        return result;
+    }
+
+    result.ok = true;
     return result;
 }
 
@@ -84,13 +101,32 @@ bool PCSC::chooseReader(size_t defaultIndex) {
     auto readers = listReaders();
     if (!readers.ok) return false;
 
-    size_t index = selectReader(readers.names, defaultIndex);
-    if (index >= readers.names.size()) {
-        std::cerr << "Invalid reader index selected.\n";
-        return false;
+    // Interaktif reader secimi
+    if (readers.names.empty()) return false;
+    if (defaultIndex >= readers.names.size()) defaultIndex = 0;
+
+    size_t selected = defaultIndex;
+    while (true) {
+        std::wcout << L"Select reader index (0-"
+                   << (readers.names.size() - 1)
+                   << L", default " << defaultIndex << L"): ";
+        std::wstring input;
+        std::getline(std::wcin, input);
+        if (input.empty()) {
+            selected = defaultIndex;
+            break;
+        }
+        try {
+            selected = std::stoul(input);
+            if (selected < readers.names.size()) break;
+            std::wcout << L"Invalid index. Try again.\n";
+        }
+        catch (const std::exception&) {
+            std::wcout << L"Invalid input. Try again.\n";
+        }
     }
 
-    readerName_ = readers.names[index];
+    readerName_ = readers.names[selected];
     return true;
 }
 
