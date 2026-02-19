@@ -19,20 +19,7 @@ target_include_directories(reader PUBLIC
 )
 
 # Reader depends on Cipher (for ICipher, Ciphers.h etc.)
-# When built as subdirectory the 'cipher' target is already available.
-if(NOT TARGET cipher)
-    set(EXTERNAL_CIPHER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Cipher")
-    add_subdirectory(${EXTERNAL_CIPHER_DIR} ${CMAKE_CURRENT_BINARY_DIR}/cipher_build)
-endif()
 target_link_libraries(reader PUBLIC cipher)
 
-# Reader also needs PCSC_workshop1/utils headers (PcscUtils.h, CardConnection.h)
-set(PCSC_UTILS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../PCSC_workshop1/utils")
-if(EXISTS "${PCSC_UTILS_DIR}/PcscUtils.h")
-    target_include_directories(reader PUBLIC ${PCSC_UTILS_DIR})
-endif()
-
-# On Windows the reader uses winscard and bcrypt (via cipher/utils)
-if(WIN32)
-    target_link_libraries(reader PUBLIC winscard bcrypt)
-endif()
+# Reader depends on Utils (for PcscUtils.h, CardConnection.h)
+target_link_libraries(reader PUBLIC utils)
