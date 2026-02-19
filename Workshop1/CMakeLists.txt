@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # CMakeLists.txt (add_subdirectory) and linked below.
 # -----------------------------------------------------------------------------
 
-add_executable(PCSC_workshop1 main.cpp)
+add_executable(PCSC_workshop1 main.cpp SmartCardApp.cpp)
 
 target_include_directories(PCSC_workshop1 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}

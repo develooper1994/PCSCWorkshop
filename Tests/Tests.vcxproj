@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{82de335e-2189-4910-954c-ee486374061d}</ProjectGuid>
-    <RootNamespace>PCSCworkshop1</RootNamespace>
+    <ProjectGuid>{B1C2D3E4-F5A6-7890-1234-567890ABCDEF}</ProjectGuid>
+    <RootNamespace>Tests</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -76,7 +76,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Utils\Utils;$(SolutionDir)Reader\Reader;$(SolutionDir)Reader\Reader\ACR1281U;$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;$(SolutionDir)Reader\Reader;$(SolutionDir)Reader\Reader\ACR1281U;$(SolutionDir)Utils\Utils;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -91,7 +92,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Utils\Utils;$(SolutionDir)Reader\Reader;$(SolutionDir)Reader\Reader\ACR1281U;$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;$(SolutionDir)Reader\Reader;$(SolutionDir)Reader\Reader\ACR1281U;$(SolutionDir)Utils\Utils;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -104,7 +106,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Utils\Utils;$(SolutionDir)Reader\Reader;$(SolutionDir)Reader\Reader\ACR1281U;$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;$(SolutionDir)Reader\Reader;$(SolutionDir)Reader\Reader\ACR1281U;$(SolutionDir)Utils\Utils;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -119,7 +122,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Utils\Utils;$(SolutionDir)Reader\Reader;$(SolutionDir)Reader\Reader\ACR1281U;$(SolutionDir)Cipher\Cipher;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(SolutionDir)Cipher\Cipher;$(SolutionDir)Reader\Reader;$(SolutionDir)Reader\Reader\ACR1281U;$(SolutionDir)Utils\Utils;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -128,9 +132,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="cipher_test.cpp" />
+    <ClCompile Include="TestCiphers.cpp" />
+    <ClCompile Include="ACR1281UReaderTestHelpers.cpp" />
+    <ClCompile Include="ACR1281UReaderTests.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="CMakeLists.txt" />
+    <ClInclude Include="ACR1281UReaderTestHelpers.h" />
+    <ClInclude Include="ACR1281UReaderTests.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Cipher\Cipher.vcxproj">

@@ -3,13 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36518.9
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PCSC_workshop1", "PCSC_workshop1\PCSC_workshop1.vcxproj", "{82DE335E-2189-4910-954C-EE486374061D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Workshop1", "Workshop1\Workshop1.vcxproj", "{82DE335E-2189-4910-954C-EE486374061D}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Cipher", "Cipher\Cipher.vcxproj", "{28DBE5CB-73ED-4703-8C7A-AB482AD59C29}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Reader", "Reader\Reader.vcxproj", "{94E046F9-D110-488B-A778-0B19F94848F7}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Utils", "Utils\Utils.vcxproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests\Tests.vcxproj", "{B1C2D3E4-F5A6-7890-1234-567890ABCDEF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,14 @@ Global
 		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|x64.Build.0 = Release|x64
 		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|x86.ActiveCfg = Release|Win32
 		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|x86.Build.0 = Release|Win32
+		{B1C2D3E4-F5A6-7890-1234-567890ABCDEF}.Debug|x64.ActiveCfg = Debug|x64
+		{B1C2D3E4-F5A6-7890-1234-567890ABCDEF}.Debug|x64.Build.0 = Debug|x64
+		{B1C2D3E4-F5A6-7890-1234-567890ABCDEF}.Debug|x86.ActiveCfg = Debug|Win32
+		{B1C2D3E4-F5A6-7890-1234-567890ABCDEF}.Debug|x86.Build.0 = Debug|Win32
+		{B1C2D3E4-F5A6-7890-1234-567890ABCDEF}.Release|x64.ActiveCfg = Release|x64
+		{B1C2D3E4-F5A6-7890-1234-567890ABCDEF}.Release|x64.Build.0 = Release|x64
+		{B1C2D3E4-F5A6-7890-1234-567890ABCDEF}.Release|x86.ActiveCfg = Release|Win32
+		{B1C2D3E4-F5A6-7890-1234-567890ABCDEF}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -58,4 +68,4 @@ Global
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5CBE6150-54CF-4645-B495-A9828E7D9E76}
 	EndGlobalSection
-EndGlobal
+
