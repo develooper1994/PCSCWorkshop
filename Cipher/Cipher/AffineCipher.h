@@ -22,7 +22,7 @@ public:
     BYTEV encrypt(const BYTE* data, size_t len) const override;
     BYTEV decrypt(const BYTE* data, size_t len) const override;
 
-    // optimized output-into overrides
+    // optimized output-into overrides (void to match ICipher)
     void encryptInto(const BYTE* data, size_t len, BYTE* out) const override;
     void decryptInto(const BYTE* data, size_t len, BYTE* out) const override;
 

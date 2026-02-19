@@ -117,6 +117,7 @@
   <ItemGroup>
     <ClInclude Include="Utils\CardConnection.h" />
     <ClInclude Include="Utils\DESFire.h" />
+    <ClInclude Include="Utils\Exceptions.h" />
     <ClInclude Include="Utils\PCSC.h" />
     <ClInclude Include="Utils\PcscUtils.h" />
     <ClInclude Include="Utils\Utils.h" />

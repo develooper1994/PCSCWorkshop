@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup MSBuild path
+      uses: microsoft/setup-msbuild@v1.1
+
+    - name: Find solution
+      shell: powershell
+      run: |
+        $sln = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Filter *.sln -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $sln) { Write-Error "No .sln file found in repository"; exit 1 }
+        Write-Output "Found solution: $($sln.FullName)"
+        echo "::set-output name=solution::$($sln.FullName)"
+      id: find_sln
+
+    - name: Build solution
+      shell: powershell
+      run: |
+        $sln = '${{ steps.find_sln.outputs.solution }}'
+        if (-not $sln) { Write-Error "Solution path not set"; exit 1 }
+        & "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe" $sln /m /p:Configuration=Debug /p:Platform=x64
+
+    - name: Run tests
+      shell: powershell
+      run: |
+        # Try to find test executables under the repo's output folders
+        $tests = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Filter *.exe -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match "Tests" }
+        if ($tests) {
+          foreach ($t in $tests) {
+            Write-Output "Running test: $($t.FullName)"
+            & $t.FullName
+          }
+        } else {
+          Write-Output "No test executables found to run."
+        }

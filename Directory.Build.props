@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <!-- Root-relative include dir for utils headers; projects can still override if needed -->
+    <UtilsIncludeDir>$(MSBuildThisFileDirectory)Utils\Utils</UtilsIncludeDir>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(UtilsIncludeDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+</Project>

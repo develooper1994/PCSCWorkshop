@@ -1,6 +1,7 @@
 #include "PCSC.h"
 #include <iostream>
 #include <utility>
+#include "Exceptions.h"
 
 // ============================================================
 // Destructor & move semantics
@@ -169,13 +170,13 @@ bool PCSC::isConnected() const {
 
 BYTEV PCSC::transmit(const BYTEV& apdu) const {
     if (!card_ || !card_->isConnected())
-        throw std::runtime_error("PCSC::transmit — card not connected");
+        throw pcsc::ReaderError("PCSC::transmit - card not connected");
     return card_->transmit(apdu);
 }
 
 BYTEV PCSC::sendCommand(const BYTEV& apdu, bool followChaining) const {
     if (!card_ || !card_->isConnected())
-        throw std::runtime_error("PCSC::sendCommand — card not connected");
+        throw pcsc::ReaderError("PCSC::sendCommand - card not connected");
     return card_->sendCommand(apdu, followChaining);
 }
 
@@ -185,13 +186,13 @@ BYTEV PCSC::sendCommand(const BYTEV& apdu, bool followChaining) const {
 
 CardConnection& PCSC::cardConnection() {
     if (!card_)
-        throw std::runtime_error("PCSC::cardConnection — no active connection");
+        throw pcsc::ReaderError("PCSC::cardConnection - no active connection");
     return *card_;
 }
 
 const CardConnection& PCSC::cardConnection() const {
     if (!card_)
-        throw std::runtime_error("PCSC::cardConnection — no active connection");
+        throw pcsc::ReaderError("PCSC::cardConnection - no active connection");
     return *card_;
 }
 

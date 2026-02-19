@@ -4,6 +4,7 @@
 #include "PcscUtils.h"
 #include <thread>
 #include <chrono>
+#include "Exceptions.h"
 
 // ============================================================
 // Kart iletiþim katmaný
@@ -72,7 +73,7 @@ public:
                                cmd.data(), static_cast<DWORD>(cmd.size()),
                                nullptr, recv, &recvLen);
         if (r != SCARD_S_SUCCESS)
-            throw std::runtime_error("SCardTransmit failed: " + std::to_string(r));
+            throw pcsc::ReaderError(std::string("SCardTransmit failed: ") + std::to_string(r));
         return BYTEV(recv, recv + recvLen);
     }
 
@@ -82,7 +83,7 @@ public:
         while (true) {
             auto resp = transmit(cmd);
             if (resp.size() < 2)
-                throw std::runtime_error("Invalid response length");
+                throw pcsc::ReaderError("Invalid response length");
 
             BYTE sw1 = resp[resp.size() - 2];
             BYTE sw2 = resp[resp.size() - 1];
@@ -101,7 +102,7 @@ public:
             else {
                 std::cerr << "Unexpected SW: ";
                 printHex(&resp[resp.size() - 2], 2);
-                throw std::runtime_error("Card returned error status");
+                throw pcsc::ReaderError("Card returned error status");
             }
         }
 
