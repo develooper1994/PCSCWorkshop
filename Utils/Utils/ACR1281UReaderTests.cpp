@@ -23,27 +23,27 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
         std::string text = "Mustafa Selcuk Caglar 10/08/1994";
         // Print original and original as hex
         std::cout << "Original " << text << " || Size: " << text.size() << " bytes ("
-            << ((text.size() + 3) / 4) << " pages) starting at page "
+            << ((text.size() + 15) / 16) << " pages) starting at page "
             << (int)startPage << '\n';
 
-		BYTE key[6] = { (BYTE)0xFF, (BYTE)0xFF, (BYTE)0xFF, (BYTE)0xFF, (BYTE)0xFF, (BYTE)0xFF }; // default key for Mifare Classic (6 bytes)
-        const BYTE keyNumber = 0x01;
-        acr1281u.loadKey<ACR1281UReader>(key, KeyStructure::NonVolatile, keyNumber); // Load default key for Mifare Classic
-		// acr1281u.authKey<ACR1281UReader>(startPage, KeyType::A, keyNumber); // Authenticate with Key A
-        /*BYTE data5[5] = {0x01, 0x00, startPage, 0x60, 0x01}; // fixed: create local array for C++
-        acr1281u.authKey2(data5); // Alternative auth with data5
-        */
+        if (acr1281u.isAuthRequested()) {
+            BYTE key[6] = { (BYTE)0xFF, (BYTE)0xFF, (BYTE)0xFF, (BYTE)0xFF, (BYTE)0xFF, (BYTE)0xFF }; // default key for Mifare Classic (6 bytes)
+            const BYTE keyNumber = 0x01;
+            acr1281u.loadKey<ACR1281UReader>(key, KeyStructure::NonVolatile, keyNumber); // Load default key for Mifare Classic
+            // acr1281u.authKey<ACR1281UReader>(startPage, KeyType::A, keyNumber); // Authenticate with Key A
+            /*BYTE data5[5] = {0x01, 0x00, startPage, 0x60, 0x01}; // fixed: create local array for C++
+            acr1281u.authKey2(data5); // Alternative auth with data5
+            */
+        }
 
-        // auto readBack = acr1281u.readPage(startPage, 16);
-        auto readBack = acr1281u.readPageMifareClassic(startPage, KeyType::A, 0x01);
+        auto readBack = acr1281u.readPage(startPage);
         // auto readBack = acr1281u.readData(startPage, text.size(), 16);
         std::cout << "Read back: " << std::string(readBack.begin(), readBack.end()) << '\n';
         printHex(readBack.data(), (DWORD)readBack.size());
 
         acr1281u.writeData(startPage, text, 16);
 
-        // readBack = acr1281u.readData(startPage, text.size());
-        readBack = acr1281u.readPageMifareClassic(startPage, KeyType::A, 0x01);
+        readBack = acr1281u.readData(startPage, text.size());
         std::cout << "Read back: " << std::string(readBack.begin(), readBack.end()) << '\n';
 
         std::cout << "\nreadAll from page 0:\n";

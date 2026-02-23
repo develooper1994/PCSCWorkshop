@@ -7,6 +7,8 @@
 class ACR1281UReader : public Reader {
 public:
     explicit ACR1281UReader(CardConnection& c);
+    ACR1281UReader(CardConnection& c, BYTE lc, bool authRequested, KeyType kt, KeyStructure ks, BYTE keyNumber, const BYTE key[6]);
+    ACR1281UReader(CardConnection& c, BYTE lc, bool authRequested, KeyType kt, KeyStructure ks, BYTE keyNumber, const BYTE keyA[6], const BYTE keyB[6]);
     ~ACR1281UReader() override;
 
     // Non-copyable, movable
@@ -15,21 +17,11 @@ public:
     ACR1281UReader(ACR1281UReader&&) noexcept;
     ACR1281UReader& operator=(ACR1281UReader&&) noexcept;
 
-    void writePage(BYTE page, const BYTE* data4, BYTE LC = 0x04) override;
-    void clearPage(BYTE page) {
-        BYTE empty[4] = {0};
-        writePage(page, empty, 4);
-	}
-    BYTEV readPage(BYTE page, BYTE LC = 0x04) override;
-
-    void writePageMifareClassic(BYTE page, const BYTE* data4, KeyType keyType = KeyType::A, BYTE keyNumber = 0x01);
-    void clearPageMifareClassic(BYTE page, KeyType keyType = KeyType::A, BYTE keyNumber = 0x01) {
-        BYTE empty[16] = { 0 };
-        authKey<ACR1281UReader>(page, keyType, keyNumber); // Authenticate before writing
-        writePage(page, empty, 16);
-    }
-    BYTEV readPageMifareClassic(BYTE page, KeyType keyType = KeyType::A, BYTE keyNumber = 0x01);
-
+    void writePage(BYTE page, const BYTE* data4) override;  
+    void clearPage(BYTE page) override;
+    BYTEV readPage(BYTE page) override;
+    // Overload that requests a specific length from the reader
+    BYTEV readPage(BYTE page, BYTE len) override;
 protected:
     BYTE mapKeyStructure(KeyStructure structure) const override {
         switch (structure) {

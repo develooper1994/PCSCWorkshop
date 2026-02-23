@@ -125,6 +125,7 @@
     <ClInclude Include="Utils\Utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ArrayAppend.cpp" />
     <ClCompile Include="Utils\ACR1281UReaderTestHelpers.cpp" />
     <ClCompile Include="Utils\ACR1281UReaderTests.cpp" />
     <ClCompile Include="Utils\PCSC.cpp" />

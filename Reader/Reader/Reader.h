@@ -19,9 +19,12 @@ enum class KeyType {
 // Reader abstraction: each reader model can implement its own read/write APDUs
 class Reader {
 public:
-    explicit Reader(CardConnection& c);
     virtual ~Reader();
 
+    explicit Reader(CardConnection& c);
+    // New overload: construct Reader and initialize Impl fields
+    Reader(CardConnection& c, BYTE lc, bool authRequested, KeyType kt, KeyStructure ks, BYTE keyNumber, const BYTE key[6]);
+    Reader(CardConnection& c, BYTE lc, bool authRequested, KeyType kt, KeyStructure ks, BYTE keyNumber, const BYTE keyA[6], const BYTE keyB[6]);
     // Non-copyable, movable
     Reader(const Reader&) = delete;
     Reader& operator=(const Reader&) = delete;
@@ -29,41 +32,51 @@ public:
     Reader& operator=(Reader&&) noexcept;
 
     // Core primitive that derived classes must implement (4 bytes)
-    virtual void writePage(BYTE page, const BYTE* data4, BYTE LC = 0x04) = 0;
-    virtual BYTEV readPage(BYTE page, BYTE LC = 0x04) = 0;
+    virtual void writePage(BYTE page, const BYTE* data4) = 0;
+    virtual void clearPage(BYTE page) = 0;
+    virtual BYTEV readPage(BYTE page) = 0;
+
+    // New overload: read a page requesting a specific length. Default implementation
+    // forwards to the single-argument virtual readPage; derived readers may override
+    // to implement reader-specific APDU behavior.
+    virtual BYTEV readPage(BYTE page, BYTE len);
 
     // Encrypted write/read
-    void writePageEncrypted(BYTE page, const BYTE* data4, const ICipher& cipher, BYTE LC = 0x04);
-    BYTEV readPageDecrypted(BYTE page, const ICipher& cipher, BYTE LC = 0x04);
+    void writePageEncrypted(BYTE page, const BYTE* data4, const ICipher& cipher);
+    BYTEV readPageDecrypted(BYTE page, const ICipher& cipher);
 
     // AAD-capable single-page encrypted write/read
-    void writePageEncryptedAAD(BYTE page, const BYTE* data4, const ICipher& cipher, const BYTE* aad, size_t aad_len, BYTE LC = 0x04);
-    BYTEV readPageDecryptedAAD(BYTE page, const ICipher& cipher, const BYTE* aad, size_t aad_len, BYTE LC = 0x04);
+    void writePageEncryptedAAD(BYTE page, const BYTE* data4, const ICipher& cipher, const BYTE* aad, size_t aad_len);
+    BYTEV readPageDecryptedAAD(BYTE page, const ICipher& cipher, const BYTE* aad, size_t aad_len);
 
     // Convenience overloads for common container types
-    void writePage(BYTE page, const BYTEV& data, BYTE LC = 0x04);
-    void writePage(BYTE page, const std::string& s, BYTE LC = 0x04);
+    void writePage(BYTE page, const BYTEV& data);
+    void writePage(BYTE page, const std::string& s);
 
-    void writePageEncrypted(BYTE page, const BYTEV& data, const ICipher& cipher, BYTE LC = 0x04);
-    void writePageEncrypted(BYTE page, const std::string& s, const ICipher& cipher, BYTE LC = 0x04);
+    void writePageEncrypted(BYTE page, const BYTEV& data, const ICipher& cipher);
+    void writePageEncrypted(BYTE page, const std::string& s, const ICipher& cipher);
 
-    void writePageEncryptedAAD(BYTE page, const BYTEV& data, const ICipher& cipher, const BYTEV& aad, BYTE LC = 0x04);
-    void writePageEncryptedAAD(BYTE page, const std::string& s, const ICipher& cipher, const BYTEV& aad, BYTE LC = 0x04);
+    void writePageEncryptedAAD(BYTE page, const BYTEV& data, const ICipher& cipher, const BYTEV& aad);
+    void writePageEncryptedAAD(BYTE page, const std::string& s, const ICipher& cipher, const BYTEV& aad);
 
     // convenience: write multi-page data
-    virtual void writeData(BYTE startPage, const BYTEV& data, BYTE LC = 4);
-    void writeData(BYTE startPage, const std::string& s, BYTE LC = 4);
+    virtual void writeData(BYTE startPage, const BYTEV& data);
+    void writeData(BYTE startPage, const std::string& s);
 
-    virtual BYTEV readData(BYTE startPage, size_t length, BYTE LC = 4);
+    // New overloads: allow caller to specify LC (bytes per page) for this operation
+    void writeData(BYTE startPage, const BYTEV& data, BYTE lc);
+    void writeData(BYTE startPage, const std::string& s, BYTE lc);
+
+    virtual BYTEV readData(BYTE startPage, size_t length);
 
     // Multi-page encrypted write/read
-    void writeDataEncrypted(BYTE startPage, const BYTEV& data, const ICipher& cipher, BYTE LC = 4);
-    void writeDataEncrypted(BYTE startPage, const std::string& s, const ICipher& cipher, BYTE LC = 4);
-    BYTEV readDataDecrypted(BYTE startPage, size_t length, const ICipher& cipher, BYTE LC = 4);
+    void writeDataEncrypted(BYTE startPage, const BYTEV& data, const ICipher& cipher);
+    void writeDataEncrypted(BYTE startPage, const std::string& s, const ICipher& cipher);
+    BYTEV readDataDecrypted(BYTE startPage, size_t length, const ICipher& cipher);
 
-    void writeDataEncryptedAAD(BYTE startPage, const BYTEV& data, const ICipher& cipher, const BYTE* aad, size_t aad_len, BYTE LC = 4);
-    void writeDataEncryptedAAD(BYTE startPage, const std::string& s, const ICipher& cipher, const BYTE* aad, size_t aad_len, BYTE LC = 4);
-    BYTEV readDataDecryptedAAD(BYTE startPage, size_t length, const ICipher& cipher, const BYTE* aad, size_t aad_len, BYTE LC = 4);
+    void writeDataEncryptedAAD(BYTE startPage, const BYTEV& data, const ICipher& cipher, const BYTE* aad, size_t aad_len);
+    void writeDataEncryptedAAD(BYTE startPage, const std::string& s, const ICipher& cipher, const BYTE* aad, size_t aad_len);
+    BYTEV readDataDecryptedAAD(BYTE startPage, size_t length, const ICipher& cipher, const BYTE* aad, size_t aad_len);
 
     // Read all pages until card returns error
     BYTEV readAll(BYTE startPage = 0);
@@ -118,7 +131,7 @@ public:
     FF FFh.
     */
     template<typename TReader>
-    void authKey(BYTE blockNumber, KeyType keyType, BYTE keyNumber) {
+    void auth(BYTE blockNumber, KeyType keyType, BYTE keyNumber) {
         if (!card().isConnected()) throw std::runtime_error("Card not connected");
         // BYTE keyTypeValue = mapKeyKind(keyType);
         BYTE keyTypeValue = KeyMapping<TReader>::map(keyType);
@@ -136,13 +149,32 @@ public:
     }
     /* {0x01(versionnumber), 0x00, Block Number, Key Type, Key Number} */
     template<typename TReader>
-    void authKeyNew(BYTE blockNumber, KeyType keyType, BYTE keyNumber) {
+    void authNew(BYTE blockNumber, KeyType keyType, BYTE keyNumber) {
         // BYTE keyTypeValue = mapKeyKind(keyType);
         BYTE keyTypeValue = KeyMapping<TReader>::map(keyType);
         BYTE data5[5] = { 0x01, 0x00, blockNumber, keyTypeValue, keyNumber };
-        authKeyNew(data5);
+        authNew(data5);
     }
-    void authKeyNew(const BYTE* data5);
+    void authNew(const BYTE* data5);
+
+    bool isAuthRequested() const;
+    void setAuthRequested(bool v);
+
+    BYTE getLC() const;
+    void setLC(BYTE lc);
+
+    KeyType keyType() const;
+    void setKeyType(KeyType kt);
+
+    KeyStructure keyStructure() const;
+    void setKeyStructure(KeyStructure ks);
+
+    BYTE getKeyNumber() const;
+    void setKeyNumber(BYTE key); // copies 6 bytes
+
+    // Copy the internal 6-byte key into out (must be at least 6 bytes)
+    void getKey(BYTE out[6]) const;
+    void setKey(const BYTE* key); // copies 6 bytes
 
 protected:
     struct Impl;
