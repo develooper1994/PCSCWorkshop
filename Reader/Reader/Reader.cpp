@@ -371,17 +371,17 @@ BYTEV Reader::readAll(BYTE startPage) {
 }
 
 void Reader::authNew(const BYTE* data5) {
-	if (!card().isConnected()) throw std::runtime_error("Card not connected");
+	if (!card().isConnected()) throw pcsc::ReaderError("Card not connected");
 	BYTE authLC = 0x05; // 5 bytes
 	BYTEV apdu{ 0xFF, 0x86, 0x00, 0x00, authLC };
 	apdu.insert(apdu.end(), data5, data5 + authLC);
 
 	auto resp = card().transmit(apdu);
-	if (resp.size() < 2) throw std::runtime_error("Invalid response for write");
+	if (resp.size() < 2) throw pcsc::ReaderError("Invalid response for write");
 	BYTE sw1 = resp[resp.size() - 2], sw2 = resp[resp.size() - 1];
-	if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00)) {
+	if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00) || (sw1 == 0x63 && sw2 == 0x00)) {
 		std::stringstream ss;
 		ss << "Write failed SW=0x" << std::hex << (int)sw1 << " 0x" << (int)sw2;
-		throw std::runtime_error(ss.str());
+		throw pcsc::AuthFailedError(ss.str());
 	}
 }

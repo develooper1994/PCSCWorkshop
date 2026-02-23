@@ -51,7 +51,7 @@ void ACR1281UReader::writePage(BYTE page, const BYTE* data4) {
 	}
 
 	auto resp = card().transmit(apdu);
-	if (resp.size() < 2) throw std::runtime_error("Invalid response for write");
+	if (resp.size() < 2) throw pcsc::ReaderError("Invalid response for write");
 	BYTE sw1 = resp[resp.size()-2], sw2 = resp[resp.size()-1];
 	if (sw1 == 0x63 && sw2 == 0x00) {
 		setAuthRequested(true);
