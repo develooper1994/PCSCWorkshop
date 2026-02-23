@@ -115,6 +115,8 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Utils\ACR1281UReaderTestHelpers.h" />
+    <ClInclude Include="Utils\ACR1281UReaderTests.h" />
     <ClInclude Include="Utils\CardConnection.h" />
     <ClInclude Include="Utils\DESFire.h" />
     <ClInclude Include="Utils\Exceptions.h" />
@@ -123,6 +125,8 @@
     <ClInclude Include="Utils\Utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Utils\ACR1281UReaderTestHelpers.cpp" />
+    <ClCompile Include="Utils\ACR1281UReaderTests.cpp" />
     <ClCompile Include="Utils\PCSC.cpp" />
     <ClCompile Include="Utils\Utils.cpp" />
   </ItemGroup>

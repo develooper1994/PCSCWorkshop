@@ -1,6 +1,7 @@
 #include "PCSC.h"
 #include "DESFire.h"
 #include "Readers.h"
+#include "ACR1281UReaderTests.h"
 
 #define BUILD_MAIN_APP
 
@@ -11,7 +12,10 @@ int main() {
         // Workshop1 testleri
         DESFire::testDESFire(p.cardConnection());
         // ACR1281UReader test moved to Tests project
-        // ACR1281UReader::testACR1281UReader(p.cardConnection());
+        // testACR1281UReaderUltralight(p.cardConnection());
+        ACR1281UReader acr1281u(p.cardConnection());
+        // testACR1281UReaderUltralightUnsecured(acr1281u, 7);
+		testACR1281UReaderMifareClassicUnsecured(acr1281u, 7);
     });
 }
 #endif

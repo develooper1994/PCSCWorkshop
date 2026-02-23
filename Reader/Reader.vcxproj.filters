@@ -47,4 +47,7 @@
       <Filter>Reader\Source</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="Reader\CMakeLists.txt" />
+  </ItemGroup>
 </Project>

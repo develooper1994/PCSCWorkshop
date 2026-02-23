@@ -13,8 +13,8 @@ add_subdirectory(Cipher)
 # Build Reader static library (depends on Cipher and Utils)
 add_subdirectory(Reader)
 
-# Build the main application (depends on Reader, Cipher, Utils)
-add_subdirectory(Workshop1)
-
 # Build the test executable (depends on Reader, Cipher, Utils)
 add_subdirectory(Tests)
+
+# Build the main application (depends on Reader, Cipher, Utils)
+add_subdirectory(Workshop1)

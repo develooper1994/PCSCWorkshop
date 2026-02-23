@@ -10,10 +10,10 @@ ACR1281UReader::ACR1281UReader(ACR1281UReader&&) noexcept = default;
 ACR1281UReader::~ACR1281UReader() = default;
 ACR1281UReader& ACR1281UReader::operator=(ACR1281UReader&&) noexcept = default;
 
-void ACR1281UReader::writePage(BYTE page, const BYTE* data4) {
+void ACR1281UReader::writePage(BYTE page, const BYTE* data4, BYTE LC) {
     if (!card().isConnected()) throw runtime_error("Card not connected");
-    BYTEV apdu{ 0xFF, 0xD6, 0x00, page, 0x04 };
-    apdu.insert(apdu.end(), data4, data4 + 4);
+    BYTEV apdu{ 0xFF, 0xD6, 0x00, page, LC };
+    apdu.insert(apdu.end(), data4, data4 + LC);
 
     auto resp = card().transmit(apdu);
     if (resp.size() < 2) throw runtime_error("Invalid response for write");
@@ -25,9 +25,9 @@ void ACR1281UReader::writePage(BYTE page, const BYTE* data4) {
     }
 }
 
-BYTEV ACR1281UReader::readPage(BYTE page) {
+BYTEV ACR1281UReader::readPage(BYTE page, BYTE LC) {
     if (!card().isConnected()) throw runtime_error("Card not connected");
-    BYTEV apdu{ 0xFF, 0xB0, 0x00, page, 0x04};
+    BYTEV apdu{ 0xFF, 0xB0, 0x00, page, LC};
 
     auto resp = card().transmit(apdu);
     if (resp.size() < 2) throw runtime_error("Invalid response for read");
@@ -39,3 +39,4 @@ BYTEV ACR1281UReader::readPage(BYTE page) {
     }
     return BYTEV(resp.begin(), resp.end()-2);
 }
+

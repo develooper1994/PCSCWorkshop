@@ -9,15 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++</Extensions>
     </Filter>
-    <Filter Include="Utils">
-      <UniqueIdentifier>{db497603-41f9-4495-935e-2640ed842f6d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Utils\Header">
-      <UniqueIdentifier>{b9948b25-ab74-4b0d-8d02-de09ce0125ac}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Utils\Source">
-      <UniqueIdentifier>{b62624b9-cbd1-4b16-a0b0-993c6e54cd75}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -29,20 +20,6 @@
     <ClCompile Include="TestCiphers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ACR1281UReaderTestHelpers.cpp">
-      <Filter>Utils\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="ACR1281UReaderTests.cpp">
-      <Filter>Utils\Source</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="ACR1281UReaderTests.h">
-      <Filter>Utils\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="ACR1281UReaderTestHelpers.h">
-      <Filter>Utils\Header</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
