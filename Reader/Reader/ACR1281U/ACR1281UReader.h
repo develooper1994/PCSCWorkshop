@@ -28,14 +28,14 @@ protected:
             case KeyStructure::Volatile: return 0x00;
             case KeyStructure::NonVolatile: return 0x20;
         }
-        throw std::runtime_error("Invalid key kind");
+        throw pcsc::Error("Invalid key kind");
     }
     BYTE mapKeyKind(KeyType kind) const override {
         switch (kind) {
             case KeyType::A: return 0x60;
             case KeyType::B: return 0x61;
         }
-        throw std::runtime_error("Invalid key kind");
+        throw pcsc::Error("Invalid key kind");
     }
 };
 

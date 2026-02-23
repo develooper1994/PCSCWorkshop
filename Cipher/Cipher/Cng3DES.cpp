@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Cng3DES.h"
+#include "Exceptions/GenericExceptions.h"
 #include <stdexcept>
 #include <vector>
 #include <windows.h>
@@ -17,14 +18,14 @@ struct Cng3DES::Impl {
 
     Impl(const std::vector<BYTE>& k, const std::vector<BYTE>& i) : key(k), iv(i) {
         NTSTATUS st = BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_3DES_ALGORITHM, nullptr, 0);
-        if (!BCRYPT_SUCCESS(st)) throw std::runtime_error("BCryptOpenAlgorithmProvider failed (3DES)");
+        if (!BCRYPT_SUCCESS(st)) throw pcsc::CipherError("BCryptOpenAlgorithmProvider failed (3DES)");
         // set CBC mode — wide string required
         st = BCryptSetProperty(hAlg, BCRYPT_CHAINING_MODE,
             (PUCHAR)BCRYPT_CHAIN_MODE_CBC,
             static_cast<ULONG>(sizeof(BCRYPT_CHAIN_MODE_CBC)), 0);
-        if (!BCRYPT_SUCCESS(st)) throw std::runtime_error("BCryptSetProperty(CHAINING_MODE) failed (3DES)");
+        if (!BCRYPT_SUCCESS(st)) throw pcsc::CipherError("BCryptSetProperty(CHAINING_MODE) failed (3DES)");
         st = BCryptGenerateSymmetricKey(hAlg, &hKey, nullptr, 0, key.data(), static_cast<ULONG>(key.size()), 0);
-        if (!BCRYPT_SUCCESS(st)) throw std::runtime_error("BCryptGenerateSymmetricKey failed (3DES)");
+        if (!BCRYPT_SUCCESS(st)) throw pcsc::CipherError("BCryptGenerateSymmetricKey failed (3DES)");
     }
 
     ~Impl() {
@@ -35,8 +36,8 @@ struct Cng3DES::Impl {
 
 Cng3DES::Cng3DES(const std::vector<BYTE>& key, const std::vector<BYTE>& iv)
     : pImpl(std::make_unique<Impl>(key, iv)) {
-    if (pImpl->iv.size() != pImpl->blockSize) throw std::runtime_error("3DES IV must be 8 bytes");
-    if (pImpl->key.size() != 24) throw std::runtime_error("3DES key must be 24 bytes");
+    if (pImpl->iv.size() != pImpl->blockSize) throw pcsc::CipherError("3DES IV must be 8 bytes");
+    if (pImpl->key.size() != 24) throw pcsc::CipherError("3DES key must be 24 bytes");
 }
 
 Cng3DES::~Cng3DES() = default;
@@ -46,7 +47,7 @@ Cng3DES& Cng3DES::operator=(Cng3DES&&) noexcept = default;
 static void throwStatus3(NTSTATUS st) {
     std::ostringstream ss;
     ss << "BCrypt error: 0x" << std::hex << st;
-    throw std::runtime_error(ss.str());
+    throw pcsc::CipherError(ss.str());
 }
 
 BYTEV Cng3DES::encrypt(const BYTE* data, size_t len) const {

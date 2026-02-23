@@ -12,6 +12,12 @@
     <Filter Include="Tests">
       <UniqueIdentifier>{b517b4d2-84aa-4096-b0f5-7223c9c0ac62}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Exception">
+      <UniqueIdentifier>{4e301404-aebf-4c60-bf2f-e9d27e463f4b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests\ACR1281U">
+      <UniqueIdentifier>{baab8c50-86fd-4401-954b-733d25b46e60}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils\PcscUtils.h">
@@ -29,14 +35,14 @@
     <ClInclude Include="Utils\PCSC.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\Exceptions.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Utils\Exceptions\GenericExceptions.h">
+      <Filter>Exception</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\ACR1281UReaderTestHelpers.h">
-      <Filter>Tests</Filter>
+    <ClInclude Include="Utils\Tests\ACR1281U\ACR1281UReaderTestHelpers.h">
+      <Filter>Tests\ACR1281U</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\ACR1281UReaderTests.h">
-      <Filter>Tests</Filter>
+    <ClInclude Include="Utils\Tests\ACR1281U\ACR1281UReaderTests.h">
+      <Filter>Tests\ACR1281U</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -46,14 +52,14 @@
     <ClCompile Include="Utils\PCSC.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Utils\ACR1281UReaderTestHelpers.cpp">
-      <Filter>Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="Utils\ACR1281UReaderTests.cpp">
-      <Filter>Tests</Filter>
-    </ClCompile>
     <ClCompile Include="ArrayAppend.cpp">
       <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Tests\ACR1281U\ACR1281UReaderTestHelpers.cpp">
+      <Filter>Tests\ACR1281U</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Tests\ACR1281U\ACR1281UReaderTests.cpp">
+      <Filter>Tests\ACR1281U</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -1,10 +1,10 @@
-#ifndef PCSC_WORKSHOP1_CARDCONNECTION_H
-#define PCSC_WORKSHOP1_CARDCONNECTION_H
+#ifndef CARDCONNECTION_H
+#define CARDCONNECTION_H
 
 #include "PcscUtils.h"
 #include <thread>
 #include <chrono>
-#include "Exceptions.h"
+#include "Exceptions/GenericExceptions.h"
 
 // ============================================================
 // Kart iletiþim katmaný
@@ -73,7 +73,7 @@ public:
                                cmd.data(), static_cast<DWORD>(cmd.size()),
                                nullptr, recv, &recvLen);
         if (r != SCARD_S_SUCCESS)
-            throw pcsc::ReaderError(std::string("SCardTransmit failed: ") + std::to_string(r));
+            throw pcsc::ReaderError (std::string("SCardTransmit failed: ") + std::to_string(r));
         return BYTEV(recv, recv + recvLen);
     }
 

@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Cipher.h"
 #include "ICipherAAD.h"
-#include "Exceptions.h"
+#include "Exceptions/GenericExceptions.h"
 
 // Default AAD-aware fallbacks: if the implementation supports ICipherAAD, forward to it;
 // otherwise, ignore AAD and call the non-AAD overloads.

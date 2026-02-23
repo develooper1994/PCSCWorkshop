@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "CngAES.h"
+#include "Exceptions/GenericExceptions.h"
 #include <stdexcept>
 #include <vector>
 #include <windows.h>
@@ -17,15 +18,15 @@ struct CngAES::Impl {
 
     Impl(const std::vector<BYTE>& k, const std::vector<BYTE>& i) : key(k), iv(i) {
         NTSTATUS st = BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_AES_ALGORITHM, nullptr, 0);
-        if (!BCRYPT_SUCCESS(st)) throw std::runtime_error("BCryptOpenAlgorithmProvider failed");
+        if (!BCRYPT_SUCCESS(st)) throw pcsc::CipherError("BCryptOpenAlgorithmProvider failed");
         // set CBC mode — BCRYPT_CHAIN_MODE_CBC is a wide string (L"ChainingModeCBC")
         st = BCryptSetProperty(hAlg, BCRYPT_CHAINING_MODE,
             (PUCHAR)BCRYPT_CHAIN_MODE_CBC,
             static_cast<ULONG>(sizeof(BCRYPT_CHAIN_MODE_CBC)), 0);
-        if (!BCRYPT_SUCCESS(st)) throw std::runtime_error("BCryptSetProperty(CHAINING_MODE) failed");
+        if (!BCRYPT_SUCCESS(st)) throw pcsc::CipherError("BCryptSetProperty(CHAINING_MODE) failed");
         // generate symmetric key object
         st = BCryptGenerateSymmetricKey(hAlg, &hKey, nullptr, 0, key.data(), static_cast<ULONG>(key.size()), 0);
-        if (!BCRYPT_SUCCESS(st)) throw std::runtime_error("BCryptGenerateSymmetricKey failed");
+        if (!BCRYPT_SUCCESS(st)) throw pcsc::CipherError("BCryptGenerateSymmetricKey failed");
     }
 
     ~Impl() {
@@ -36,7 +37,7 @@ struct CngAES::Impl {
 
 CngAES::CngAES(const std::vector<BYTE>& key, const std::vector<BYTE>& iv)
     : pImpl(std::make_unique<Impl>(key, iv)) {
-    if (pImpl->iv.size() != pImpl->blockSize) throw std::runtime_error("AES IV must be 16 bytes");
+    if (pImpl->iv.size() != pImpl->blockSize) throw pcsc::CipherError("AES IV must be 16 bytes");
 }
 
 CngAES::~CngAES() = default;
@@ -46,7 +47,7 @@ CngAES& CngAES::operator=(CngAES&&) noexcept = default;
 static void throwStatus(NTSTATUS st) {
     std::ostringstream ss;
     ss << "BCrypt error: 0x" << std::hex << st;
-    throw std::runtime_error(ss.str());
+    throw pcsc::CipherError(ss.str());
 }
 
 BYTEV CngAES::encrypt(const BYTE* data, size_t len) const {

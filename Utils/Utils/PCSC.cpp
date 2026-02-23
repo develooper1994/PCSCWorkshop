@@ -1,7 +1,7 @@
 #include "PCSC.h"
 #include <iostream>
 #include <utility>
-#include "Exceptions.h"
+#include "Exceptions/GenericExceptions.h"
 
 // ============================================================
 // Destructor & move semantics
@@ -87,7 +87,7 @@ PCSC::ReaderList PCSC::listReaders() const {
     }
 
     // rawBuffer'i serbest birak
-    SCardFreeMemory(hContext_, rawBuffer);
+    if(rawBuffer != nullptr) SCardFreeMemory(hContext_, rawBuffer);
 
     if (result.names.empty()) {
         std::cerr << "No readers found.\n";

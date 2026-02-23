@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "CngAESGcm.h"
 #include "CngAESGcmUtil.h"
+#include "Exceptions/GenericExceptions.h"
 #include <stdexcept>
 #include <vector>
 #include <windows.h>
@@ -22,12 +23,12 @@ struct CngAESGcm::Impl {
 
     Impl(const std::vector<BYTE>& k) : key(k) {
         NTSTATUS st = BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_AES_ALGORITHM, nullptr, 0);
-        if (!BCRYPT_SUCCESS(st)) throw std::runtime_error("BCryptOpenAlgorithmProvider failed");
+        if (!BCRYPT_SUCCESS(st)) throw pcsc::CipherError("BCryptOpenAlgorithmProvider failed");
         // Set GCM chaining mode — required before using authenticated cipher info
         st = BCryptSetProperty(hAlg, BCRYPT_CHAINING_MODE,
             (PUCHAR)BCRYPT_CHAIN_MODE_GCM,
             static_cast<ULONG>(sizeof(BCRYPT_CHAIN_MODE_GCM)), 0);
-        if (!BCRYPT_SUCCESS(st)) throw std::runtime_error("BCryptSetProperty(GCM) failed");
+        if (!BCRYPT_SUCCESS(st)) throw pcsc::CipherError("BCryptSetProperty(GCM) failed");
     }
 
     ~Impl() {
@@ -43,7 +44,7 @@ CngAESGcm& CngAESGcm::operator=(CngAESGcm&&) noexcept = default;
 static void throwStatusG(NTSTATUS st) {
     std::ostringstream ss;
     ss << "BCrypt error: 0x" << std::hex << st;
-    throw std::runtime_error(ss.str());
+    throw pcsc::CipherError(ss.str());
 }
 
 static std::vector<BYTE> randomBytes(size_t n) {
@@ -103,7 +104,7 @@ BYTEV encrypt_with_aad(const CngAESGcm::Impl* impl, const BYTE* data, size_t len
 
 // Helper that performs AAD-aware decrypt
 BYTEV decrypt_with_aad(const CngAESGcm::Impl* impl, const BYTE* data, size_t len, const BYTE* aad, size_t aad_len) {
-    if (len < impl->nonceSize + impl->tagSize) throw std::runtime_error("Input too short for nonce+tag");
+    if (len < impl->nonceSize + impl->tagSize) throw pcsc::CipherError("Input too short for nonce+tag");
     const BYTE* nonce = data;
     const BYTE* ct = data + impl->nonceSize;
     ULONG ctLen = static_cast<ULONG>(len - impl->nonceSize - impl->tagSize);

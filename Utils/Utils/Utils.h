@@ -5,6 +5,7 @@
 #include "PcscUtils.h"
 #include "CardConnection.h"
 #include "DESFire.h"
-#include "Exceptions.h"
+// Exceptions
+#include "Exceptions/GenericExceptions.h"
 
 #endif // PCSC_WORKSHOP1_UTILS_H
