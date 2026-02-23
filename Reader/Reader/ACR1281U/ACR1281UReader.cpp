@@ -15,6 +15,9 @@ void ACR1281UReader::writePage(BYTE page, const BYTE* data4, BYTE LC) {
     BYTEV apdu{ 0xFF, 0xD6, 0x00, page, LC };
     apdu.insert(apdu.end(), data4, data4 + LC);
 
+    if(isAuthRequested)
+        authKey<ACR1281UReader>(page, keyType, keyNumber); // Authenticate before reading
+
     auto resp = card().transmit(apdu);
     if (resp.size() < 2) throw runtime_error("Invalid response for write");
     BYTE sw1 = resp[resp.size()-2], sw2 = resp[resp.size()-1];
@@ -40,3 +43,12 @@ BYTEV ACR1281UReader::readPage(BYTE page, BYTE LC) {
     return BYTEV(resp.begin(), resp.end()-2);
 }
 
+void ACR1281UReader::writePageMifareClassic(BYTE page, const BYTE* data4, KeyType keyType, BYTE keyNumber) {
+	authKey<ACR1281UReader>(page, keyType, keyNumber); // Authenticate before writing
+	writePage(page, data4, 16);
+}
+
+BYTEV ACR1281UReader::readPageMifareClassic(BYTE page, KeyType keyType, BYTE keyNumber) {
+    authKey<ACR1281UReader>(page, keyType, keyNumber); // Authenticate before reading
+	return readPage(page, 16);
+}

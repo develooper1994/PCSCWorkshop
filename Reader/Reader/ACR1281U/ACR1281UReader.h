@@ -16,7 +16,19 @@ public:
     ACR1281UReader& operator=(ACR1281UReader&&) noexcept;
 
     void writePage(BYTE page, const BYTE* data4, BYTE LC = 0x04) override;
+    void clearPage(BYTE page) {
+        BYTE empty[4] = {0};
+        writePage(page, empty, 4);
+	}
     BYTEV readPage(BYTE page, BYTE LC = 0x04) override;
+
+    void writePageMifareClassic(BYTE page, const BYTE* data4, KeyType keyType = KeyType::A, BYTE keyNumber = 0x01);
+    void clearPageMifareClassic(BYTE page, KeyType keyType = KeyType::A, BYTE keyNumber = 0x01) {
+        BYTE empty[16] = { 0 };
+        authKey<ACR1281UReader>(page, keyType, keyNumber); // Authenticate before writing
+        writePage(page, empty, 16);
+    }
+    BYTEV readPageMifareClassic(BYTE page, KeyType keyType = KeyType::A, BYTE keyNumber = 0x01);
 
 protected:
     BYTE mapKeyStructure(KeyStructure structure) const override {

@@ -85,7 +85,7 @@ public:
     FF FF FF FFh.
     */
     template<typename TReader>
-    void loadKey(KeyStructure keyStructure, BYTE keyNumber, const BYTE* key) {
+    void loadKey(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber) {
         if (!card().isConnected()) throw std::runtime_error("Card not connected");
         // BYTE keyStructureValue = mapKeyStructure(keyStructure);
         BYTE keyStructureValue = KeyMapping<TReader>::map(keyStructure);
@@ -99,7 +99,7 @@ public:
         BYTE sw1 = resp[resp.size() - 2], sw2 = resp[resp.size() - 1];
         if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00)) {
             std::stringstream ss;
-            ss << "Write failed SW=0x" << std::hex << (int)sw1 << " 0x" << (int)sw2;
+            ss << "Write failed SW=0x" << std::hex << (int)sw1 << " 0x" << (int)sw2 << '\n';
             throw std::runtime_error(ss.str());
         }
     }
@@ -130,7 +130,7 @@ public:
         BYTE sw1 = resp[resp.size() - 2], sw2 = resp[resp.size() - 1];
         if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00)) {
             std::stringstream ss;
-            ss << "Write failed SW=0x" << std::hex << (int)sw1 << " 0x" << (int)sw2;
+            ss << "Write failed SW=0x" << std::hex << (int)sw1 << " 0x" << (int)sw2 << '\n';
             throw std::runtime_error(ss.str());
         }
     }

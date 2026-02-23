@@ -7,6 +7,10 @@
 // ============================================================
 struct Reader::Impl {
     CardConnection& card;
+    bool isAuthRequested = false;
+    KeyType keyType = KeyType::A; // default to Key A
+    KeyStructure keyStructure = KeyStructure::NonVolatile; // default to non-volatile
+    BYTE key[6] = { (BYTE)0xFF, (BYTE)0xFF, (BYTE)0xFF, (BYTE)0xFF, (BYTE)0xFF, (BYTE)0xFF }; // default key for Mifare Classic (6 bytes)
 
     explicit Impl(CardConnection& c) : card(c) {}
 };
