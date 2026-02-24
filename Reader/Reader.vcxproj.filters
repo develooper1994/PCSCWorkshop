@@ -44,7 +44,7 @@
     <ClInclude Include="Reader\Reader.h">
       <Filter>Reader\Header</Filter>
     </ClInclude>
-    <ClInclude Include="MifareClassic.h">
+    <ClInclude Include="Reader\Card\MifareClassic\MifareClassic.h">
       <Filter>Card\MifareClassic</Filter>
     </ClInclude>
   </ItemGroup>
@@ -55,7 +55,7 @@
     <ClCompile Include="Reader\Reader.cpp">
       <Filter>Reader\Source</Filter>
     </ClCompile>
-    <ClCompile Include="MifareClassic.cpp">
+    <ClCompile Include="Reader\Card\MifareClassic\MifareClassic.cpp">
       <Filter>Card\MifareClassic</Filter>
     </ClCompile>
   </ItemGroup>

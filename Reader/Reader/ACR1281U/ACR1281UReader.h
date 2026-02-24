@@ -28,15 +28,15 @@ protected:
         switch (structure) {
             case KeyStructure::Volatile: return 0x00;
             case KeyStructure::NonVolatile: return 0x20;
+			default: throw pcsc::Error("Invalid key structure");
         }
-        throw pcsc::Error("Invalid key kind");
     }
     BYTE mapKeyKind(KeyType kind) const override {
         switch (kind) {
             case KeyType::A: return 0x60;
             case KeyType::B: return 0x61;
+			default: throw pcsc::Error("Invalid key kind");
         }
-        throw pcsc::Error("Invalid key kind");
     }
 };
 
