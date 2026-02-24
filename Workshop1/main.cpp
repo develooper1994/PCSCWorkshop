@@ -1,5 +1,5 @@
 #include "PCSC.h"
-#include "DESFire.h"
+#include "CardUtils.h"
 #include "Readers.h"
 #include "Tests/ACR1281U/ACR1281UReaderTests.h"
 
@@ -10,7 +10,7 @@ int main() {
 	PCSC pcsc;
 	return pcsc.run([](PCSC& p) {
 		// Workshop1 testleri
-		// DESFire::testDESFire(p.cardConnection());
+		// CardUtils::testDESFire(p.cardConnection());
 		// 
 		// ACR1281UReader test moved to Tests project
 		// testACR1281UReaderUltralight(p.cardConnection());

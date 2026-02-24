@@ -4,7 +4,7 @@
 // Convenience header to include all utils
 #include "PcscUtils.h"
 #include "CardConnection.h"
-#include "DESFire.h"
+#include "CardUtils.h"
 // Exceptions
 #include "Exceptions/GenericExceptions.h"
 

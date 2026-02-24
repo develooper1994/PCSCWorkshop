@@ -1,16 +1,20 @@
-#ifndef PCSC_WORKSHOP1_DESFIRE_H
-#define PCSC_WORKSHOP1_DESFIRE_H
+#ifndef PCSC_WORKSHOP1_CARDUTILS_H
+#define PCSC_WORKSHOP1_CARDUTILS_H
 
 #include "CardConnection.h"
 #include <algorithm>
 #include <sstream>
 #include <iostream>
 
+// NOTE: Namespace adý "DESFire" -> "CardUtils" olarak deðiþtirildi.
+// Eðer proje genelinde "DESFire::" kullanýmlarý varsa hepsinin de güncellenmesi gerekir.
+
 // ============================================================
-// DESFire komutlarý ve parse
+// Kart komutlarý ve parse (DESFire'e özgü APDU'lar kullanýlmakla birlikte
+// fonksiyonlar genel kart/versiyon/UID iþlemleri sunar)
 // ============================================================
 
-namespace DESFire {
+namespace CardUtils {
 
     const BYTEV GETVERSIONAPDU = { 0x90, 0x60, 0x00, 0x00, 0x00 };
     const BYTEV GETUIDAPDU = { 0xFF, 0xCA, 0x00, 0x00, 0x00 };
@@ -45,12 +49,12 @@ namespace DESFire {
         }
     }
 
-    inline BYTEV getVersion(const CardConnection& card) {
-        return card.sendCommand(GETVERSIONAPDU);
+    inline BYTEV getVersion(const CardConnection& cardConnection) {
+        return cardConnection.sendCommand(GETVERSIONAPDU);
     }
 
-    inline BYTEV getUid(const CardConnection& card) {
-        return card.sendCommand(GETUIDAPDU, false);
+    inline BYTEV getUid(const CardConnection& cardConnection) {
+        return cardConnection.sendCommand(GETUIDAPDU, false);
     }
 
     inline void printFrame(const BYTEV& data, size_t& pos, const char* title) {
@@ -103,9 +107,9 @@ namespace DESFire {
         }
     }
 
-    inline void printVersionInfo(const CardConnection& card) {
+    inline void printVersionInfo(const CardConnection& cardConnection) {
         try {
-            auto data = getVersion(card);
+            auto data = getVersion(cardConnection);
             std::cout << "\nDESFire Version Raw: ";
             printHex(data.data(), static_cast<DWORD>(data.size()));
             parseAndPrintVersion(data);
@@ -115,9 +119,9 @@ namespace DESFire {
         }
     }
 
-    inline void printUid(const CardConnection& card) {
+    inline void printUid(const CardConnection& cardConnection) {
         try {
-            auto uid = getUid(card);
+            auto uid = getUid(cardConnection);
             std::cout << "UID: ";
             printHex(uid.data(), static_cast<DWORD>(uid.size()));
         }
@@ -126,12 +130,12 @@ namespace DESFire {
         }
     }
 
-    inline void testDESFire(const CardConnection& card) {
+    inline void testDESFire(const CardConnection& cardConnection) {
         std::cout << "\n--- " << __func__ << ": ---\n";
-        printUid(card);
-        printVersionInfo(card);
+        printUid(cardConnection);
+        printVersionInfo(cardConnection);
     }
 
-} // namespace DESFire
+} // namespace CardUtils
 
-#endif // PCSC_WORKSHOP1_DESFIRE_H
+#endif // PCSC_WORKSHOP1_CARDUTILS_H

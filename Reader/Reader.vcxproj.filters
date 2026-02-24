@@ -27,6 +27,12 @@
     <Filter Include="Reader\Source">
       <UniqueIdentifier>{7e7c99d9-1e9c-465d-998b-209fcd3e8a61}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Card">
+      <UniqueIdentifier>{0e48c3ec-6f78-4ffa-a759-2fe2760fee38}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Card\MifareClassic">
+      <UniqueIdentifier>{712e4825-400d-472c-85e6-3432c2861291}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Reader\Readers.h">
@@ -38,6 +44,9 @@
     <ClInclude Include="Reader\Reader.h">
       <Filter>Reader\Header</Filter>
     </ClInclude>
+    <ClInclude Include="Card.h">
+      <Filter>Card</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Reader\ACR1281U\ACR1281UReader.cpp">
@@ -45,6 +54,9 @@
     </ClCompile>
     <ClCompile Include="Reader\Reader.cpp">
       <Filter>Reader\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Card.cpp">
+      <Filter>Card</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

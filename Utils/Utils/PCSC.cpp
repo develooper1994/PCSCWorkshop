@@ -205,9 +205,7 @@ int PCSC::run(TestCallback callback) {
     if (!chooseReader())     return 1;
     if (!connectToCard(500)) return 1;
 
-    if (callback) {
-        callback(*this);
-    }
+    if (callback) callback(*this);
     return 0;
 }
 

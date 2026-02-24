@@ -1,10 +1,11 @@
-#ifndef PCSC_WORKSHOP1_READER_H
+﻿#ifndef PCSC_WORKSHOP1_READER_H
 #define PCSC_WORKSHOP1_READER_H
 
 #include "CardConnection.h"
 #include "Cipher.h"
 #include <string>
 #include <memory>
+#include <functional>
 
 enum class KeyStructure : BYTE {
 	Volatile,
@@ -16,6 +17,24 @@ enum class KeyType {
 	B
 };
 
+struct ReadPolicy {
+	static void handle(BYTE sw1, BYTE sw2) {
+		std::stringstream ss;
+		ss << "Read failed SW=0x"
+			<< std::hex << (int)sw1 << " 0x" << (int)sw2;
+		throw pcsc::ReaderReadError(ss.str());
+	}
+};
+
+struct WritePolicy {
+	static void handle(BYTE sw1, BYTE sw2) {
+		std::stringstream ss;
+		ss << "Write failed SW=0x"
+			<< std::hex << (int)sw1 << " 0x" << (int)sw2;
+		throw pcsc::ReaderWriteError(ss.str());
+	}
+};
+
 // Reader abstraction: each reader model can implement its own read/write APDUs
 class Reader {
 public:
@@ -25,16 +44,39 @@ public:
 	// New overload: construct Reader and initialize Impl fields
 	Reader(CardConnection& c, BYTE lc, bool authRequested, KeyType kt, KeyStructure ks, BYTE keyNumber, const BYTE key[6]);
 	Reader(CardConnection& c, BYTE lc, bool authRequested, KeyType kt, KeyStructure ks, BYTE keyNumber, const BYTE keyA[6], const BYTE keyB[6]);
+	// New overload: accept explicit 4-byte access bits between keyA and keyB
+	Reader(CardConnection& c, BYTE lc, bool authRequested, KeyType kt, KeyStructure ks, BYTE keyNumber, const BYTE keyA[6], const BYTE accessBits[4], const BYTE keyB[6]);
 	// Non-copyable, movable
 	Reader(const Reader&) = delete;
 	Reader& operator=(const Reader&) = delete;
 	Reader(Reader&&) noexcept;
 	Reader& operator=(Reader&&) noexcept;
 
-	// Core primitive that derived classes must implement (4 bytes)
-	virtual void writePage(BYTE page, const BYTE* data4) = 0;
-	virtual void clearPage(BYTE page) = 0;
-	virtual BYTEV readPage(BYTE page) = 0;
+	// Core primitive that derived classes must implement
+	virtual void performAuth(BYTE page);
+	template<typename Policy>
+	BYTEV secureTransmit(BYTE page, const BYTEV& apdu)
+	{
+		cardConnection().checkConnected();
+		if (isAuthRequested()) performAuth(page);
+
+		auto resp = cardConnection().transmit(apdu);
+		if (resp.size() < 2) throw pcsc::ReaderError("Invalid response");
+		BYTE sw1 = resp[resp.size() - 2], sw2 = resp[resp.size() - 1];
+		if (sw1 == 0x63 && sw2 == 0x00) {
+			setAuthRequested(true);
+			throw pcsc::AuthFailedError("Auth failed");
+		} 
+		else if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00)) {
+			setAuthRequested(true);
+			Policy::handle(sw1, sw2);   // 👈 compile-time dispatch
+		}
+		setAuthRequested(false);
+		return resp;
+	}
+	virtual void writePage(BYTE page, const BYTE* data, const BYTEV* customApdu = nullptr);
+	virtual void clearPage(BYTE page);
+	virtual BYTEV readPage(BYTE page, const BYTEV* customApdu = nullptr);
 
 	// New overload: read a page requesting a specific length. Default implementation
 	// forwards to the single-argument virtual readPage; derived readers may override
@@ -89,7 +131,7 @@ public:
 	0x20 : Non-volatile memory (EEPROM)
 
 	keyNumber(1 byte):
-	00h � 1Fh = Non-volatile memory for storing keys. The keys are
+	00h – 1Fh = Non-volatile memory for storing keys. The keys are
 	permanently stored in the reader and will not be erased even if the
 	reader is disconnected from the PC. It can store up to 32 keys inside
 	the reader non-volatile memory.
@@ -99,17 +141,15 @@ public:
 	used as a session key for different sessions. Default value = FF FF
 	FF FF FF FFh.
 	*/
-	template<typename TReader>
 	void loadKey(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber) {
-		if (!card().isConnected()) throw pcsc::ReaderError("Card not connected");
-		// BYTE keyStructureValue = mapKeyStructure(keyStructure);
-		BYTE keyStructureValue = KeyMapping<TReader>::map(keyStructure);
+		if (!cardConnection().isConnected()) throw pcsc::ReaderError("Card not connected");
+		BYTE keyStructureValue = mapKeyStructure(keyStructure);
 
 		BYTE LC = 0x06; // 6 bytes
 		BYTEV apdu{ 0xFF, 0x82, keyStructureValue, keyNumber, LC };
 		apdu.insert(apdu.end(), key, key + LC);
 
-		auto resp = card().transmit(apdu);
+		auto resp = cardConnection().transmit(apdu);
 		if (resp.size() < 2) throw pcsc::ReaderError("Invalid response for write");
 		BYTE sw1 = resp[resp.size() - 2], sw2 = resp[resp.size() - 1];
 		if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00)) {
@@ -118,39 +158,35 @@ public:
 			throw pcsc::LoadKeyFailedError(ss.str());
 		}
 	}
-	template<typename TReader>
 	void loadKeyA(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber) {
-		loadKey<TReader>(key, keyStructure, keyNumber);
-		setKeyALoaded(true);
+		loadKey(key, keyStructure, keyNumber);
+		setKeyLoaded(true);
 	}
-	template<typename TReader>
 	void loadKeyB(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber) {
-		loadKey<TReader>(key, keyStructure, keyNumber);
-		setKeyBLoaded(true);
+		loadKey(key, keyStructure, keyNumber);
+		setKeyLoaded(true);
 	}
 	/*
 	keyType(1 byte):
 	A -> 0x60, B -> 0x61
 	keyNumber(1 byte):
-	00h � 1Fh = Non-volatile memory for storing keys. The keys are
+	00h – 1Fh = Non-volatile memory for storing keys. The keys are
 	permanently stored in the reader and will not be erased even if the
 	reader is disconnected from the PC. It can store up to 32 keys inside
 	the reader non-volatile memory.
 	20h (Session Key) = Volatile memory for temporarily storing keys.
 	The keys will be erased when the reader is disconnected from the
-	PC. Only 1 volatile memory is provided. The volatile key can be used
-	as a session key for different sessions. Default value = FF FF FF FF
+	PC. Only 1 volatile memory is provided. The volatile key can be
+	used as a session key for different sessions. Default value = FF FF FF FF
 	FF FFh.
 	*/
-	template<typename TReader>
 	void auth(BYTE blockNumber, KeyType keyType, BYTE keyNumber) {
-		if (!card().isConnected()) throw pcsc::ReaderError("Card not connected");
-		// BYTE keyTypeValue = mapKeyKind(keyType);
-		BYTE keyTypeValue = KeyMapping<TReader>::map(keyType);
+		if (!cardConnection().isConnected()) throw pcsc::ReaderError("Card not connected");
+		BYTE keyTypeValue = mapKeyKind(keyType);
 
 		BYTEV apdu{ 0xFF, 0x88, 0x00, blockNumber, keyTypeValue, keyNumber };
 
-		auto resp = card().transmit(apdu);
+		auto resp = cardConnection().transmit(apdu);
 		if (resp.size() < 2) throw pcsc::ReaderError("Invalid response for write");
 		BYTE sw1 = resp[resp.size() - 2], sw2 = resp[resp.size() - 1];
 		if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00) || (sw1 == 0x63 && sw2==0x00)) {
@@ -184,34 +220,24 @@ public:
 	BYTE getKeyNumber() const;
 	void setKeyNumber(BYTE key); // copies 6 bytes
 
-	// Copy the internal 6-byte key into out (must be at least 6 bytes)
-	template<typename TReader>
-	void getKey(KeyType keyType, BYTE out[6]) const {
-		keyType == KeyType::A ? getKeyA(out) : getKeyB(out);
-	}
-	template<typename TReader>
-	void setKey(KeyType keyType, const BYTE* key) {
-		keyType == KeyType::A ? setKeyA(key) : setKeyB(key);
-	}
+	// Full 16-byte key storage accessor: [keyA(6)|accessbits(4)|keyB(6)]
+	void getKeyAll(BYTE out16[16]) const;
+	void setKeyAll(const BYTE* key16); // copies 16 bytes
 
-	void getKeyA(BYTE out[6]) const;
-	void setKeyA(const BYTE* key); // copies 6 bytes
+	// Convenience helpers to get/set 6-byte Key A or Key B from the 16-byte blob
+	void getKey(KeyType keyType, BYTE out6[6]) const; // copies 6 bytes
+	void setKey(KeyType keyType, const BYTE* key6); // copies 6 bytes into internal blob
 
-	void getKeyB(BYTE out[6]) const;
-	void setKeyB(const BYTE* key); // copies 6 bytes
-
-	bool keyALoaded() const;
-	void setKeyALoaded(bool loaded);
-	bool keyBLoaded() const;
-	void setKeyBLoaded(bool loaded);
+	bool keyLoaded() const;
+	void setKeyLoaded(bool loaded);
 
 protected:
 	struct Impl;
 	std::unique_ptr<Impl> pImpl;
 
 	// Derived classes access CardConnection through this
-	CardConnection& card();
-	const CardConnection& card() const;
+	CardConnection& cardConnection();
+	const CardConnection& cardConnection() const;
 
 	virtual BYTE mapKeyStructure(KeyStructure structure) const = 0;
 	virtual BYTE mapKeyKind(KeyType kind) const = 0;

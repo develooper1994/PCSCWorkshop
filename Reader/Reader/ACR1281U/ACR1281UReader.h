@@ -17,9 +17,10 @@ public:
     ACR1281UReader(ACR1281UReader&&) noexcept;
     ACR1281UReader& operator=(ACR1281UReader&&) noexcept;
 
-    void writePage(BYTE page, const BYTE* data4) override;  
-    void clearPage(BYTE page) override;
-    BYTEV readPage(BYTE page) override;
+    void writePage(BYTE page, const BYTE* data, const BYTEV* customApdu = nullptr) override;
+    // Overload that requests a specific length from the reader
+    void writePage(BYTE page, const BYTE* data, BYTE len);
+    BYTEV readPage(BYTE page, const BYTEV* customApdu = nullptr) override;
     // Overload that requests a specific length from the reader
     BYTEV readPage(BYTE page, BYTE len) override;
 protected:

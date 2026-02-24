@@ -11,9 +11,9 @@
 
 /********************  Mifare Classic ********************/
 // loadkey -> auth block -> read/write block
-void testACR1281UReaderMifareClassic(CardConnection& card, BYTE startPage) {
+void testACR1281UReaderMifareClassic(CardConnection& cardConnection, BYTE startPage) {
 	std::cout << "\n--- " << __func__ << ": ---\n";
-	ACR1281UReader acr1281u(card);
+	ACR1281UReader acr1281u(cardConnection);
 	testACR1281UReaderMifareClassicUnsecured(acr1281u, startPage);
 }
 
@@ -21,15 +21,23 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
 	std::cout << "\n--- " << __func__ << ": ---\n";
 	try {
 		std::string text = "Mustafa Selcuk Caglar 10/08/1994";
+		// Hesapla: Mifare Classic için sector hesaplama (1K ve 4K uyumlu)
+		auto sectorFromPage = [](BYTE page) -> int {
+			int p = static_cast<int>(page);
+			// Ýlk 128 blok (0..127): sektör baþýna 4 blok (sektör 0..31)
+			if (p < 128) return p / 4;
+			// Sonraki bloklar (128..255): sektör 32..39, sektör baþýna 16 blok
+			return 32 + (p - 128) / 16;
+			};
 		// Print original and original as hex
 		std::cout << "Original " << text << " || Size: " << text.size() << " bytes ("
 			<< ((text.size() + 15) / 16) << " pages) starting at page "
-			<< (int)startPage << '\n';
+			<< (int)startPage << " (sector " << sectorFromPage(startPage) << ")\n";
 
 		if (acr1281u.isAuthRequested()) {
-			BYTE key[6] = { (BYTE)0xFF }; // default key for Mifare Classic (6 bytes)
+			BYTE key[16] = { (BYTE)0xFF }; // default key for Mifare Classic (16 bytes)
 			const BYTE keyNumber = 0x01;
-			acr1281u.loadKey<ACR1281UReader>(key, KeyStructure::NonVolatile, keyNumber); // Load default key for Mifare Classic
+			acr1281u.loadKey(key, KeyStructure::NonVolatile, keyNumber); // Load default key for Mifare Classic
 			// acr1281u.authKey<ACR1281UReader>(startPage, KeyType::A, keyNumber); // Authenticate with Key A
 			/*BYTE data5[5] = {0x01, 0x00, startPage, 0x60, 0x01}; // fixed: create local array for C++
 			acr1281u.authKey2(data5); // Alternative auth with data5
@@ -58,9 +66,9 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
 }
 
 /********************  Ultralight ********************/
-void testACR1281UReaderUltralight(CardConnection& card, BYTE startPage) {
+void testACR1281UReaderUltralight(CardConnection& cardConnection, BYTE startPage) {
 	std::cout << "\n--- " << __func__ << ": ---\n";
-	ACR1281UReader acr1281u(card);
+	ACR1281UReader acr1281u(cardConnection);
 	testACR1281UReaderUltralightUnsecured(acr1281u, startPage);
 	testACR1281UReaderUltralightSecured(acr1281u, startPage);
 }

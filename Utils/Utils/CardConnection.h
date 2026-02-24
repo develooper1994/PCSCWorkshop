@@ -59,6 +59,7 @@ public:
     }
 
     bool isConnected() const { return m_connected; }
+    void checkConnected() const { if (!m_connected) throw pcsc::ReaderError("Card not connected"); }
     SCARDHANDLE handle() const { return m_hCard; }
     DWORD protocol() const { return m_activeProtocol; }
 

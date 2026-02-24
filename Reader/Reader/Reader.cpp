@@ -7,37 +7,27 @@
 // Reader::Impl — hidden implementation of the base Reader
 // ============================================================
 struct Reader::Impl {
-	CardConnection& card;
+	CardConnection& cardConnection;
 	BYTE LC = 0x04;
 	bool isAuthRequested = false;
 	KeyType keyType = KeyType::A; // default to Key A
 	KeyStructure keyStructure = KeyStructure::NonVolatile; // default to non-volatile
 	BYTE keyNumber = 0x01;
-	BYTE keyA[6] = { (BYTE)0xFF }; // default key for Mifare Classic (6 bytes)
-	BYTE keyB[6] = { (BYTE)0xFF };
-	bool keyALoaded = false;
-	bool keyBLoaded = false;
+	BYTE key[16] = { (BYTE)0xFF }; // default key for Mifare Classic [keyA(6 bytes)|accessbits(4 bytes)|keyB(6 bytes)]
+	bool keyLoaded = false;
 
 	// Primary ctor: initialize with CardConnection reference and optional parameters
 	explicit Impl(CardConnection& c,
-				  BYTE lc = 0x04,
-				  bool authRequested = false,
-				  KeyType kt = KeyType::A,
-				  KeyStructure ks = KeyStructure::NonVolatile,
-				  BYTE keyNum = 0x01,
-				  const BYTE* keya = nullptr,
-				  const BYTE* keyb = nullptr)
-		: card(c), LC(lc), isAuthRequested(authRequested), keyType(kt), keyStructure(ks), keyNumber(keyNum)
+			  BYTE lc = 0x04,
+			  bool authRequested = false,
+			  KeyType kt = KeyType::A,
+			  KeyStructure ks = KeyStructure::NonVolatile,
+			  BYTE keyNum = 0x01,
+			  const BYTE* KEY = nullptr)
+		: cardConnection(c), LC(lc), isAuthRequested(authRequested), keyType(kt), keyStructure(ks), keyNumber(keyNum)
 	{
-		if (isAuthRequested) {
-			if (keya) std::memcpy(keyA, keya, 6);
-			if (keyb) std::memcpy(keyB, keyb, 6);
-		}
-		else {
-			// If auth is not requested, zero out keys for safety
-			std::memset(keyA, 0, 6);
-			std::memset(keyB, 0, 6);
-		}
+		if (isAuthRequested && KEY!=nullptr) std::memcpy(key, KEY, 16);
+		if (KEY!=nullptr) keyLoaded = true;
 	}
 
 	// Non-copyable because of reference member
@@ -46,9 +36,9 @@ struct Reader::Impl {
 
 	// Movable: allow move construction/assignment
 	Impl(Impl&& other) noexcept
-		: card(other.card), LC(other.LC), isAuthRequested(other.isAuthRequested), keyType(other.keyType), keyStructure(other.keyStructure), keyNumber(other.keyNumber)
+		: cardConnection(other.cardConnection), LC(other.LC), isAuthRequested(other.isAuthRequested), keyType(other.keyType), keyStructure(other.keyStructure), keyNumber(other.keyNumber), keyLoaded(other.keyLoaded)
 	{
-		std::memcpy(keyA, other.keyA, 6);
+		std::memcpy(key, other.key, 16);
 	}
 
 	Impl& operator=(Impl&& other) noexcept {
@@ -59,7 +49,8 @@ struct Reader::Impl {
 			keyType = other.keyType;
 			keyStructure = other.keyStructure;
 			keyNumber = other.keyNumber;
-			std::memcpy(keyA, other.keyA, 6);
+			keyLoaded = other.keyLoaded;
+			std::memcpy(key, other.key, 16);
 		}
 		return *this;
 	}
@@ -68,18 +59,38 @@ struct Reader::Impl {
 // ============================================================
 // Reader — base class implementation
 // ============================================================
-
 Reader::Reader(CardConnection& c) : pImpl(std::make_unique<Impl>(c)) {}
 Reader::Reader(CardConnection& c, BYTE lc, bool authRequested, KeyType kt, KeyStructure ks, BYTE keyNumber, const BYTE key[6])
 	: pImpl(std::make_unique<Impl>(c, lc, authRequested, kt, ks, keyNumber, key)) {}
 Reader::Reader(CardConnection& c, BYTE lc, bool authRequested, KeyType kt, KeyStructure ks, BYTE keyNumber, const BYTE keyA[6], const BYTE keyB[6])
-	: pImpl(std::make_unique<Impl>(c, lc, authRequested, kt, ks, keyNumber, keyA, keyB)) {}
+	: pImpl(std::make_unique<Impl>(c, lc, authRequested, kt, ks, keyNumber, nullptr)) {
+	// If both keyA and keyB are provided, combine into 16-byte blob with default access bits (0xFF)
+	if (keyA && keyB) {
+		BYTE tmp[16];
+		std::memcpy(tmp, keyA, 6);
+		// std::memset(tmp + 6, 0xFF, 4); // Don't assume default access bits; leave as zeros or require explicit setting via setKeyAll or the 3-arg constructor
+		std::memcpy(tmp + 10, keyB, 6);
+		setKeyAll(tmp);
+	}
+}
+
+// New overload: accept explicit accessBits (4 bytes) between keyA and keyB
+Reader::Reader(CardConnection& c, BYTE lc, bool authRequested, KeyType kt, KeyStructure ks, BYTE keyNumber, const BYTE keyA[6], const BYTE accessBits[4], const BYTE keyB[6])
+	: pImpl(std::make_unique<Impl>(c, lc, authRequested, kt, ks, keyNumber, nullptr)) {
+	if (keyA && accessBits && keyB) {
+		BYTE tmp[16];
+		std::memcpy(tmp, keyA, 6);
+		std::memcpy(tmp + 6, accessBits, 4);
+		std::memcpy(tmp + 10, keyB, 6);
+		setKeyAll(tmp);
+	}
+}
 Reader::Reader(Reader&&) noexcept = default;
 Reader::~Reader() = default;
 Reader& Reader::operator=(Reader&&) noexcept = default;
 
-CardConnection& Reader::card() { return pImpl->card; }
-const CardConnection& Reader::card() const { return pImpl->card; }
+CardConnection& Reader::cardConnection() { return pImpl->cardConnection; }
+const CardConnection& Reader::cardConnection() const { return pImpl->cardConnection; }
 
 // New accessors to expose Impl members
 bool Reader::isAuthRequested() const { return pImpl->isAuthRequested; }
@@ -97,30 +108,46 @@ void Reader::setKeyStructure(KeyStructure ks) { pImpl->keyStructure = ks; }
 BYTE Reader::getKeyNumber() const { return pImpl->keyNumber; }
 void Reader::setKeyNumber(BYTE key) { pImpl->keyNumber = key; }
 
-void Reader::getKeyA(BYTE out[6]) const {
-	if (out == nullptr) return;
-	for (int i = 0; i < 6; ++i) out[i] = pImpl->keyA[i];
+void Reader::getKeyAll(BYTE out16[16]) const {
+	if (!out16) return;
+	std::memcpy(out16, pImpl->key, 16);
+}
+void Reader::setKeyAll(const BYTE* key16) {
+	if (!key16) return;
+	std::memcpy(pImpl->key, key16, 16);
+	pImpl->keyLoaded = true;
 }
 
-void Reader::setKeyA(const BYTE* key) {
-	if (!key) return;
-	for (int i = 0; i < 6; ++i) pImpl->keyA[i] = key[i];
+void Reader::getKey(KeyType kt, BYTE out6[6]) const {
+	if (!out6) return;
+	switch (kt) {
+	case KeyType::A:
+		std::memcpy(out6, pImpl->key, 6);
+		break;
+	case KeyType::B:
+		std::memcpy(out6, pImpl->key + 10, 6);
+		break;
+	default:
+		break;
+	}
+}
+void Reader::setKey(KeyType kt, const BYTE* key6) {
+	if (!key6) return;
+	switch (kt) {
+	case KeyType::A:
+		std::memcpy(pImpl->key, key6, 6);
+		break;
+	case KeyType::B:
+		std::memcpy(pImpl->key + 10, key6, 6);
+		break;
+	default:
+		break;
+	}
+	pImpl->keyLoaded = true;
 }
 
-void Reader::getKeyB(BYTE out[6]) const {
-	if (out == nullptr) return;
-	for (int i = 0; i < 6; ++i) out[i] = pImpl->keyA[i];
-}
-
-void Reader::setKeyB(const BYTE* key) {
-	if (!key) return;
-	for (int i = 0; i < 6; ++i) pImpl->keyA[i] = key[i];
-}
-
-bool Reader::keyALoaded() const { return pImpl->keyALoaded; }
-void Reader::setKeyALoaded(bool loaded) { pImpl->keyALoaded = loaded; }
-bool Reader::keyBLoaded() const { return pImpl->keyBLoaded; }
-void Reader::setKeyBLoaded(bool loaded) { pImpl->keyBLoaded = loaded; }
+bool Reader::keyLoaded() const { return pImpl->keyLoaded; }
+void Reader::setKeyLoaded(bool loaded) { pImpl->keyLoaded = loaded; }
 
 // Provide default implementation that forwards to the simple readPage
 BYTEV Reader::readPage(BYTE page, BYTE len) {
@@ -133,21 +160,18 @@ BYTEV Reader::readPage(BYTE page, BYTE len) {
 }
 
 // --- Encrypted single-page write/read ---
-
 void Reader::writePageEncrypted(BYTE page, const BYTE* data, const ICipher& cipher) {
 	auto enc = cipher.encrypt(data, getLC());
 	BYTEV buf(getLC());
 	for (size_t i = 0; i < getLC() && i < enc.size(); ++i) buf[i] = enc[i];
 	writePage(page, buf.data());
 }
-
 BYTEV Reader::readPageDecrypted(BYTE page, const ICipher& cipher) {
 	BYTEV raw = readPage(page);
 	return cipher.decrypt(raw);
 }
 
 // --- AAD-capable single-page operations ---
-
 void Reader::writePageEncryptedAAD(BYTE page, const BYTE* data, const ICipher& cipher, const BYTE* aad, size_t aad_len) {
 	// Prefer AAD-capable encrypt; ICipher default forwards to non-AAD if unsupported
 	auto enc = cipher.encrypt(data, getLC(), aad, aad_len);
@@ -155,24 +179,61 @@ void Reader::writePageEncryptedAAD(BYTE page, const BYTE* data, const ICipher& c
 	for (size_t i = 0; i < getLC() && i < enc.size(); ++i) buf[i] = enc[i];
 	writePage(page, buf.data());
 }
-
 BYTEV Reader::readPageDecryptedAAD(BYTE page, const ICipher& cipher, const BYTE* aad, size_t aad_len) {
 	BYTEV raw = readPage(page);
 	return cipher.decrypt(raw.data(), raw.size(), aad, aad_len);
 }
 
 // --- Plain convenience overloads ---
+void Reader::performAuth(BYTE page) {
+	try {
+		auth(page, keyType(), getKeyNumber());
+	}
+	catch (const pcsc::AuthFailedError&) {
 
+		if (!keyLoaded()) {
+			BYTE key[6];
+			getKey(keyType(), key);
+			loadKey(key, keyStructure(), getKeyNumber());
+			setKeyLoaded(true);
+		}
+
+		auth(page, keyType(), getKeyNumber());
+	}
+
+	setAuthRequested(false);
+}
+BYTEV Reader::readPage(BYTE page, const BYTEV* customApdu) {
+	BYTEV apdu;
+	if (customApdu) apdu = *customApdu;
+	else apdu = { 0xFF, 0xB0, 0x00, page, getLC() };
+	auto resp = secureTransmit<ReadPolicy>(page, apdu);
+	return BYTEV(resp.begin(), resp.end() - 2);
+}
+void Reader::writePage(BYTE page, const BYTE* data, const BYTEV* customApdu) {
+	BYTEV apdu;
+	if (customApdu) apdu = *customApdu;  // dýþarýdan gelen APDU
+	else {
+		// default APDU
+		apdu = { 0xFF, 0xD6, 0x00, page, getLC() };
+		apdu.insert(apdu.end(), data, data + getLC());
+	}
+	secureTransmit<WritePolicy>(page, apdu);
+}
 void Reader::writePage(BYTE page, const BYTEV& data) {
 	BYTEV tmp(getLC());
 	for (size_t i = 0; i < getLC() && i < data.size(); ++i) tmp[i] = data[i];
 	writePage(page, tmp.data());
 }
-
 void Reader::writePage(BYTE page, const std::string& s) {
 	BYTEV tmp(getLC());
 	for (size_t i = 0; i < getLC() && i < s.size(); ++i) tmp[i] = static_cast<BYTE>(s[i]);
 	writePage(page, tmp.data());
+}
+void Reader::clearPage(BYTE page) {
+	// Default implementation: write zeros to the page
+	BYTEV zeros(getLC(), 0x00);
+	writePage(page, zeros.data());
 }
 
 void Reader::writePageEncrypted(BYTE page, const BYTEV& data, const ICipher& cipher) {
@@ -180,7 +241,6 @@ void Reader::writePageEncrypted(BYTE page, const BYTEV& data, const ICipher& cip
 	for (size_t i = 0; i < getLC() && i < data.size(); ++i) tmp[i] = data[i];
 	writePageEncrypted(page, tmp.data(), cipher);
 }
-
 void Reader::writePageEncrypted(BYTE page, const std::string& s, const ICipher& cipher) {
 	BYTEV tmp(getLC());
 	for (size_t i = 0; i < getLC() && i < s.size(); ++i) tmp[i] = static_cast<BYTE>(s[i]);
@@ -192,7 +252,6 @@ void Reader::writePageEncryptedAAD(BYTE page, const BYTEV& data, const ICipher& 
 	for (size_t i = 0; i < getLC() && i < data.size(); ++i) tmp[i] = data[i];
 	writePageEncryptedAAD(page, tmp.data(), cipher, aad.data(), aad.size());
 }
-
 void Reader::writePageEncryptedAAD(BYTE page, const std::string& s, const ICipher& cipher, const BYTEV& aad) {
 	BYTEV tmp(getLC());
 	for (size_t i = 0; i < getLC() && i < s.size(); ++i) tmp[i] = static_cast<BYTE>(s[i]);
@@ -200,7 +259,6 @@ void Reader::writePageEncryptedAAD(BYTE page, const std::string& s, const ICiphe
 }
 
 // --- Multi-page plain write/read ---
-
 void Reader::writeData(BYTE startPage, const BYTEV& data) {
 	size_t total = data.size();
 	size_t pages = (total + getLC()-1) / getLC();
@@ -214,13 +272,10 @@ void Reader::writeData(BYTE startPage, const BYTEV& data) {
 		writePage(page, chunk);
 	}
 }
-
 void Reader::writeData(BYTE startPage, const std::string& s) {
 	BYTEV data(s.begin(), s.end());
 	writeData(startPage, data);
 }
-
-// New overloads that allow custom LC
 void Reader::writeData(BYTE startPage, const BYTEV& data, BYTE lc) {
 	BYTE old = getLC();
 	if (old == lc) { writeData(startPage, data); return; }
@@ -228,7 +283,6 @@ void Reader::writeData(BYTE startPage, const BYTEV& data, BYTE lc) {
 	writeData(startPage, data);
 	setLC(old);
 }
-
 void Reader::writeData(BYTE startPage, const std::string& s, BYTE lc) {
 	BYTEV data(s.begin(), s.end());
 	writeData(startPage, data, lc);
@@ -249,13 +303,11 @@ BYTEV Reader::readData(BYTE startPage, size_t length) {
 }
 
 // --- Multi-page encrypted write/read ---
-
 void Reader::writeDataEncrypted(BYTE startPage, const BYTEV& data, const ICipher& cipher) {
 	// Encrypt the entire blob first, then write raw encrypted bytes page-by-page
 	auto encrypted = cipher.encrypt(data);
 	writeData(startPage, encrypted);
 }
-
 void Reader::writeDataEncrypted(BYTE startPage, const std::string& s, const ICipher& cipher) {
 	BYTEV data(s.begin(), s.end());
 	writeDataEncrypted(startPage, data, cipher);
@@ -306,13 +358,11 @@ BYTEV Reader::readDataDecrypted(BYTE startPage, size_t length, const ICipher& ci
 }
 
 // --- Multi-page AAD-capable encrypted write/read ---
-
 void Reader::writeDataEncryptedAAD(BYTE startPage, const BYTEV& data, const ICipher& cipher, const BYTE* aad, size_t aad_len) {
 	// Encrypt the entire blob with AAD, then write raw encrypted bytes page-by-page
 	auto encrypted = cipher.encrypt(data.data(), data.size(), aad, aad_len);
 	writeData(startPage, encrypted);
 }
-
 void Reader::writeDataEncryptedAAD(BYTE startPage, const std::string& s, const ICipher& cipher, const BYTE* aad, size_t aad_len) {
 	BYTEV data(s.begin(), s.end());
 	writeDataEncryptedAAD(startPage, data, cipher, aad, aad_len);
@@ -352,7 +402,6 @@ BYTEV Reader::readDataDecryptedAAD(BYTE startPage, size_t length, const ICipher&
 }
 
 // --- Read all pages until error ---
-
 BYTEV Reader::readAll(BYTE startPage) {
 	BYTEV out;
 	BYTE page = startPage;
@@ -370,13 +419,14 @@ BYTEV Reader::readAll(BYTE startPage) {
 	return out;
 }
 
+// --- Authenticate with explicit 5-byte data (for readers that support this mode) ---
 void Reader::authNew(const BYTE* data5) {
-	if (!card().isConnected()) throw pcsc::ReaderError("Card not connected");
+	if (!cardConnection().isConnected()) throw pcsc::ReaderError("Card not connected");
 	BYTE authLC = 0x05; // 5 bytes
 	BYTEV apdu{ 0xFF, 0x86, 0x00, 0x00, authLC };
 	apdu.insert(apdu.end(), data5, data5 + authLC);
 
-	auto resp = card().transmit(apdu);
+	auto resp = cardConnection().transmit(apdu);
 	if (resp.size() < 2) throw pcsc::ReaderError("Invalid response for write");
 	BYTE sw1 = resp[resp.size() - 2], sw2 = resp[resp.size() - 1];
 	if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00) || (sw1 == 0x63 && sw2 == 0x00)) {
