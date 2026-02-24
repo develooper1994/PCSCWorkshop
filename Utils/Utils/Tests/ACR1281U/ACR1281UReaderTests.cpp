@@ -38,7 +38,6 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
 			BYTE key[16] = { (BYTE)0xFF }; // default key for Mifare Classic (16 bytes)
 			const BYTE keyNumber = 0x01;
 			acr1281u.loadKey(key, KeyStructure::NonVolatile, keyNumber); // Load default key for Mifare Classic
-			// acr1281u.authKey<ACR1281UReader>(startPage, KeyType::A, keyNumber); // Authenticate with Key A
 			/*BYTE data5[5] = {0x01, 0x00, startPage, 0x60, 0x01}; // fixed: create local array for C++
 			acr1281u.authKey2(data5); // Alternative auth with data5
 			*/

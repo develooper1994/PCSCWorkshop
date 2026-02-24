@@ -201,10 +201,6 @@ const CardConnection& PCSC::cardConnection() const {
 // ============================================================
 
 int PCSC::run(TestCallback callback) {
-    if (!establishContext()) return 1;
-    if (!chooseReader())     return 1;
-    if (!connectToCard(500)) return 1;
-
     if (callback) callback(*this);
     return 0;
 }

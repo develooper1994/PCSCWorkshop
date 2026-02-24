@@ -108,6 +108,7 @@ void Reader::setKeyStructure(KeyStructure ks) { pImpl->keyStructure = ks; }
 BYTE Reader::getKeyNumber() const { return pImpl->keyNumber; }
 void Reader::setKeyNumber(BYTE key) { pImpl->keyNumber = key; }
 
+// Full 16-byte key storage accessors: [keyA(6 bytes)|accessbits(4 bytes)|keyB(6 bytes)]
 void Reader::getKeyAll(BYTE out16[16]) const {
 	if (!out16) return;
 	std::memcpy(out16, pImpl->key, 16);
@@ -118,27 +119,48 @@ void Reader::setKeyAll(const BYTE* key16) {
 	pImpl->keyLoaded = true;
 }
 
-void Reader::getKey(KeyType kt, BYTE out6[6]) const {
-	if (!out6) return;
+// partial key accessors: get/set 6-byte Key A or Key B from the 16-byte blob
+void Reader::getKey(KeyType kt, BYTE out[16]) const {
+	if (!out) return;
 	switch (kt) {
 	case KeyType::A:
-		std::memcpy(out6, pImpl->key, 6);
+		std::memcpy(out, pImpl->key, 6);
 		break;
 	case KeyType::B:
-		std::memcpy(out6, pImpl->key + 10, 6);
+		std::memcpy(out, pImpl->key + 10, 6);
+		break;
+	case KeyType::ACCESS:
+		std::memcpy(out, pImpl->key + 6, 4);
+		break;
+	case KeyType::AB:
+		std::memcpy(out, pImpl->key, 6); // Return Key A for BOTH
+		std::memcpy(out, pImpl->key + 10, 6);
+		break;
+	case KeyType::ALL:
+		std::memcpy(out, pImpl->key, 16);
 		break;
 	default:
 		break;
 	}
 }
-void Reader::setKey(KeyType kt, const BYTE* key6) {
-	if (!key6) return;
+void Reader::setKey(KeyType kt, const BYTE* key) {
+	if (!key) return;
 	switch (kt) {
 	case KeyType::A:
-		std::memcpy(pImpl->key, key6, 6);
+		std::memcpy(pImpl->key, key, 6);
 		break;
 	case KeyType::B:
-		std::memcpy(pImpl->key + 10, key6, 6);
+		std::memcpy(pImpl->key + 10, key, 6);
+		break;
+	case KeyType::ACCESS:
+		std::memcpy(pImpl->key + 6, key, 4);
+		break;
+	case KeyType::AB:
+		std::memcpy(pImpl->key, key, 6); // Set Key A for BOTH
+		std::memcpy(pImpl->key + 10, key, 6);
+		break;
+	case KeyType::ALL:
+		std::memcpy(pImpl->key, key, 16);
 		break;
 	default:
 		break;
@@ -192,7 +214,7 @@ void Reader::performAuth(BYTE page) {
 	catch (const pcsc::AuthFailedError&) {
 
 		if (!keyLoaded()) {
-			BYTE key[6];
+			BYTE key[16];
 			getKey(keyType(), key);
 			loadKey(key, keyStructure(), getKeyNumber());
 			setKeyLoaded(true);

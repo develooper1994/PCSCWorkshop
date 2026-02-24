@@ -12,9 +12,13 @@ enum class KeyStructure : BYTE {
 	NonVolatile
 };
 
+// [keyA(6 Byte)|AccessBytes(4 Byte)|keyB(6 Byte)|]
 enum class KeyType {
-	A,
-	B
+	A,		// keyA
+	B,		// keyB
+	ACCESS, // AccessBytes
+	AB,	// [keyA(6 Byte)|-|keyB(6 Byte)|]
+	ALL,	// [keyA(6 Byte)|AccessBytes(4 Byte)|keyB(6 Byte)|]
 };
 
 struct ReadPolicy {
