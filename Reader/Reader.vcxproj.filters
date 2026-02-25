@@ -55,9 +55,6 @@
     <ClCompile Include="Reader\Reader.cpp">
       <Filter>Reader\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Reader\Card\MifareClassic\MifareClassic.cpp">
-      <Filter>Card\MifareClassic</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Reader\CMakeLists.txt" />

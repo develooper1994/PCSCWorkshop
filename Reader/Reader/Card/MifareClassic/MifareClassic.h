@@ -302,6 +302,7 @@ private:
 
     // --- AUTH CACHE MEMBERS (ekle bunlarý!) ---
     int authSector = -1;       // currently authenticated sector, -1 == none
+    int authSectorCurrently = -1; // not strictly necessary (kept for clarity)
     BYTE authSlot = 0xFF;    // slot used for last auth
     KeyType authType = KeyType::A;
 
@@ -310,7 +311,7 @@ private:
 
     struct KeyInfo {
         std::array<BYTE, 6> key{};
-        KeyStructure ks = KeyStructure::KeyA;
+        KeyStructure ks = KeyStructure::NonVolatile;
         BYTE slot = 0x00;
     };
 
@@ -320,7 +321,6 @@ private:
     // cached auth state for sector -> (KeyType, slot)
     struct AuthState { KeyType kt; BYTE slot; };
     std::map<int, AuthState> authCache;
-    int authSectorCurrently = -1; // not strictly necessary (kept for clarity)
 
     // ===== helpers: layout (1K/4K aware) =====
     int sectorFromBlock(BYTE block) const {

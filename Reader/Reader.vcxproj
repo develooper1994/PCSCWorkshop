@@ -119,7 +119,6 @@
     <ClInclude Include="Reader\ACR1281U\ACR1281UReader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Reader\Card\MifareClassic\MifareClassic.cpp" />
     <ClCompile Include="Reader\Reader.cpp" />
     <ClCompile Include="Reader\ACR1281U\ACR1281UReader.cpp" />
   </ItemGroup>

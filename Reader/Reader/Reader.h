@@ -14,11 +14,11 @@ enum class KeyStructure : BYTE {
 
 // [keyA(6 Byte)|AccessBytes(4 Byte)|keyB(6 Byte)|]
 enum class KeyType {
-	A,		// keyA
-	B,		// keyB
+	A, 		// keyA
+	B, 		// keyB
 	ACCESS, // AccessBytes
-	AB,	// [keyA(6 Byte)|-|keyB(6 Byte)|]
-	ALL,	// [keyA(6 Byte)|AccessBytes(4 Byte)|keyB(6 Byte)|]
+	AB, 	// [keyA(6 Byte)|-|keyB(6 Byte)|]
+	ALL, 	// [keyA(6 Byte)|AccessBytes(4 Byte)|keyB(6 Byte)|]
 };
 
 struct ReadPolicy {
@@ -65,8 +65,9 @@ public:
 		if (isAuthRequested()) performAuth(page);
 
 		auto resp = cardConnection().transmit(apdu);
-		if (resp.size() < 2) throw pcsc::ReaderError("Invalid response");
-		BYTE sw1 = resp[resp.size() - 2], sw2 = resp[resp.size() - 1];
+		cardConnection().checkResponseSize(resp);
+		auto sw = cardConnection().getStatusWords(resp);
+		BYTE sw1 = sw.first, sw2 = sw.second;
 		if (sw1 == 0x63 && sw2 == 0x00) {
 			setAuthRequested(true);
 			throw pcsc::AuthFailedError("Auth failed");
@@ -146,7 +147,7 @@ public:
 	FF FF FF FFh.
 	*/
 	void loadKey(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber) {
-		if (!cardConnection().isConnected()) throw pcsc::ReaderError("Card not connected");
+		cardConnection().checkConnected();
 		BYTE keyStructureValue = mapKeyStructure(keyStructure);
 
 		BYTE LC = 0x06; // 6 bytes
@@ -154,8 +155,9 @@ public:
 		apdu.insert(apdu.end(), key, key + LC);
 
 		auto resp = cardConnection().transmit(apdu);
-		if (resp.size() < 2) throw pcsc::ReaderError("Invalid response for write");
-		BYTE sw1 = resp[resp.size() - 2], sw2 = resp[resp.size() - 1];
+		cardConnection().checkResponseSize(resp);
+		auto sw = cardConnection().getStatusWords(resp);
+		BYTE sw1 = sw.first, sw2 = sw.second;
 		if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00)) {
 			std::stringstream ss;
 			ss << "LoadKey failed SW=0x" << std::hex << (int)sw1 << " 0x" << (int)sw2 << '\n';
@@ -185,14 +187,15 @@ public:
 	FF FFh.
 	*/
 	void auth(BYTE blockNumber, KeyType keyType, BYTE keyNumber) {
-		if (!cardConnection().isConnected()) throw pcsc::ReaderError("Card not connected");
+		cardConnection().checkConnected();
 		BYTE keyTypeValue = mapKeyKind(keyType);
 
 		BYTEV apdu{ 0xFF, 0x88, 0x00, blockNumber, keyTypeValue, keyNumber };
 
 		auto resp = cardConnection().transmit(apdu);
-		if (resp.size() < 2) throw pcsc::ReaderError("Invalid response for write");
-		BYTE sw1 = resp[resp.size() - 2], sw2 = resp[resp.size() - 1];
+		cardConnection().checkResponseSize(resp);
+		auto sw = cardConnection().getStatusWords(resp);
+		BYTE sw1 = sw.first, sw2 = sw.second;
 		if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00) || (sw1 == 0x63 && sw2==0x00)) {
 			std::stringstream ss;
 			ss << "Auth failed SW=0x" << std::hex << (int)sw1 << " 0x" << (int)sw2 << '\n';
@@ -207,7 +210,7 @@ public:
 		BYTE data5[5] = { 0x01, 0x00, blockNumber, keyTypeValue, keyNumber };
 		authNew(data5);
 	}
-	void authNew(const BYTE* data5);
+	void authNew(const BYTE data[5]);
 
 	bool isAuthRequested() const;
 	void setAuthRequested(bool v);

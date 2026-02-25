@@ -21,20 +21,29 @@ void testACR1281UReaderMifareClassic(CardConnection& cardConnection, BYTE startP
 void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE startPage) {
     std::cout << "\n--- " << __func__ << ": ---\n";
     try {
+        constexpr int SMALL_SECTOR_COUNT = 32;
+        constexpr int SMALL_SECTOR_PAGES = 4;
+        constexpr int SMALL_SECTORS_TOTAL_PAGES = SMALL_SECTOR_COUNT * SMALL_SECTOR_PAGES; // 128
+        constexpr int LARGE_SECTOR_PAGES = 16;
+
         // 1) hazýr metin
-        std::string text = "Mustafa Selcuk Caglar 10/08/1994";
+        std::string text = "Mustafa";
 
         // 2) sectorFromPage lambda (1K ve 4K uyumlu)
         auto sectorFromPage = [](BYTE page) -> int {
             const int p = static_cast<int>(page);
-            return p < 128 ? p / 4 : 32 + (p - 128) / 16;
-            };
+            return p < SMALL_SECTORS_TOTAL_PAGES
+                ? p / SMALL_SECTOR_PAGES
+                : SMALL_SECTOR_COUNT + (p - SMALL_SECTORS_TOTAL_PAGES) / LARGE_SECTOR_PAGES;
+        };
 
         // 3) indexInsideSector lambda
         auto indexFromPage = [](BYTE page) -> int {
             const int p = static_cast<int>(page);
-            return p < 128 ? p % 4 : (p - 128) % 16;
-            };
+            return p < SMALL_SECTORS_TOTAL_PAGES
+                ? p % SMALL_SECTOR_PAGES
+                : (p - SMALL_SECTORS_TOTAL_PAGES) % LARGE_SECTOR_PAGES;
+        };
 
         // 4) print info
         std::cout << "Original: \"" << text << "\" size: " << text.size()
@@ -47,11 +56,11 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
         MifareCardCore<ACR1281UReader> card(acr1281u, /*is4K=*/ false);
 
         // 6) load default key into reader and also give it to the card (slot 0x01 used in older examples)
-        const uint8_t defaultKey6[6] = { 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF };
-        const uint8_t keySlot = 0x01; // as in your earlier example
+        const BYTE defaultKey6[6] = { 0xFF };
+        const BYTE keySlot = 0x01; // as in your earlier example
 
         // If your ACR1281UReader expects storage type (NonVolatile/Volatile), use that value:
-        acr1281u.loadKey(defaultKey6, KeyStructure::NonVolatile, keySlot);
+        // acr1281u.loadKey(defaultKey6, KeyStructure::NonVolatile, keySlot);
         // Also register the key into card so it knows which slot to use for auth decisions.
         // setKey signature might be different in your core; adjust if necessary.
         card.setKey(MifareCardCore<ACR1281UReader>::KeyType::A, std::array<BYTE, 6>{defaultKey6[0], defaultKey6[1], defaultKey6[2], defaultKey6[3], defaultKey6[4], defaultKey6[5]},

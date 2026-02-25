@@ -1,3 +1,6 @@
+#ifndef ARRAYAPPEND_H
+#define ARRAYAPPEND_H
+
 #include <utility>
 #include <cstddef>
 
@@ -72,3 +75,4 @@ append(const std::array<T, N1>& a,
         std::make_index_sequence<N1>{},
         std::make_index_sequence<N2>{});
 }
+#endif // ARRAYAPPEND_H

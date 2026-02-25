@@ -19,7 +19,7 @@ int main() {
 	// testACR1281UReaderUltralight(p.cardConnection());
 	BYTE keyA[6] = { (BYTE)0xFF };
 	ACR1281UReader acr1281u(pcsc.cardConnection(), 16, true, KeyType::A, KeyStructure::NonVolatile, 0x01, keyA);
-	testACR1281UReaderMifareClassicUnsecured(acr1281u, 10);
+	testACR1281UReaderMifareClassicUnsecured(acr1281u, 13);
 	
 	return 0;
 }

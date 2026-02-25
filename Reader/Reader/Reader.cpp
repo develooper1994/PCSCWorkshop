@@ -212,17 +212,14 @@ void Reader::performAuth(BYTE page) {
 		auth(page, keyType(), getKeyNumber());
 	}
 	catch (const pcsc::AuthFailedError&) {
-
 		if (!keyLoaded()) {
 			BYTE key[16];
 			getKey(keyType(), key);
 			loadKey(key, keyStructure(), getKeyNumber());
 			setKeyLoaded(true);
 		}
-
 		auth(page, keyType(), getKeyNumber());
 	}
-
 	setAuthRequested(false);
 }
 BYTEV Reader::readPage(BYTE page, const BYTEV* customApdu) {
@@ -442,18 +439,20 @@ BYTEV Reader::readAll(BYTE startPage) {
 }
 
 // --- Authenticate with explicit 5-byte data (for readers that support this mode) ---
-void Reader::authNew(const BYTE* data5) {
-	if (!cardConnection().isConnected()) throw pcsc::ReaderError("Card not connected");
+void Reader::authNew(const BYTE data[5]) {
+	cardConnection().checkConnected();
 	BYTE authLC = 0x05; // 5 bytes
 	BYTEV apdu{ 0xFF, 0x86, 0x00, 0x00, authLC };
-	apdu.insert(apdu.end(), data5, data5 + authLC);
+	apdu.insert(apdu.end(), data, data + authLC);
 
-	auto resp = cardConnection().transmit(apdu);
-	if (resp.size() < 2) throw pcsc::ReaderError("Invalid response for write");
-	BYTE sw1 = resp[resp.size() - 2], sw2 = resp[resp.size() - 1];
-	if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00) || (sw1 == 0x63 && sw2 == 0x00)) {
+	BYTEV resp = cardConnection().transmit(apdu);
+	cardConnection().checkResponseSize(resp);
+	auto sw = cardConnection().getStatusWords(resp);
+	BYTE sw1 = sw.first, sw2 = sw.second;
+	// Throw if neither success nor auth-failed sentinel
+	if (! ( ((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00) || (sw1 == 0x63 && sw2 == 0x00) ) ) {
 		std::stringstream ss;
-		ss << "Write failed SW=0x" << std::hex << (int)sw1 << " 0x" << (int)sw2;
+		ss << "Auth failed SW=0x" << std::hex << (int)sw1 << " 0x" << (int)sw2 << '\n';
 		throw pcsc::AuthFailedError(ss.str());
 	}
 }
