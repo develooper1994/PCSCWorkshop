@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include "CipherTypes.h"
 #include "../../Reader.h"
+#include <string>
 
 //
 // Reader interface expected methods (match ACR1281UReader):
@@ -96,7 +97,15 @@ public:
         return reader.readPage(block);
     }
 
-    std::vector<BYTE> read(
+    /*std::string read(BYTE block,
+        KeyType keyType,
+        BYTE keySlot)
+    {
+		auto result = read(block, keyType, keySlot);
+        return std::string(result.begin(), result.end());
+    }*/
+
+    /*std::vector<BYTE> read(
         BYTE block,
         BYTE blockSize,
         const BYTE* key,
@@ -109,7 +118,7 @@ public:
         ensureAuth(block, keyType, keySlot);
 
         return reader.readPage(block);
-    }
+    }*/
 
     void write(BYTE block,
         const std::vector<BYTE>& data,
@@ -117,7 +126,7 @@ public:
         BYTE keySlot)
     {
         ensureAuth(block, keyType, keySlot);
-        reader.writePage(block, data);
+        reader.writePage(block, data.data(), nullptr);
     }
 
     void write(BYTE block,
@@ -129,7 +138,7 @@ public:
         write(block, data, keyType, keySlot);
     }
 
-    void write(
+    /*void write(
         BYTE block,
         BYTE blockSize,
         const BYTE* data,
@@ -141,7 +150,7 @@ public:
         std::vector<BYTE> buffer(data, data + blockSize);
 
         reader.writeData(block, buffer);
-    }
+    }*/
 
     // Linear read: startBlock (absolute), read length bytes (<= large). Returns exactly 'length' bytes (last page may be partial)
     BYTEV readLinear(BYTE startBlock, size_t length) {
@@ -325,19 +334,13 @@ private:
     // ===== helpers: layout (1K/4K aware) =====
     int sectorFromBlock(BYTE block) const {
         int b = static_cast<int>(block);
-        if (!is4KCard) return b / 4;
-        if (b < 128) return b / 4;
-        return 32 + (b - 128) / 16;
+		return !is4KCard || b < 128 ? b / 4 : 32 + (b - 128) / 16;
     }
     int blocksPerSector(int sector) const {
-        if (!is4KCard) return 4;
-        if (sector < 32) return 4;
-        return 16;
+		return !is4KCard || sector < 32 ? 4 : 16;
     }
     int firstBlockOfSector(int sector) const {
-        if (!is4KCard) return sector * 4;
-        if (sector < 32) return sector * 4;
-        return 128 + (sector - 32) * 16;
+		return !is4KCard || sector < 32 ? sector * 4 : 128 + (sector - 32) * 16;
     }
     bool isTrailerBlock(BYTE block) const {
         int sector = sectorFromBlock(block);

@@ -76,7 +76,7 @@ public:
 			setAuthRequested(true);
 			Policy::handle(sw1, sw2);   // 👈 compile-time dispatch
 		}
-		setAuthRequested(false);
+		// setAuthRequested(false);
 		return resp;
 	}
 	virtual void writePage(BYTE page, const BYTE* data, const BYTEV* customApdu = nullptr);

@@ -9,7 +9,7 @@
 struct Reader::Impl {
 	CardConnection& cardConnection;
 	BYTE LC = 0x04;
-	bool isAuthRequested = false;
+	bool isAuthRequested = true;
 	KeyType keyType = KeyType::A; // default to Key A
 	KeyStructure keyStructure = KeyStructure::NonVolatile; // default to non-volatile
 	BYTE keyNumber = 0x01;
@@ -220,7 +220,7 @@ void Reader::performAuth(BYTE page) {
 		}
 		auth(page, keyType(), getKeyNumber());
 	}
-	setAuthRequested(false);
+	setAuthRequested(false); // Don't reset auth requested flag here; let caller decide when to re-authenticate
 }
 BYTEV Reader::readPage(BYTE page, const BYTEV* customApdu) {
 	BYTEV apdu;
