@@ -21,13 +21,8 @@ void testACR1281UReaderMifareClassic(CardConnection& cardConnection, BYTE startP
 void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE startPage) {
     std::cout << "\n--- " << __func__ << ": ---\n";
     try {
-        constexpr int SMALL_SECTOR_COUNT = 32;
-        constexpr int SMALL_SECTOR_PAGES = 4;
-        constexpr int SMALL_SECTORS_TOTAL_PAGES = SMALL_SECTOR_COUNT * SMALL_SECTOR_PAGES; // 128
-        constexpr int LARGE_SECTOR_PAGES = 16;
-
         // 1) hazýr metin
-        std::string text = "Mustafa"; // "Mustafa Selcuk Caglar 10/08/1994";
+        std::string text = "MustafaMustafa77"; // "Mustafa Selcuk Caglar 10/08/1994";
 
         // 2) sectorFromPage lambda (1K ve 4K uyumlu)
         auto sectorFromPage = [](BYTE page) -> int {
@@ -66,25 +61,24 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
         // Also register the key into card so it knows which slot to use for auth decisions.
         // setKey signature might be different in your core; adjust if necessary.
         card.setKey(MifareCardCore<ACR1281UReader>::KeyType::A, std::array<BYTE, 6>{defaultKey6[0], defaultKey6[1], defaultKey6[2], defaultKey6[3], defaultKey6[4], defaultKey6[5]},
-            /*keyStructure*/ KeyStructure::NonVolatile, keySlotA);
+            KeyStructure::NonVolatile, keySlotA);
         card.setKey(MifareCardCore<ACR1281UReader>::KeyType::B, std::array<BYTE, 6>{defaultKey6[0], defaultKey6[1], defaultKey6[2], defaultKey6[3], defaultKey6[4], defaultKey6[5]},
             /*keyStructure*/ KeyStructure::NonVolatile, keySlotB);
 
         // 7) ensure default sector config: KeyA read-only, KeyB read+write
-        MifareCardCore<ACR1281UReader>::SectorKeyConfig defaultCfg;
-        defaultCfg.keyA_canRead = true;
-        defaultCfg.keyA_canWrite = false;
-        defaultCfg.keyB_canRead = true;
-        defaultCfg.keyB_canWrite = true;
+        MifareCardCore<ACR1281UReader>::SectorKeyConfig defaultCfg(true, false, true, true);
 
         // Apply for all sectors (1K => 16 sectors)
-        for (int s = 0; s < 16; ++s) card.setSectorConfig(s, defaultCfg);
+        for (int s = 0; s < 16; ++s) {
+            card.setSectorConfig(s, defaultCfg);
+            if(s != 0)
+                card.applySectorConfigStrict(s);
+            // card.applySectorConfigToCard(s);
+        }
 
         // 8) Try a pre-read of the start page using card (safe)
         {
-            int sector = sectorFromPage(startPage);
-            int index = indexFromPage(startPage);
-
+            std::cout << "Reading bytes in block:\n" << startPage;
             auto result = card.read(static_cast<BYTE>(startPage), MifareCardCore<ACR1281UReader>::KeyType::A, keySlotA);
             std::string sread(result.begin(), result.end());
             std::cout << "Empty Read (single block) : \"" << sread << "\"\n";
@@ -93,7 +87,7 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
 
         // 9) Write the bytes at startPage:
         {
-			std::cout << "\nWriting bytes in block:\n";
+			std::cout << "\nWriting bytes in block:\n" << startPage;
             acr1281u.setAuthRequested(true);
             // Write using KeyB (KeyB default allowed to write)
             card.write(static_cast<BYTE>(startPage), text, MifareCardCore<ACR1281UReader>::KeyType::B, keySlotB);
@@ -101,10 +95,10 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
 
         // 10) Read back same length starting at startPage
         {
-            std::vector<BYTE> readBack;
+            std::cout << "Reading bytes in block:\n" << startPage;
             acr1281u.setAuthRequested(true);
             auto result = card.read(static_cast<BYTE>(startPage), MifareCardCore<ACR1281UReader>::KeyType::A, keySlotA);
-            std::cout << "Read back (reassembled): \"" << std::string(readBack.begin(), readBack.end()) << "\"\n";
+            std::cout << "Read back (reassembled): \"" << std::string(result.begin(), result.end()) << "\"\n";
             printHex(result);
         }
 

@@ -17,10 +17,14 @@ public:
     ACR1281UReader(ACR1281UReader&&) noexcept;
     ACR1281UReader& operator=(ACR1281UReader&&) noexcept;
 
-    void writePage(BYTE page, const BYTE* data, const BYTEV* customApdu = nullptr) override;
+    inline void writePage(BYTE page, const BYTE* data, const BYTEV* customApdu = nullptr) override {
+        Reader::writePage(page, data, customApdu); // Use base class implementation for writing, which handles auth and APDU construction
+    }
     // Overload that requests a specific length from the reader
     void writePage(BYTE page, const BYTE* data, BYTE len);
-    BYTEV readPage(BYTE page, const BYTEV* customApdu = nullptr) override;
+    inline BYTEV readPage(BYTE page, const BYTEV* customApdu = nullptr) override {
+        return Reader::readPage(page, customApdu); // Use base class implementation for writing, which handles auth and APDU construction
+    }
     // Overload that requests a specific length from the reader
     BYTEV readPage(BYTE page, BYTE len) override;
 protected:

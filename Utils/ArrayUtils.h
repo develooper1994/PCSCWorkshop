@@ -3,6 +3,7 @@
 
 #include <utility>
 #include <cstddef>
+#include <array>
 
 template<typename T, std::size_t N>
 struct ArrayWrapper {
@@ -75,4 +76,23 @@ append(const std::array<T, N1>& a,
         std::make_index_sequence<N1>{},
         std::make_index_sequence<N2>{});
 }
+
+template<typename T, std::size_t... I>
+constexpr std::array<T, sizeof...(I)>
+make_filled_array_impl(T value, std::index_sequence<I...>) { return { { (static_cast<void>(I), value)... } }; }
+/*
+constexpr auto tmp = make_filled_array<6>((BYTE)0xFF);
+constexpr BYTE keyA[6] = {
+    tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], tmp[5]
+};
+*/
+template<std::size_t N, typename T>
+constexpr std::array<T, N> make_filled_array(T value) { return make_filled_array_impl<T>(value, std::make_index_sequence<N>{}); }
+
+template<typename T, std::size_t... I>
+constexpr auto make_filled_array(T value, std::index_sequence<I...>) { return std::array<T, sizeof...(I)>{ { (static_cast<void>(I), value)... } }; }
+// constexpr auto keyA = make_filled_array<6>((BYTE)0xFF);
+template<std::size_t N, typename T>
+constexpr auto make_filled_array(T value) { return make_filled_array<T>(value, std::make_index_sequence<N>{}); }
+
 #endif // ARRAYAPPEND_H

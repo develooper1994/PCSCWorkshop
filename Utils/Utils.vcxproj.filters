@@ -52,7 +52,7 @@
     <ClCompile Include="Utils\Utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ArrayAppend.h">
+    <ClCompile Include="ArrayUtils.h">
       <Filter>Header Files</Filter>
     </ClCompile>
     <ClCompile Include="Utils\Tests\ACR1281U\ACR1281UReaderTestHelpers.cpp">

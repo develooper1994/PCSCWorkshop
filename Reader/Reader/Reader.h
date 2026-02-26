@@ -6,6 +6,7 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include <array>
 
 enum class KeyStructure : BYTE {
 	Volatile,
@@ -19,6 +20,13 @@ enum class KeyType {
 	ACCESS, // AccessBytes
 	AB, 	// [keyA(6 Byte)|-|keyB(6 Byte)|]
 	ALL, 	// [keyA(6 Byte)|AccessBytes(4 Byte)|keyB(6 Byte)|]
+};
+
+struct KeyInfo {
+	std::array<BYTE, 6> key{};
+	KeyType kt = KeyType::A;
+	KeyStructure ks = KeyStructure::NonVolatile;
+	BYTE slot = 0x00;
 };
 
 struct ReadPolicy {
@@ -110,9 +118,9 @@ public:
 	virtual void writeData(BYTE startPage, const BYTEV& data);
 	void writeData(BYTE startPage, const std::string& s);
 
-	// New overloads: allow caller to specify LC (bytes per page) for this operation
-	void writeData(BYTE startPage, const BYTEV& data, BYTE lc);
-	void writeData(BYTE startPage, const std::string& s, BYTE lc);
+	// New overloads: allow caller to specify LE (bytes per page) for this operation
+	void writeData(BYTE startPage, const BYTEV& data, BYTE le);
+	void writeData(BYTE startPage, const std::string& s, BYTE le);
 
 	virtual BYTEV readData(BYTE startPage, size_t length);
 
@@ -150,9 +158,9 @@ public:
 		cardConnection().checkConnected();
 		BYTE keyStructureValue = mapKeyStructure(keyStructure);
 
-		BYTE LC = 0x06; // 6 bytes
-		BYTEV apdu{ 0xFF, 0x82, keyStructureValue, keyNumber, LC };
-		apdu.insert(apdu.end(), key, key + LC);
+		BYTE LE = 0x06; // 6 bytes
+		BYTEV apdu{ 0xFF, 0x82, keyStructureValue, keyNumber, LE };
+		apdu.insert(apdu.end(), key, key + LE);
 
 		auto resp = cardConnection().transmit(apdu);
 		cardConnection().checkResponseSize(resp);
@@ -215,8 +223,8 @@ public:
 	bool isAuthRequested() const;
 	void setAuthRequested(bool v);
 
-	BYTE getLC() const;
-	void setLC(BYTE lc);
+	BYTE getLE() const;
+	void setLE(BYTE le);
 
 	KeyType keyType() const;
 	void setKeyType(KeyType kt);

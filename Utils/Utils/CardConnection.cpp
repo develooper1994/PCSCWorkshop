@@ -69,11 +69,31 @@ BYTEV CardConnection::transmit(const BYTEV& cmd) const {
         ? *SCARD_PCI_T0
         : *SCARD_PCI_T1;
 
+    // Debug: hex yazdýr
+    {
+        std::ostringstream oss;
+        oss << "APDU send: ";
+        for (auto b : cmd) oss << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << (int)b << ' ';
+        oss << '\n';
+        std::cout << oss.str().c_str() << "\n"; // veya std::cout
+    }
+
     LONG r = SCardTransmit(m_hCard, &pci,
         cmd.data(), static_cast<DWORD>(cmd.size()),
         nullptr, recv, &recvLen);
+
     if (r != SCARD_S_SUCCESS)
         throw pcsc::ReaderError(std::string("SCardTransmit failed: ") + std::to_string(r));
+
+    // Debug: alýnan byte'larý yazdýr
+    {
+        std::ostringstream oss;
+        oss << "APDU recvLen=" << recvLen << " recv: ";
+        for (DWORD i = 0; i < recvLen; ++i) oss << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << (int)recv[i] << ' ';
+        oss << '\n';
+        std::cout << oss.str().c_str() << "\n";
+    }
+
     return BYTEV(recv, recv + recvLen);
 }
 
