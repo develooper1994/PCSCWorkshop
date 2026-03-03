@@ -70,9 +70,13 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
 
         // Apply for all sectors (1K => 16 sectors)
         for (int s = 0; s < 16; ++s) {
-            card.setSectorConfig(s, defaultCfg);
-            if(s != 0)
+            if (s != 0) {
+                card.setSectorConfig(s, defaultCfg);
                 card.applySectorConfigStrict(s);
+            } else {
+				MifareCardCore<ACR1281UReader>::SectorKeyConfig sector0Cfg(true, false, true, false);
+				card.setSectorConfig(s, sector0Cfg);
+			}
             // card.applySectorConfigToCard(s);
         }
 
