@@ -22,58 +22,52 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
 		// 2) prepare reader & card core
 		// create a MifareCardCore that wraps acr1281u; assume 1K (false). If you have 4K card, pass true.
 		MifareCardCore card(acr1281u, false);  // 1K kart
-		const BYTE keySlotA = 0x01;
-		const BYTE keySlotB = 0x02;
+
+		// Keys are already loaded in constructor with default values
+		// If you want to use different keys, call setKey here:
+		// const BYTE customKey[6] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 };
+		// card.setKey(KeyType::A, std::array<BYTE, 6>{...}, KeyStructure::NonVolatile, 0x01);
 
 		// 3) print info using card's layout helpers
 		std::cout << "Original: \"" << text << "\" size: " << text.size()
 			<< " bytes, needs " << ((text.size() + 15) / 16)
-			<< " pages. starting page: " << int(startPage)
+			<< " pages. starting page: " << static_cast<int>(startPage)
 			<< " (sector " << card.blockToSector(startPage)
 			<< ", block index in sector: " << card.blockIndexInSector(startPage) << ")\n";
 
-		// 4) load default keys
-		const BYTE defaultKey6[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-		card.setKey(MifareCardCore::KeyType::A, std::array<BYTE, 6>{defaultKey6[0], defaultKey6[1], defaultKey6[2], defaultKey6[3], defaultKey6[4], defaultKey6[5]},
-			KeyStructure::NonVolatile, keySlotA);
-		card.setKey(MifareCardCore::KeyType::B, std::array<BYTE, 6>{defaultKey6[0], defaultKey6[1], defaultKey6[2], defaultKey6[3], defaultKey6[4], defaultKey6[5]},
-			KeyStructure::NonVolatile, keySlotB);
-		acr1281u.loadKey(defaultKey6, KeyStructure::NonVolatile, keySlotA);
-		acr1281u.loadKey(defaultKey6, KeyStructure::NonVolatile, keySlotB);
-
-		// 5) Read sector trailers for all sectors and print their access bits (for debugging)
+		// 4) Read sector trailers for all sectors and print their access bits (for debugging)
 		card.printAllTrailers();
 
-		// 6) ensure default sector config: KeyA read-only, KeyB read+write
+		// 5) ensure default sector config: KeyA read-only, KeyB read+write
 		MifareCardCore::SectorKeyConfig defaultCfg(true, false, true, true);
 		std::vector<MifareCardCore::SectorKeyConfig> sectorConfigs(16, defaultCfg);
-		sectorConfigs.at(0).keyB_canWrite = false; // Sector 0: KeyA read-only, KeyB read-only
+		sectorConfigs[0].keyB_canWrite = false; // Sector 0: KeyA read-only, KeyB read-only
 		card.applyAllSectorsConfig(sectorConfigs);
 
-		// 7) Try a pre-read of the start page using card (safe)
+		// 6) Try a pre-read of the start page using card (safe)
 		{
-			std::cout << "Reading bytes in block " << int(startPage) << ":\n";
+			std::cout << "Reading bytes in block " << static_cast<int>(startPage) << ":\n";
 			auto result = card.read(static_cast<BYTE>(startPage));
 			std::string sread(result.begin(), result.end());
 			std::cout << "Empty Read (single block) : \"" << sread << "\"\n";
 			printHex(result);
 		}
 
-		// 8) Write the bytes at startPage:
+		// 7) Write the bytes at startPage:
 		{
 			std::cout << "\nWriting bytes in block " << int(startPage) << ":\n";
 			card.write(static_cast<BYTE>(startPage), text);
 		}
 
-		// 9) Read back same length starting at startPage
+		// 8) Read back same length starting at startPage
 		{
-			std::cout << "Reading bytes in block " << int(startPage) << ":\n";
+			std::cout << "Reading bytes in block " << static_cast<int>(startPage) << ":\n";
 			auto result = card.read(static_cast<BYTE>(startPage));
 			std::cout << "Read back (reassembled): \"" << std::string(result.begin(), result.end()) << "\"\n";
 			printHex(result);
 		}
 
-		// 10) Optionally, print full dump using reader's own readAll (if you prefer original behaviour)
+		// 9) Optionally, print full dump using reader's own readAll (if you prefer original behaviour)
 		std::cout << "\nreadAll from page 0 (reader helper):\n";
 		auto all = acr1281u.readAll(0); // using your original helper
 		std::cout << "Total bytes read: " << all.size() << "\n";

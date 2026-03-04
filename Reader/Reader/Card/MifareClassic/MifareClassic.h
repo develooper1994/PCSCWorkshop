@@ -60,6 +60,10 @@ public:
     // ════════════════════════════════════════════════════════
     void setKey(KeyType kt, const std::array<BYTE, 6>& key,
                 KeyStructure ks, BYTE slot);
+    
+    // Force load all registered keys to reader immediately (optional, for testing)
+    // Normally keys are loaded lazily when first needed
+    void loadAllKeysToReader();
 
     // ════════════════════════════════════════════════════════
     //  Sector config (host-side permission model)

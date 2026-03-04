@@ -12,23 +12,20 @@ MifareCardCore::SectorKeyConfig::SectorKeyConfig(bool aR, bool aW,
 //  Construction
 // ════════════════════════════════════════════════════════
 MifareCardCore::MifareCardCore(Reader& r, bool is4K)
-	: reader_(r),
-	  is4KCard_(is4K),
-	  numberOfSectors_(is4K ? 40 : 16),
-	  sectorConfigs_(numberOfSectors_, SectorKeyConfig{})
+    : reader_(r),
+      is4KCard_(is4K),
+      numberOfSectors_(is4K ? 40 : 16),
+      sectorConfigs_(numberOfSectors_, SectorKeyConfig{})
 {
-	// -> load key into reader and also give it to the card (slot 0x01 used in older examples)
-	const std::array<BYTE, 6> defaultKey6 = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-	const BYTE keySlotA = 0x01; // as in your earlier example
-	const BYTE keySlotB = 0x02; // as in your earlier example
+    // Load default keys into MifareCardCore's key registry
+    // Keys will be loaded to reader on-demand when first authentication is needed
+    const std::array<BYTE, 6> defaultKey6 = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+    const BYTE keySlotA = 0x01;
+    const BYTE keySlotB = 0x02;
 
-	// Also register the key into card so it knows which slot to use for auth decisions.
-	// setKey signature might be different in your core; adjust if necessary.
-	setKey(MifareCardCore::KeyType::A, std::array<BYTE, 6>{defaultKey6[0], defaultKey6[1], defaultKey6[2], defaultKey6[3], defaultKey6[4], defaultKey6[5]},
-		KeyStructure::NonVolatile, keySlotA);
-	setKey(MifareCardCore::KeyType::B, std::array<BYTE, 6>{defaultKey6[0], defaultKey6[1], defaultKey6[2], defaultKey6[3], defaultKey6[4], defaultKey6[5]},
-		/*keyStructure*/ KeyStructure::NonVolatile, keySlotB);
-	// If your ACR1281UReader expects storage type (NonVolatile/Volatile), use that value:
+    // Register keys - they will be loaded to reader lazily when needed
+    setKey(KeyType::A, defaultKey6, KeyStructure::NonVolatile, keySlotA);
+    setKey(KeyType::B, defaultKey6, KeyStructure::NonVolatile, keySlotB);
 }
 
 int MifareCardCore::getSectorCount() const {
@@ -46,6 +43,21 @@ void MifareCardCore::setKey(KeyType kt, const std::array<BYTE, 6>& key,
 						   [kt](const KeyInfo& k) { return k.kt == kt; });
 	if (it != keys_.end()) *it = ki;
 	else keys_.push_back(ki);
+}
+
+void MifareCardCore::loadAllKeysToReader() {
+    // Force load all registered keys to reader
+    // Useful for pre-loading keys when you know reader is connected
+    for (const auto& ki : keys_) {
+        try {
+            reader_.loadKey(ki.key.data(), ki.ks, ki.slot);
+        } catch (const std::exception& e) {
+            std::cerr << "Warning: Failed to load key " 
+                      << (ki.kt == KeyType::A ? "A" : "B")
+                      << " to slot " << static_cast<int>(ki.slot)
+                      << ": " << e.what() << std::endl;
+        }
+    }
 }
 
 // ════════════════════════════════════════════════════════
