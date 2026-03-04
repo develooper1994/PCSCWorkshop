@@ -180,6 +180,10 @@ public:
 		loadKey(key, keyStructure, keyNumber);
 		setKeyLoaded(true);
 	}
+	void loadKey(const KeyInfo& info) {
+		loadKey(info.key.data(), info.ks, info.slot);
+		setKeyLoaded(true);
+	}
 	/*
 	keyType(1 byte):
 	A -> 0x60, B -> 0x61

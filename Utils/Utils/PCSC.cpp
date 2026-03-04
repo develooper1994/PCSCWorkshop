@@ -4,6 +4,59 @@
 #include "Exceptions/GenericExceptions.h"
 
 // ============================================================
+// Helper: Convert SCARD error codes to user-friendly messages
+// ============================================================
+namespace {
+    std::string getSCardErrorMessage(LONG errorCode) {
+        switch (errorCode) {
+            case SCARD_E_NO_READERS_AVAILABLE:
+                return "No smart card readers found. Please connect a card reader.";
+            case SCARD_E_NO_SMARTCARD:
+                return "No smart card detected. Please insert a card into the reader.";
+            case SCARD_W_REMOVED_CARD:
+                return "Smart card has been removed from the reader.";
+            case SCARD_E_READER_UNAVAILABLE:
+                return "Card reader is unavailable or disconnected.";
+            case SCARD_E_SHARING_VIOLATION:
+                return "Card reader is being used by another application.";
+            case SCARD_E_CARD_UNSUPPORTED:
+                return "The smart card is not supported.";
+            case SCARD_E_INVALID_HANDLE:
+                return "Invalid handle or context.";
+            case SCARD_E_INSUFFICIENT_BUFFER:
+                return "Buffer is too small for the requested operation.";
+            case SCARD_E_UNKNOWN_CARD:
+                return "Unknown card type.";
+            case SCARD_E_PROTO_MISMATCH:
+                return "Protocol mismatch between card and reader.";
+            case SCARD_E_NOT_READY:
+                return "Card reader is not ready.";
+            case SCARD_E_CANCELLED:
+                return "Operation was cancelled.";
+            case SCARD_E_TIMEOUT:
+                return "Operation timed out.";
+            case SCARD_W_UNPOWERED_CARD:
+                return "Card is not powered.";
+            case SCARD_W_UNRESPONSIVE_CARD:
+                return "Card is not responding.";
+            case SCARD_W_UNSUPPORTED_CARD:
+                return "Card is not supported.";
+            case SCARD_E_INVALID_PARAMETER:
+                return "Invalid parameter provided.";
+            case SCARD_E_INVALID_VALUE:
+                return "Invalid value provided.";
+            case SCARD_E_SERVICE_STOPPED:
+                return "Smart Card service has stopped.";
+            default: {
+                std::ostringstream oss;
+                oss << "Smart card error: 0x" << std::hex << std::uppercase << errorCode;
+                return oss.str();
+            }
+        }
+    }
+}
+
+// ============================================================
 // Destructor & move semantics
 // ============================================================
 
@@ -36,8 +89,8 @@ bool PCSC::establishContext() {
     if (hContext_) return true; // zaten acik
     LONG result = SCardEstablishContext(SCARD_SCOPE_USER, nullptr, nullptr, &hContext_);
     if (result != SCARD_S_SUCCESS) {
-        std::cerr << "SCardEstablishContext failed: 0x"
-                  << std::hex << result << std::dec << std::endl;
+        std::cerr << "SCardEstablishContext failed: " 
+                  << getSCardErrorMessage(result) << std::endl;
         hContext_ = 0;
         return false;
     }
@@ -72,8 +125,8 @@ PCSC::ReaderList PCSC::listReaders() const {
                                 reinterpret_cast<LPWSTR>(&rawBuffer),
                                 &readersLen);
     if (rc != SCARD_S_SUCCESS) {
-        std::cerr << "SCardListReaders failed: 0x"
-                  << std::hex << rc << std::dec << std::endl;
+        std::cerr << "SCardListReaders failed: " 
+                  << getSCardErrorMessage(rc) << std::endl;
         return result;
     }
 

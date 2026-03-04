@@ -230,23 +230,41 @@ BYTEV Reader::readPage(BYTE page, const BYTEV* customApdu) {
 	return BYTEV(resp.begin(), resp.end() - 2);
 }
 void Reader::writePage(BYTE page, const BYTE* data, const BYTEV* customApdu) {
+	// IMPORTANT: data MUST contain at least getLE() bytes!
+	// Caller is responsible for ensuring data buffer has sufficient size.
 	BYTEV apdu;
 	if (customApdu) apdu = *customApdu;  // dýþarýdan gelen APDU
 	else {
-		// default APDU
+		// default APDU - assumes data has exactly getLE() bytes
 		apdu = { 0xFF, 0xD6, 0x00, page, getLE() };
 		apdu.insert(apdu.end(), data, data + getLE());
 	}
 	secureTransmit<WritePolicy>(page, apdu);
 }
 void Reader::writePage(BYTE page, const BYTEV& data) {
-	BYTEV tmp(getLE());
-	for (size_t i = 0; i < getLE() && i < data.size(); ++i) tmp[i] = data[i];
+	// Validate data size: must not exceed getLE()
+	if (data.size() > getLE()) {
+		std::stringstream ss;
+		ss << "Data size (" << data.size() << " bytes) exceeds block size (" 
+		   << static_cast<int>(getLE()) << " bytes)";
+		throw std::invalid_argument(ss.str());
+	}
+	// Pad to getLE() bytes with zeros
+	BYTEV tmp(getLE(), 0x00);
+	std::memcpy(tmp.data(), data.data(), data.size());
 	writePage(page, tmp.data());
 }
 void Reader::writePage(BYTE page, const std::string& s) {
-	BYTEV tmp(getLE());
-	for (size_t i = 0; i < getLE() && i < s.size(); ++i) tmp[i] = static_cast<BYTE>(s[i]);
+	// Validate data size: must not exceed getLE()
+	if (s.size() > getLE()) {
+		std::stringstream ss;
+		ss << "Data size (" << s.size() << " bytes) exceeds block size (" 
+		   << static_cast<int>(getLE()) << " bytes)";
+		throw std::invalid_argument(ss.str());
+	}
+	// Pad to getLE() bytes with zeros
+	BYTEV tmp(getLE(), 0x00);
+	std::memcpy(tmp.data(), s.data(), s.size());
 	writePage(page, tmp.data());
 }
 void Reader::clearPage(BYTE page) {
@@ -256,24 +274,56 @@ void Reader::clearPage(BYTE page) {
 }
 
 void Reader::writePageEncrypted(BYTE page, const BYTEV& data, const ICipher& cipher) {
-	BYTEV tmp(getLE());
-	for (size_t i = 0; i < getLE() && i < data.size(); ++i) tmp[i] = data[i];
+	// Validate data size: must not exceed getLE()
+	if (data.size() > getLE()) {
+		std::stringstream ss;
+		ss << "Data size (" << data.size() << " bytes) exceeds block size (" 
+		   << static_cast<int>(getLE()) << " bytes)";
+		throw std::invalid_argument(ss.str());
+	}
+	// Pad to getLE() bytes with zeros
+	BYTEV tmp(getLE(), 0x00);
+	std::memcpy(tmp.data(), data.data(), data.size());
 	writePageEncrypted(page, tmp.data(), cipher);
 }
 void Reader::writePageEncrypted(BYTE page, const std::string& s, const ICipher& cipher) {
-	BYTEV tmp(getLE());
-	for (size_t i = 0; i < getLE() && i < s.size(); ++i) tmp[i] = static_cast<BYTE>(s[i]);
+	// Validate data size: must not exceed getLE()
+	if (s.size() > getLE()) {
+		std::stringstream ss;
+		ss << "Data size (" << s.size() << " bytes) exceeds block size (" 
+		   << static_cast<int>(getLE()) << " bytes)";
+		throw std::invalid_argument(ss.str());
+	}
+	// Pad to getLE() bytes with zeros
+	BYTEV tmp(getLE(), 0x00);
+	std::memcpy(tmp.data(), s.data(), s.size());
 	writePageEncrypted(page, tmp.data(), cipher);
 }
 
 void Reader::writePageEncryptedAAD(BYTE page, const BYTEV& data, const ICipher& cipher, const BYTEV& aad) {
-	BYTEV tmp(getLE());
-	for (size_t i = 0; i < getLE() && i < data.size(); ++i) tmp[i] = data[i];
+	// Validate data size: must not exceed getLE()
+	if (data.size() > getLE()) {
+		std::stringstream ss;
+		ss << "Data size (" << data.size() << " bytes) exceeds block size (" 
+		   << static_cast<int>(getLE()) << " bytes)";
+		throw std::invalid_argument(ss.str());
+	}
+	// Pad to getLE() bytes with zeros
+	BYTEV tmp(getLE(), 0x00);
+	std::memcpy(tmp.data(), data.data(), data.size());
 	writePageEncryptedAAD(page, tmp.data(), cipher, aad.data(), aad.size());
 }
 void Reader::writePageEncryptedAAD(BYTE page, const std::string& s, const ICipher& cipher, const BYTEV& aad) {
-	BYTEV tmp(getLE());
-	for (size_t i = 0; i < getLE() && i < s.size(); ++i) tmp[i] = static_cast<BYTE>(s[i]);
+	// Validate data size: must not exceed getLE()
+	if (s.size() > getLE()) {
+		std::stringstream ss;
+		ss << "Data size (" << s.size() << " bytes) exceeds block size (" 
+		   << static_cast<int>(getLE()) << " bytes)";
+		throw std::invalid_argument(ss.str());
+	}
+	// Pad to getLE() bytes with zeros
+	BYTEV tmp(getLE(), 0x00);
+	std::memcpy(tmp.data(), s.data(), s.size());
 	writePageEncryptedAAD(page, tmp.data(), cipher, aad.data(), aad.size());
 }
 
