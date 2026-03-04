@@ -154,36 +154,11 @@ public:
 	used as a session key for different sessions. Default value = FF FF
 	FF FF FF FFh.
 	*/
-	void loadKey(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber) {
-		cardConnection().checkConnected();
-		BYTE keyStructureValue = mapKeyStructure(keyStructure);
-
-		BYTE LE = 0x06; // 6 bytes
-		BYTEV apdu{ 0xFF, 0x82, keyStructureValue, keyNumber, LE };
-		apdu.insert(apdu.end(), key, key + LE);
-
-		auto resp = cardConnection().transmit(apdu);
-		cardConnection().checkResponseSize(resp);
-		auto sw = cardConnection().getStatusWords(resp);
-		BYTE sw1 = sw.first, sw2 = sw.second;
-		if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00)) {
-			std::stringstream ss;
-			ss << "LoadKey failed SW=0x" << std::hex << (int)sw1 << " 0x" << (int)sw2 << '\n';
-			throw pcsc::LoadKeyFailedError(ss.str());
-		}
-	}
-	void loadKeyA(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber) {
-		loadKey(key, keyStructure, keyNumber);
-		setKeyLoaded(true);
-	}
-	void loadKeyB(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber) {
-		loadKey(key, keyStructure, keyNumber);
-		setKeyLoaded(true);
-	}
-	void loadKey(const KeyInfo& info) {
-		loadKey(info.key.data(), info.ks, info.slot);
-		setKeyLoaded(true);
-	}
+	void loadKey(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber);
+	void loadKeyA(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber);
+	void loadKeyB(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber);
+	void loadKey(const KeyInfo& info);
+	
 	/*
 	keyType(1 byte):
 	A -> 0x60, B -> 0x61
@@ -198,22 +173,8 @@ public:
 	used as a session key for different sessions. Default value = FF FF FF FF
 	FF FFh.
 	*/
-	void auth(BYTE blockNumber, KeyType keyType, BYTE keyNumber) {
-		cardConnection().checkConnected();
-		BYTE keyTypeValue = mapKeyKind(keyType);
-
-		BYTEV apdu{ 0xFF, 0x88, 0x00, blockNumber, keyTypeValue, keyNumber };
-
-		auto resp = cardConnection().transmit(apdu);
-		cardConnection().checkResponseSize(resp);
-		auto sw = cardConnection().getStatusWords(resp);
-		BYTE sw1 = sw.first, sw2 = sw.second;
-		if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00) || (sw1 == 0x63 && sw2==0x00)) {
-			std::stringstream ss;
-			ss << "Auth failed SW=0x" << std::hex << (int)sw1 << " 0x" << (int)sw2 << '\n';
-			throw pcsc::AuthFailedError(ss.str());
-		}
-	}
+	void auth(BYTE blockNumber, KeyType keyType, BYTE keyNumber);
+	
 	/* {0x01(versionnumber), 0x00, Block Number, Key Type, Key Number} */
 	template<typename TReader>
 	void authNew(BYTE blockNumber, KeyType keyType, BYTE keyNumber) {
