@@ -14,122 +14,122 @@ MifareCardCore::SectorKeyConfig::SectorKeyConfig(bool aR, bool aW,
 //  Construction
 // ════════════════════════════════════════════════════════
 MifareCardCore::MifareCardCore(Reader& r, bool is4K)
-    : Card(r),
-      is4KCard_(is4K),
-      numberOfSectors_(is4K ? 40 : 16),
-      sectorConfigs_(numberOfSectors_, SectorKeyConfig{}) {
-    // Load default keys into MifareCardCore's key registry
-    // Keys will be loaded to reader on-demand when first authentication is needed
-    const std::array<BYTE, 6> defaultKey6 = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-    const BYTE keySlotA = 0x01;
-    const BYTE keySlotB = 0x02;
+	: Card(r),
+	  is4KCard_(is4K),
+	  numberOfSectors_(is4K ? 40 : 16),
+	  sectorConfigs_(numberOfSectors_, SectorKeyConfig{}) {
+	// Load default keys into MifareCardCore's key registry
+	// Keys will be loaded to reader on-demand when first authentication is needed
+	const std::array<BYTE, 6> defaultKey6 = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+	const BYTE keySlotA = 0x01;
+	const BYTE keySlotB = 0x02;
 
-    // Register keys - they will be loaded to reader lazily when needed
-    setKey(KeyType::A, defaultKey6, KeyStructure::NonVolatile, keySlotA);
-    setKey(KeyType::B, defaultKey6, KeyStructure::NonVolatile, keySlotB);
+	// Register keys - they will be loaded to reader lazily when needed
+	setKey(KeyType::A, defaultKey6, KeyStructure::NonVolatile, keySlotA);
+	setKey(KeyType::B, defaultKey6, KeyStructure::NonVolatile, keySlotB);
 }
 
 // ════════════════════════════════════════════════════════
 //  Card interface implementation
 // ════════════════════════════════════════════════════════
 std::string MifareCardCore::getCardType() const {
-    return is4KCard_ ? "Mifare Classic 4K" : "Mifare Classic 1K";
+	return is4KCard_ ? "Mifare Classic 4K" : "Mifare Classic 1K";
 }
 
 size_t MifareCardCore::getMemorySize() const noexcept {
-    // Calculate usable memory (excluding manufacturer block and all trailer blocks)
-    // 
-    // Mifare Classic 1K:
-    // - 16 sectors × 4 blocks/sector = 64 blocks total
-    // - Block 0 (manufacturer): read-only, NOT usable
-    // - 16 trailer blocks (1 per sector): NOT usable for data
-    // - Usable: 64 - 1 (manufacturer) - 16 (trailers) = 47 blocks
-    // - 47 blocks × 16 bytes = 752 bytes
-    //
-    // Mifare Classic 4K:
-    // - First 32 sectors: 32 × 4 = 128 blocks
-    // - Last 8 sectors: 8 × 16 = 128 blocks
-    // - Total: 256 blocks
-    // - Block 0 (manufacturer): read-only, NOT usable
-    // - 40 trailer blocks (1 per sector): NOT usable for data
-    // - Usable: 256 - 1 (manufacturer) - 40 (trailers) = 215 blocks
-    // - 215 blocks × 16 bytes = 3440 bytes
-    
-    if (is4KCard_) {
-        // 4K card: 256 total blocks - 1 manufacturer - 40 trailers = 215 usable blocks
-        return 215 * 16;  // 3440 bytes
-    } else {
-        // 1K card: 64 total blocks - 1 manufacturer - 16 trailers = 47 usable blocks
-        return 47 * 16;   // 752 bytes
-    }
+	// Calculate usable memory (excluding manufacturer block and all trailer blocks)
+	// 
+	// Mifare Classic 1K:
+	// - 16 sectors × 4 blocks/sector = 64 blocks total
+	// - Block 0 (manufacturer): read-only, NOT usable
+	// - 16 trailer blocks (1 per sector): NOT usable for data
+	// - Usable: 64 - 1 (manufacturer) - 16 (trailers) = 47 blocks
+	// - 47 blocks × 16 bytes = 752 bytes
+	//
+	// Mifare Classic 4K:
+	// - First 32 sectors: 32 × 4 = 128 blocks
+	// - Last 8 sectors: 8 × 16 = 128 blocks
+	// - Total: 256 blocks
+	// - Block 0 (manufacturer): read-only, NOT usable
+	// - 40 trailer blocks (1 per sector): NOT usable for data
+	// - Usable: 256 - 1 (manufacturer) - 40 (trailers) = 215 blocks
+	// - 215 blocks × 16 bytes = 3440 bytes
+	
+	if (is4KCard_) {
+		// 4K card: 256 total blocks - 1 manufacturer - 40 trailers = 215 usable blocks
+		return 215 * 16;  // 3440 bytes
+	} else {
+		// 1K card: 64 total blocks - 1 manufacturer - 16 trailers = 47 usable blocks
+		return 47 * 16;   // 752 bytes
+	}
 }
 
 BYTEV MifareCardCore::read(size_t address, size_t length) {
-    // Convert byte address to block number (each block is 16 bytes)
-    BYTE startBlock = static_cast<BYTE>(address / 16);
-    return readLinear(startBlock, length);
+	// Convert byte address to block number (each block is 16 bytes)
+	BYTE startBlock = static_cast<BYTE>(address / 16);
+	return readLinear(startBlock, length);
 }
 
 void MifareCardCore::write(size_t address, const BYTEV& data) {
-    // Convert byte address to block number (each block is 16 bytes)
-    BYTE startBlock = static_cast<BYTE>(address / 16);
-    writeLinear(startBlock, data);
+	// Convert byte address to block number (each block is 16 bytes)
+	BYTE startBlock = static_cast<BYTE>(address / 16);
+	writeLinear(startBlock, data);
 }
 
 void MifareCardCore::reset() {
-    // Clear authentication cache
-    authCache_.clear();
-    // Call base class reset
-    Card::reset();
+	// Clear authentication cache
+	authCache_.clear();
+	// Call base class reset
+	Card::reset();
 }
 
 BYTEV MifareCardCore::getUID() const {
-    // For Mifare Classic, UID is stored in manufacturer block (block 0)
-    // Block 0 layout: UID(4 or 7 bytes) + BCC + Manufacturer data
-    // Standard UID: 4 bytes (single size)
-    // Extended UID: 7 bytes (double size)
-    // We read block 0 and extract the UID portion
-    
-    try {
-        // We need to cast away const to use non-const methods temporarily
-        // This is safe because we're only reading, not modifying card state
-        auto& self = const_cast<MifareCardCore&>(*this);
-        
-        // Manufacturer block is always in sector 0
-        // We need to authenticate to read it
-        const KeyInfo* keyA = nullptr;
-        for (const auto& ki : keys_) {
-            if (ki.kt == KeyType::A) {
-                keyA = &ki;
-                break;
-            }
-        }
-        
-        if (!keyA) return BYTEV{}; // No Key A available, return empty
-        
-        // Authenticate to sector 0 with Key A
-        self.ensureAuthorized(0, KeyType::A, keyA->slot);
-        
-        // Read manufacturer block (block 0)
-        BYTEV block0 = self.reader().readPage(0);
-        
-        if (block0.size() < 4) return BYTEV{}; // Invalid block size
-        
-        // Check if it's a 7-byte UID (indicated by first byte being 0x88)
-        if (block0[0] == 0x88 && block0.size() >= 7) {
-            // 7-byte UID: bytes [0,1,2,3,4,5,6] (skip BCC at index 3 and 7)
-            // Layout: 0x88 | UID0 UID1 UID2 | BCC0 | UID3 UID4 UID5 | BCC1
+	// For Mifare Classic, UID is stored in manufacturer block (block 0)
+	// Block 0 layout: UID(4 or 7 bytes) + BCC + Manufacturer data
+	// Standard UID: 4 bytes (single size)
+	// Extended UID: 7 bytes (double size)
+	// We read block 0 and extract the UID portion
+	
+	try {
+		// We need to cast away const to use non-const methods temporarily
+		// This is safe because we're only reading, not modifying card state
+		auto& self = const_cast<MifareCardCore&>(*this);
+		
+		// Manufacturer block is always in sector 0
+		// We need to authenticate to read it
+		const KeyInfo* keyA = nullptr;
+		for (const auto& ki : keys_) {
+			if (ki.kt == KeyType::A) {
+				keyA = &ki;
+				break;
+			}
+		}
+		
+		if (!keyA) return BYTEV{}; // No Key A available, return empty
+		
+		// Authenticate to sector 0 with Key A
+		self.ensureAuthorized(0, KeyType::A, keyA->slot);
+		
+		// Read manufacturer block (block 0)
+		BYTEV block0 = self.reader().readPage(0);
+		
+		if (block0.size() < 4) return BYTEV{}; // Invalid block size
+		
+		// Check if it's a 7-byte UID (indicated by first byte being 0x88)
+		if (block0[0] == 0x88 && block0.size() >= 7) {
+			// 7-byte UID: bytes [0,1,2,3,4,5,6] (skip BCC at index 3 and 7)
+			// Layout: 0x88 | UID0 UID1 UID2 | BCC0 | UID3 UID4 UID5 | BCC1
 			// skip BCC at block0[4]
-            BYTEV uid { block0[0], block0[1], block0[2], block0[3], block0[5], block0[6], block0[7] };
-            return uid;
-        } else return BYTEV(block0.begin(), block0.begin() + 4); // 4-byte UID: bytes [0,1,2,3]
-    } catch (...) {
-        // If we can't read the manufacturer block, return empty
-        return BYTEV{};
-    }
+			BYTEV uid { block0[0], block0[1], block0[2], block0[3], block0[5], block0[6], block0[7] };
+			return uid;
+		} else return BYTEV(block0.begin(), block0.begin() + 4); // 4-byte UID: bytes [0,1,2,3]
+	} catch (...) {
+		// If we can't read the manufacturer block, return empty
+		return BYTEV{};
+	}
 }
 
-int MifareCardCore::getSectorCount() const noexcept { return numberOfSectors_; }
+size_t MifareCardCore::getSectorCount() const noexcept { return numberOfSectors_; }
 
 // ════════════════════════════════════════════════════════
 //  Key management
@@ -144,18 +144,18 @@ void MifareCardCore::setKey(KeyType kt, const std::array<BYTE, 6>& key, KeyStruc
 }
 
 void MifareCardCore::loadAllKeysToReader() {
-    // Force load all registered keys to reader
-    // Useful for pre-loading keys when you know reader is connected
-    for (const auto& ki : keys_) {
-        try {
-            reader().loadKey(ki.key.data(), ki.ks, ki.slot);
-        } catch (const std::exception& e) {
-            std::cerr << "Warning: Failed to load key " 
-                      << (ki.kt == KeyType::A ? "A" : "B")
-                      << " to slot " << static_cast<int>(ki.slot)
-                      << ": " << e.what() << std::endl;
-        }
-    }
+	// Force load all registered keys to reader
+	// Useful for pre-loading keys when you know reader is connected
+	for (const auto& ki : keys_) {
+		try {
+			reader().loadKey(ki.key.data(), ki.ks, ki.slot);
+		} catch (const std::exception& e) {
+			std::cerr << "Warning: Failed to load key " 
+					  << (ki.kt == KeyType::A ? "A" : "B")
+					  << " to slot " << static_cast<int>(ki.slot)
+					  << ": " << e.what() << std::endl;
+		}
+	}
 }
 
 // ════════════════════════════════════════════════════════

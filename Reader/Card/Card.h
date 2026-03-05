@@ -1,4 +1,4 @@
-﻿#ifndef CARD_H
+#ifndef CARD_H
 #define CARD_H
 
 #include "../Reader.h"

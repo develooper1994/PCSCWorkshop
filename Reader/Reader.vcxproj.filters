@@ -9,15 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="ACR1281U">
-      <UniqueIdentifier>{A1B2C3D4-E5F6-7890-ABCD-EF0123456789}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ACR1281U\Source">
-      <UniqueIdentifier>{3e0ea861-9a42-42f6-b84b-ab14062511d8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ACR1281U\Header">
-      <UniqueIdentifier>{d0b38a18-645c-46ba-8a60-28d3e6d0d803}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Reader">
       <UniqueIdentifier>{430aafd9-64c7-4a0b-841f-957559f72755}</UniqueIdentifier>
     </Filter>
@@ -36,41 +27,50 @@
     <Filter Include="Card\Desfire">
       <UniqueIdentifier>{a87e68f4-c675-4944-b732-ca7bb95ae858}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Reader\ACR1281U">
+      <UniqueIdentifier>{A1B2C3D4-E5F6-7890-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Reader\ACR1281U\Source">
+      <UniqueIdentifier>{3e0ea861-9a42-42f6-b84b-ab14062511d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Reader\ACR1281U\Header">
+      <UniqueIdentifier>{d0b38a18-645c-46ba-8a60-28d3e6d0d803}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Reader\Readers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Reader\ACR1281U\ACR1281UReader.h">
-      <Filter>ACR1281U\Header</Filter>
+      <Filter>Reader\ACR1281U\Header</Filter>
     </ClInclude>
     <ClInclude Include="Reader\Reader.h">
       <Filter>Reader\Header</Filter>
     </ClInclude>
-    <ClInclude Include="Reader\Card\MifareClassic\MifareClassic.h">
-      <Filter>Card\MifareClassic</Filter>
-    </ClInclude>
-    <ClInclude Include="Reader\Card\Card.h">
+    <ClInclude Include="Card\Card.h">
       <Filter>Card</Filter>
     </ClInclude>
-    <ClInclude Include="Reader\Card\Desfire\Desfire.h">
+    <ClInclude Include="Card\MifareClassic\MifareClassic.h">
+      <Filter>Card\MifareClassic</Filter>
+    </ClInclude>
+    <ClInclude Include="Card\Desfire\Desfire.h">
       <Filter>Card\Desfire</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Reader\ACR1281U\ACR1281UReader.cpp">
-      <Filter>ACR1281U\Source</Filter>
+      <Filter>Reader\ACR1281U\Source</Filter>
     </ClCompile>
     <ClCompile Include="Reader\Reader.cpp">
       <Filter>Reader\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Reader\Card\MifareClassic\MifareClassic.cpp">
-      <Filter>Card\MifareClassic</Filter>
-    </ClCompile>
-    <ClCompile Include="Reader\Card\Card.cpp">
+    <ClCompile Include="Card\Card.cpp">
       <Filter>Card</Filter>
     </ClCompile>
-    <ClCompile Include="Reader\Card\Desfire\Desfire.cpp">
+    <ClCompile Include="Card\MifareClassic\MifareClassic.cpp">
+      <Filter>Card\MifareClassic</Filter>
+    </ClCompile>
+    <ClCompile Include="Card\Desfire\Desfire.cpp">
       <Filter>Card\Desfire</Filter>
     </ClCompile>
   </ItemGroup>

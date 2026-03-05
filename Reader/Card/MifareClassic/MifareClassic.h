@@ -1,4 +1,4 @@
-﻿#ifndef MIFARECLASSIC_H
+#ifndef MIFARECLASSIC_H
 #define MIFARECLASSIC_H
 
 #include "Utils.h"
@@ -66,7 +66,7 @@ public:
     // ════════════════════════════════════════════════════════
     //  Mifare-specific operations
     // ════════════════════════════════════════════════════════
-    int getSectorCount() const noexcept;
+    size_t getSectorCount() const noexcept;
 
     // ════════════════════════════════════════════════════════
     //  Key management
@@ -175,7 +175,7 @@ public:
 
 private:
     const bool is4KCard_;
-    const int  numberOfSectors_;
+    const size_t  numberOfSectors_;
 
     std::vector<KeyInfo>          keys_;
     std::vector<SectorKeyConfig>  sectorConfigs_;
@@ -231,4 +231,4 @@ void MifareCardCore::batchApply(Fn fn) {
     throwIfErrors(errors, "Batch operation failed on some sectors:\n");
 }
 
-#endif // MIFARECLASSIC_H#endif // MIFARECLASSIC_H
+#endif // MIFARECLASSIC_H

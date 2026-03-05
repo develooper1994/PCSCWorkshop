@@ -1,4 +1,4 @@
-﻿#include "Card.h"
+#include "Card.h"
 #include "CardUtils.h"
 #include <stdexcept>
 

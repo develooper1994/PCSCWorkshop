@@ -75,7 +75,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(ProjectDir)Reader;$(ProjectDir)Reader\ACR1281U;$(SolutionDir)Cipher\Cipher;$(SolutionDir)Utils\Utils;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Reader;$(ProjectDir)Reader\ACR1281U;$(ProjectDir)Card;$(SolutionDir)Cipher\Cipher;$(SolutionDir)Utils\Utils;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -87,7 +87,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(ProjectDir)Reader;$(ProjectDir)Reader\ACR1281U;$(SolutionDir)Cipher\Cipher;$(SolutionDir)Utils\Utils;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Reader;$(ProjectDir)Reader\ACR1281U;$(ProjectDir)Card;$(SolutionDir)Cipher\Cipher;$(SolutionDir)Utils\Utils;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -97,7 +97,7 @@
       <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(ProjectDir)Reader;$(ProjectDir)Reader\ACR1281U;$(SolutionDir)Cipher\Cipher;$(SolutionDir)Utils\Utils;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Reader;$(ProjectDir)Reader\ACR1281U;$(ProjectDir)Card;$(SolutionDir)Cipher\Cipher;$(SolutionDir)Utils\Utils;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -109,21 +109,21 @@
       <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(ProjectDir)Reader;$(ProjectDir)Reader\ACR1281U;$(SolutionDir)Cipher\Cipher;$(SolutionDir)Utils\Utils;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Reader;$(ProjectDir)Reader\ACR1281U;$(ProjectDir)Card;$(SolutionDir)Cipher\Cipher;$(SolutionDir)Utils\Utils;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Reader\Card\Card.h" />
-    <ClInclude Include="Reader\Card\Desfire\Desfire.h" />
-    <ClInclude Include="Reader\Card\MifareClassic\MifareClassic.h" />
+    <ClInclude Include="Card\Card.h" />
+    <ClInclude Include="Card\Desfire\Desfire.h" />
+    <ClInclude Include="Card\MifareClassic\MifareClassic.h" />
     <ClInclude Include="Reader\Reader.h" />
     <ClInclude Include="Reader\Readers.h" />
     <ClInclude Include="Reader\ACR1281U\ACR1281UReader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Reader\Card\Card.cpp" />
-    <ClCompile Include="Reader\Card\Desfire\Desfire.cpp" />
-    <ClCompile Include="Reader\Card\MifareClassic\MifareClassic.cpp" />
+    <ClCompile Include="Card\Card.cpp" />
+    <ClCompile Include="Card\Desfire\Desfire.cpp" />
+    <ClCompile Include="Card\MifareClassic\MifareClassic.cpp" />
     <ClCompile Include="Reader\Reader.cpp" />
     <ClCompile Include="Reader\ACR1281U\ACR1281UReader.cpp" />
   </ItemGroup>
