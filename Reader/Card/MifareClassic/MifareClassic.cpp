@@ -32,10 +32,6 @@ MifareCardCore::MifareCardCore(Reader& r, bool is4K)
 // ════════════════════════════════════════════════════════
 //  Card interface implementation
 // ════════════════════════════════════════════════════════
-std::string MifareCardCore::getCardType() const {
-	return is4KCard_ ? "Mifare Classic 4K" : "Mifare Classic 1K";
-}
-
 size_t MifareCardCore::getMemorySize() const noexcept {
 	// Calculate usable memory (excluding manufacturer block and all trailer blocks)
 	// 
@@ -129,7 +125,59 @@ BYTEV MifareCardCore::getUID() const {
 	}
 }
 
-size_t MifareCardCore::getSectorCount() const noexcept { return numberOfSectors_; }
+CardTopology MifareCardCore::getTopology() const {
+	CardTopology topology;
+	topology.cardType = getCardType();
+	topology.sectors.reserve(numberOfSectors_);
+
+	// Topology
+	for (size_t sector = 0; sector < numberOfSectors_; ++sector) {
+		CardSectorNode sectorNode;
+		sectorNode.index = sector;
+		sectorNode.name = "Sector " + std::to_string(sector);
+
+		const int firstBlock = firstBlockOfSector(static_cast<int>(sector));
+		const int blockCount = blocksPerSector(static_cast<int>(sector));
+		sectorNode.blocks.reserve(static_cast<size_t>(blockCount));
+		// Sector
+		for (int i = 0; i < blockCount; ++i) {
+			const int absoluteBlock = firstBlock + i;
+			const bool isManufacturer = absoluteBlock == 0;
+			const bool isTrailer = i == blockCount - 1;
+
+			CardBlockNode blockNode;
+			blockNode.index = static_cast<size_t>(absoluteBlock);
+			blockNode.sizeBytes = 16;
+			blockNode.readable = true;
+			blockNode.writable = !isManufacturer;
+			blockNode.isMetadata = isManufacturer || isTrailer;
+			// Block
+			if (isManufacturer) {
+				blockNode.kind = CardBlockKind::Manufacturer;
+				blockNode.name = "Manufacturer";
+				blockNode.fields = {
+					{0, 4, true,  false, "UID/BCC"},
+					{4, 12, true, false, "ManufacturerData"}
+				};
+			} else if (isTrailer) {
+				blockNode.kind = CardBlockKind::Trailer;
+				blockNode.name = "Trailer";
+				blockNode.fields = {
+					{0,  6, false, true, "KeyA"},
+					{6,  4, true,  true, "AccessBits+GPB"},
+					{10, 6, false, true, "KeyB"}
+				};
+			} else {
+				blockNode.kind = CardBlockKind::Data;
+				blockNode.name = "Data";
+				blockNode.fields = {{0, 16, true, true, "Payload"}};
+			}
+			sectorNode.blocks.push_back(blockNode);
+		}
+		topology.sectors.push_back(sectorNode);
+	}
+	return topology;
+}
 
 // ════════════════════════════════════════════════════════
 //  Key management
@@ -164,17 +212,6 @@ void MifareCardCore::loadAllKeysToReader() {
 void MifareCardCore::setSectorConfig(int sector, const SectorKeyConfig& cfg) {
 	validateSectorNumber(sector);
 	sectorConfigs_[sector] = cfg;
-}
-
-void MifareCardCore::setAllSectorsConfig(const SectorKeyConfig& cfg) {
-	std::fill(sectorConfigs_.begin(), sectorConfigs_.end(), cfg);
-}
-
-void MifareCardCore::setAllSectorsConfig(const std::map<int, SectorKeyConfig>& configs) {
-	for (const auto& p : configs) {
-		validateSectorNumber(p.first);
-		sectorConfigs_[p.first] = p.second;
-	}
 }
 
 void MifareCardCore::setAllSectorsConfig(const std::vector<SectorKeyConfig>& configs) {
@@ -293,10 +330,6 @@ void MifareCardCore::write(BYTE block, const BYTEV& data) {
 	reader().writePage(block, data.data());
 }
 
-void MifareCardCore::write(BYTE block, const std::string& text) {
-	write(block, BYTEV(text.begin(), text.end()));
-}
-
 // Explicit key specification versions (for advanced use)
 BYTEV MifareCardCore::readWithKey(BYTE block, KeyType keyType, BYTE keySlot) {
 	int sector = blockToSector(block);
@@ -322,10 +355,6 @@ void MifareCardCore::writeWithKey(BYTE block, const BYTEV& data, KeyType keyType
 	}
 	ensureAuthorized(sector, keyType, keySlot);
 	reader().writePage(block, data.data());
-}
-
-void MifareCardCore::writeWithKey(BYTE block, const std::string& text, KeyType keyType, BYTE keySlot) {
-	writeWithKey(block, BYTEV(text.begin(), text.end()), keyType, keySlot);
 }
 
 // ════════════════════════════════════════════════════════
@@ -455,7 +484,7 @@ std::vector<MifareCardCore::BLOCK> MifareCardCore::readAllTrailers() {
 
 void MifareCardCore::printAllTrailers() {
 	pcsc::Log::getInstance().disableCategory(pcsc::LogCategory::PCSC);
-	for (size_t sector = 0; sector < getSectorCount(); ++sector) {
+	for (int sector = 0; sector < getSectorCount(); ++sector) {
 		try {
 			BLOCK trailer = readTrailer(sector);
 			// Print raw trailer bytes (uses existing printHex overload that accepts a vector<BYTE>)
@@ -479,7 +508,7 @@ void MifareCardCore::printAllTrailers() {
 
 void MifareCardCore::changeTrailer(int sector, const BYTE trailer16[16]) {
 	validateSectorNumber(sector);
-	if (!validateAccessBits(trailer16 + 6))
+	if (!SectorKeyConfig::validateAccessBits(trailer16 + 6))
 		throw std::runtime_error("changeTrailer: invalid access bits");
 
 	const KeyInfo& ki = findKeyOrThrow(KeyType::B);
@@ -493,13 +522,13 @@ void MifareCardCore::applySectorConfigToCard(int sector) {
 	validateSectorNumber(sector);
 	requireBothKeys();
 
-	ACCESSBYTES access = makeSectorAccessBits(sectorConfigs_[sector]);
-	if (!validateAccessBits(access.data()))
+	ACCESSBYTES access = SectorKeyConfig::makeSectorAccessBits(sectorConfigs_[sector]);
+	if (!SectorKeyConfig::validateAccessBits(access.data()))
 		throw std::runtime_error("Generated access bits are invalid");
 
 	const KeyInfo& ka = findKeyOrThrow(KeyType::A);
 	const KeyInfo& kb = findKeyOrThrow(KeyType::B);
-	BLOCK trailer = buildTrailer(ka.key.data(), access.data(), kb.key.data());
+	BLOCK trailer = SectorKeyConfig::buildTrailer(ka.key.data(), access.data(), kb.key.data());
 
 	BYTE usedSlot = 0xFF;
 	tryAnyAuthForSector(sector, usedSlot);
@@ -513,8 +542,8 @@ void MifareCardCore::applySectorConfigStrict(int sector, KeyType authKeyType, bo
 	requireBothKeys();
 	const KeyInfo& authKey = findKeyOrThrow(authKeyType);
 
-	ACCESSBYTES access = makeSectorAccessBits(sectorConfigs_[sector]);
-	if (!validateAccessBits(access.data()))
+	auto accessBytes = SectorKeyConfig::makeSectorAccessBits(sectorConfigs_[sector]);
+	if (!SectorKeyConfig::validateAccessBits(accessBytes.data()))
 		throw std::runtime_error("Generated access bits invalid");
 
 	BYTE trailerBlock = trailerBlockOf(sector);
@@ -525,7 +554,7 @@ void MifareCardCore::applySectorConfigStrict(int sector, KeyType authKeyType, bo
 
 	const KeyInfo& ka = findKeyOrThrow(KeyType::A);
 	const KeyInfo& kb = findKeyOrThrow(KeyType::B);
-	BLOCK newTrailer = buildTrailer(ka.key.data(), access.data(), kb.key.data());
+	BLOCK newTrailer = SectorKeyConfig::buildTrailer(ka.key.data(), accessBytes.data(), kb.key.data());
 
 	ensureAuthorized(sector, authKeyType, authKey.slot);
 
@@ -549,31 +578,9 @@ void MifareCardCore::applySectorConfigStrict(int sector, KeyType authKeyType, bo
 // ════════════════════════════════════════════════════════
 //  Batch apply / load config helpers
 // ════════════════════════════════════════════════════════
-void MifareCardCore::applyAllSectorsConfig() {
-	batchApply([this](int s) { applySectorConfigToCard(s); });
-}
-
-void MifareCardCore::applyAllSectorsConfig(const std::map<int, SectorKeyConfig>& configs) {
-	setAllSectorsConfig(configs);
-	batchApply([this](int s) { applySectorConfigToCard(s); });
-}
-
 void MifareCardCore::applyAllSectorsConfig(const std::vector<SectorKeyConfig>& configs) {
 	setAllSectorsConfig(configs);
 	batchApply([this](int s) { applySectorConfigToCard(s); });
-}
-
-void MifareCardCore::applyAllSectorsConfigStrict(KeyType authKeyType, bool enableRollback) {
-	batchApply([this, authKeyType, enableRollback](int s) {
-		applySectorConfigStrict(s, authKeyType, enableRollback);
-	});
-}
-
-void MifareCardCore::applyAllSectorsConfigStrict(const std::map<int, SectorKeyConfig>& configs, KeyType authKeyType, bool enableRollback) {
-	setAllSectorsConfig(configs);
-	batchApply([this, authKeyType, enableRollback](int s) {
-		applySectorConfigStrict(s, authKeyType, enableRollback);
-	});
 }
 
 void MifareCardCore::applyAllSectorsConfigStrict(const std::vector<SectorKeyConfig>& configs, KeyType authKeyType, bool enableRollback) {
@@ -587,14 +594,10 @@ void MifareCardCore::loadSectorConfigFromCard(int sector) {
 	validateSectorNumber(sector);
 	BLOCK trailer = readTrailer(sector);
 	const BYTE* ab = trailer.data() + 6;
-	if (!validateAccessBits(ab))
+	if (!SectorKeyConfig::validateAccessBits(ab))
 		throw std::runtime_error("Invalid access bits in sector "
 								 + std::to_string(sector));
-	sectorConfigs_[sector] = parseAccessBitsToConfig(ab);
-}
-
-void MifareCardCore::loadAllSectorConfigsFromCard() {
-	batchApply([this](int s) { loadSectorConfigFromCard(s); });
+	sectorConfigs_[sector] = SectorKeyConfig::parseAccessBitsToConfig(ab);
 }
 
 void MifareCardCore::loadSectorConfigsFromCard(const std::vector<int>& sectors) {
@@ -623,11 +626,6 @@ void MifareCardCore::setAuthCache(int sector, KeyType kt, BYTE slot) {
 	authCache_[sector].slot = slot;
 }
 
-void MifareCardCore::invalidateAuthForSector(int sector) noexcept {
-	if (sector >= 0 && sector < static_cast<int>(authCache_.size()))
-		authCache_[sector].slot = 0xFF;   // sentinel: not authorized
-}
-
 void MifareCardCore::ensureAuthCacheSize(int sector) {
 	if (static_cast<int>(authCache_.size()) <= sector) {
 		KeyInfo empty;
@@ -636,48 +634,10 @@ void MifareCardCore::ensureAuthCacheSize(int sector) {
 	}
 }
 
-int MifareCardCore::sectorFromBlock(BYTE block) const noexcept {
-	int b = static_cast<int>(block);
-	return (!is4KCard_ || b < 128) ? b / 4 : 32 + (b - 128) / 16;
-}
-
-int MifareCardCore::blocksPerSector(int sector) const noexcept {
-	return (!is4KCard_ || sector < 32) ? 4 : 16;
-}
-
-int MifareCardCore::firstBlockOfSector(int sector) const noexcept {
-	return (!is4KCard_ || sector < 32) ? sector * 4 : 128 + (sector - 32) * 16;
-}
-
-BYTE MifareCardCore::trailerBlockOf(int sector) const noexcept {
-	return static_cast<BYTE>(firstBlockOfSector(sector)
-							 + blocksPerSector(sector) - 1);
-}
-
-bool MifareCardCore::isTrailerBlock(BYTE block) const noexcept {
-	return block == trailerBlockOf(sectorFromBlock(block));
-}
-
-bool MifareCardCore::isManufacturerBlock(BYTE block) const noexcept {
-	return block == 0;
-}
-
-void MifareCardCore::checkTrailerBlock(BYTE block) const {
-	if (isTrailerBlock(block)) throw std::runtime_error(std::string(__func__)+": trailer block - use ");
-}
-
-void MifareCardCore::checkManufacturerBlock(BYTE block) const {
-	if (isManufacturerBlock(block)) throw std::runtime_error(std::string(__func__)+": manufacturer block is read-only - use ");
-}
-
 void MifareCardCore::validateBlockNumber(int block) const {
 	if (block < 0) throw std::out_of_range("block < 0");
 	int maxBlocks = is4KCard_ ? (128 + (40 - 32) * 16) : (16 * 4);
 	if (block >= maxBlocks) throw std::out_of_range("block out of range");
-}
-
-void MifareCardCore::validateSectorNumber(int sector) const {
-	if (sector < 0 || sector >= numberOfSectors_) throw std::out_of_range("sector out of range");
 }
 
 KeyType MifareCardCore::chooseKeyForOperation(int sector, bool isWrite) const {
@@ -701,17 +661,6 @@ const KeyInfo& MifareCardCore::findKeyOrThrow(KeyType kt) const {
 	return *it;
 }
 
-bool MifareCardCore::hasKey(KeyType kt) const noexcept {
-	return std::any_of(keys_.begin(), keys_.end(),
-					   [kt](const KeyInfo& k) { return k.kt == kt; });
-}
-
-void MifareCardCore::requireBothKeys() const {
-	if (!hasKey(KeyType::A) || !hasKey(KeyType::B))
-		throw std::runtime_error(
-			"Both KeyType::A and KeyType::B must be set before changing trailer");
-}
-
 void MifareCardCore::throwIfErrors(const std::vector<std::string>& errors, const char* header) {
 	if (errors.empty()) return;
 	std::string msg = header;
@@ -722,13 +671,13 @@ void MifareCardCore::throwIfErrors(const std::vector<std::string>& errors, const
 // ════════════════════════════════════════════════════════
 //  Access-bits codec (static helpers)
 // ════════════════════════════════════════════════════════
-MifareCardCore::SectorKeyConfig MifareCardCore::parseAccessBitsToConfig(const BYTE ab[4]) noexcept {
+MifareCardCore::SectorKeyConfig MifareCardCore::SectorKeyConfig::parseAccessBitsToConfig(const BYTE ab[4]) noexcept {
 	BYTE c1[4], c2[4], c3[4];
 	extractAccessBits(ab, c1, c2, c3);
 	return configFromC1C2C3(c1[0], c2[0], c3[0]);
 }
 
-bool MifareCardCore::validateAccessBits(const BYTE a[4]) noexcept {
+bool MifareCardCore::SectorKeyConfig::validateAccessBits(const BYTE a[4]) noexcept {
 	BYTE c1[4], c2[4], c3[4];
 	extractAccessBits(a, c1, c2, c3);
 
@@ -751,7 +700,7 @@ bool MifareCardCore::validateAccessBits(const BYTE a[4]) noexcept {
 	return true;
 }
 
-void MifareCardCore::extractAccessBits(const BYTE ab[4],
+void MifareCardCore::SectorKeyConfig::extractAccessBits(const BYTE ab[4],
 									   BYTE c1[4], BYTE c2[4], BYTE c3[4]) noexcept {
 	BYTE b6 = ab[0], b7 = ab[1];
 	c1[0] = (b6 >> 4) & 1; c1[1] = (b6 >> 5) & 1;
@@ -762,7 +711,7 @@ void MifareCardCore::extractAccessBits(const BYTE ab[4],
 	c3[2] = (b7 >> 6) & 1; c3[3] = (b7 >> 7) & 1;
 }
 
-MifareCardCore::SectorKeyConfig MifareCardCore::configFromC1C2C3(BYTE c1, BYTE c2, BYTE c3) noexcept {
+MifareCardCore::SectorKeyConfig MifareCardCore::SectorKeyConfig::configFromC1C2C3(BYTE c1, BYTE c2, BYTE c3) noexcept {
 	SectorKeyConfig cfg;
 	if      (c1==0 && c2==0 && c3==0) { cfg = {true,  true,  true,  true};  }
 	else if (c1==0 && c2==1 && c3==0) { cfg = {true,  false, true,  true};  }
@@ -776,16 +725,16 @@ MifareCardCore::SectorKeyConfig MifareCardCore::configFromC1C2C3(BYTE c1, BYTE c
 	return cfg;
 }
 
-void MifareCardCore::mapDataBlock(const SectorKeyConfig& cfg,
+void MifareCardCore::SectorKeyConfig::mapDataBlock(const SectorKeyConfig& cfg,
 								  BYTE& c1, BYTE& c2, BYTE& c3) {
 	if ( cfg.keyA_canRead && !cfg.keyA_canWrite &&  cfg.keyB_canRead &&  cfg.keyB_canWrite) { c1=0; c2=1; c3=0; return; }
-	if ( cfg.keyA_canRead &&  cfg.keyA_canWrite &&  cfg.keyB_canRead &&  cfg.keyB_canWrite) { c1=0; c2=0; c3=0; return; }
-	if ( cfg.keyA_canRead &&  cfg.keyA_canWrite &&  cfg.keyB_canRead && !cfg.keyB_canWrite) { c1=1; c2=0; c3=0; return; }
-	if ( cfg.keyA_canRead && !cfg.keyA_canWrite &&  cfg.keyB_canRead && !cfg.keyB_canWrite) { c1=1; c2=1; c3=0; return; }
-	throw std::runtime_error("Unsupported access combination");
+	else if ( cfg.keyA_canRead &&  cfg.keyA_canWrite &&  cfg.keyB_canRead &&  cfg.keyB_canWrite) { c1=0; c2=0; c3=0; return; }
+	else if ( cfg.keyA_canRead &&  cfg.keyA_canWrite &&  cfg.keyB_canRead && !cfg.keyB_canWrite) { c1=1; c2=0; c3=0; return; }
+	else if ( cfg.keyA_canRead && !cfg.keyA_canWrite &&  cfg.keyB_canRead && !cfg.keyB_canWrite) { c1=1; c2=1; c3=0; return; }
+	else throw std::runtime_error("Unsupported access combination");
 }
 
-MifareCardCore::ACCESSBYTES MifareCardCore::makeSectorAccessBits(const SectorKeyConfig& dataCfg) noexcept {
+MifareCardCore::ACCESSBYTES MifareCardCore::SectorKeyConfig::makeSectorAccessBits(const SectorKeyConfig& dataCfg) noexcept {
 	BYTE c1[SMALL_SECTOR_PAGES], c2[SMALL_SECTOR_PAGES], c3[SMALL_SECTOR_PAGES];
 	for (int i = 0; i < SMALL_SECTOR_PAGES - 1; ++i)
 		mapDataBlock(dataCfg, c1[i], c2[i], c3[i]);
@@ -805,7 +754,7 @@ MifareCardCore::ACCESSBYTES MifareCardCore::makeSectorAccessBits(const SectorKey
 	return {{ b6, b7, b8, 0x00 }};
 }
 
-MifareCardCore::BLOCK MifareCardCore::buildTrailer(const BYTE keyA[6],
+MifareCardCore::BLOCK MifareCardCore::SectorKeyConfig::buildTrailer(const BYTE keyA[6],
 													const BYTE access[4],
 													const BYTE keyB[6]) noexcept {
 	BLOCK t;

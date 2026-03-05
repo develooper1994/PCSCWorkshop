@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "CaesarCipher.h"
 #include "CipherUtil.h"
 #include <numeric>

@@ -5,6 +5,76 @@
 #include <string>
 #include <vector>
 
+enum class CardBlockKind {
+	Unknown,
+	Data,
+	Manufacturer,
+	Trailer
+};
+
+struct CardBlockField {
+	size_t offset = 0;
+	size_t sizeBytes = 0;
+	bool readable = true;
+	bool writable = true;
+	std::string name;
+};
+
+struct CardBlockNode {
+	size_t index = 0;
+	size_t sizeBytes = 0;
+	bool readable = true;
+	bool writable = true;
+	bool isMetadata = false;
+	CardBlockKind kind = CardBlockKind::Unknown;
+	std::string name;
+	std::vector<CardBlockField> fields;
+};
+
+struct CardSectorNode {
+	size_t index = 0;
+	std::string name;
+	std::vector<CardBlockNode> blocks;
+};
+
+struct CardApplicationNode {
+	size_t index = 0;
+	std::string name;
+	std::vector<CardSectorNode> sectors;
+};
+
+struct CardTopology {
+	std::string cardType;
+	std::vector<CardSectorNode> sectors;
+	std::vector<CardApplicationNode> applications;
+
+	bool hasApplications() const noexcept { return !applications.empty(); }
+
+	size_t totalBytes() const noexcept {
+		size_t total = 0;
+		for (const auto& sector : sectors)
+			for (const auto& block : sector.blocks)
+				total += block.sizeBytes;
+		for (const auto& app : applications)
+			for (const auto& sector : app.sectors)
+				for (const auto& block : sector.blocks)
+					total += block.sizeBytes;
+		return total;
+	}
+
+	size_t writableBytes() const noexcept {
+		size_t total = 0;
+		for (const auto& sector : sectors)
+			for (const auto& block : sector.blocks)
+				if (block.writable) total += block.sizeBytes;
+		for (const auto& app : applications)
+			for (const auto& sector : app.sectors)
+				for (const auto& block : sector.blocks)
+					if (block.writable) total += block.sizeBytes;
+		return total;
+	}
+};
+
 // ============================================================
 // Card — Abstract base class for all card types
 // ============================================================
@@ -48,6 +118,9 @@ public:
 
 	// Get card UID/serial number
 	virtual BYTEV getUID() const;
+
+	// Describe logical topology (blocks/sectors/applications)
+	virtual CardTopology getTopology() const;
 
 	// Authenticate to card (default implementation delegates to reader)
 	virtual void authenticate(const BYTE* key, size_t keyLen);

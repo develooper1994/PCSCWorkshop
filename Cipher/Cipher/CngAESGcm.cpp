@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "CngAESGcm.h"
 #include "CngAESGcmUtil.h"
 #include "Exceptions/GenericExceptions.h"

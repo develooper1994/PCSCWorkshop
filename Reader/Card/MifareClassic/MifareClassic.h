@@ -46,6 +46,22 @@ public:
         bool keyB_canWrite = true;
         SectorKeyConfig(bool aR = true, bool aW = false,
                         bool bR = true, bool bW = true) noexcept;
+
+        // ════════════════════════════════════════════════════════
+        //  Access-bits codec (static helpers)
+        // ════════════════════════════════════════════════════════
+        static SectorKeyConfig parseAccessBitsToConfig(const BYTE ab[4]) noexcept;
+        static bool validateAccessBits(const BYTE a[4]) noexcept;
+        static ACCESSBYTES makeSectorAccessBits(const SectorKeyConfig& dataCfg) noexcept;
+        static BLOCK buildTrailer(const BYTE keyA[6],
+                                  const BYTE access[4],
+                                  const BYTE keyB[6]) noexcept;
+
+        static void extractAccessBits(const BYTE ab[4],
+            BYTE c1[4], BYTE c2[4], BYTE c3[4]) noexcept;
+        static SectorKeyConfig configFromC1C2C3(BYTE c1, BYTE c2, BYTE c3) noexcept;
+        static void mapDataBlock(const SectorKeyConfig& cfg,
+            BYTE& c1, BYTE& c2, BYTE& c3);
     };
 
     // ════════════════════════════════════════════════════════
@@ -62,6 +78,7 @@ public:
     void write(size_t address, const BYTEV& data) override;
     void reset() override;
     BYTEV getUID() const override;
+    CardTopology getTopology() const override;
 
     // ════════════════════════════════════════════════════════
     //  Mifare-specific operations
@@ -83,7 +100,6 @@ public:
     // ════════════════════════════════════════════════════════
     void setSectorConfig(int sector, const SectorKeyConfig& cfg);
     void setAllSectorsConfig(const SectorKeyConfig& cfg);
-    void setAllSectorsConfig(const std::map<int, SectorKeyConfig>& configs);
     void setAllSectorsConfig(const std::vector<SectorKeyConfig>& configs);
 
     // ════════════════════════════════════════════════════════
@@ -147,14 +163,9 @@ public:
     //  Batch apply / load config helpers
     // ════════════════════════════════════════════════════════
     void applyAllSectorsConfig();
-    void applyAllSectorsConfig(const std::map<int, SectorKeyConfig>& configs);
     void applyAllSectorsConfig(const std::vector<SectorKeyConfig>& configs);
     void applyAllSectorsConfigStrict(KeyType authKeyType = KeyType::B,
                                      bool enableRollback = true);
-    void applyAllSectorsConfigStrict(
-            const std::map<int, SectorKeyConfig>& configs,
-            KeyType authKeyType = KeyType::B,
-            bool enableRollback = true);
     void applyAllSectorsConfigStrict(
             const std::vector<SectorKeyConfig>& configs,
             KeyType authKeyType = KeyType::B,
@@ -162,16 +173,6 @@ public:
     void loadSectorConfigFromCard(int sector);
     void loadAllSectorConfigsFromCard();
     void loadSectorConfigsFromCard(const std::vector<int>& sectors);
-
-    // ════════════════════════════════════════════════════════
-    //  Access-bits codec (static helpers)
-    // ════════════════════════════════════════════════════════
-    static SectorKeyConfig parseAccessBitsToConfig(const BYTE ab[4]) noexcept;
-    static bool validateAccessBits(const BYTE a[4]) noexcept;
-    static ACCESSBYTES makeSectorAccessBits(const SectorKeyConfig& dataCfg) noexcept;
-    static BLOCK buildTrailer(const BYTE keyA[6],
-                              const BYTE access[4],
-                              const BYTE keyB[6]) noexcept;
 
 private:
     const bool is4KCard_;
@@ -211,11 +212,6 @@ private:
 
     static void throwIfErrors(const std::vector<std::string>& errors,
                                const char* header);
-    static void extractAccessBits(const BYTE ab[4],
-                                  BYTE c1[4], BYTE c2[4], BYTE c3[4]) noexcept;
-    static SectorKeyConfig configFromC1C2C3(BYTE c1, BYTE c2, BYTE c3) noexcept;
-    static void mapDataBlock(const SectorKeyConfig& cfg,
-                             BYTE& c1, BYTE& c2, BYTE& c3);
 };
 
 // ── Template implementation for batchApply ──
@@ -229,6 +225,94 @@ void MifareCardCore::batchApply(Fn fn) {
         }
     }
     throwIfErrors(errors, "Batch operation failed on some sectors:\n");
+}
+
+// Inline implementations for small layout helpers (defined inline for performance and header-only access)
+inline int MifareCardCore::sectorFromBlock(BYTE block) const noexcept {
+    int b = static_cast<int>(block);
+    return (!is4KCard_ || b < 128) ? b / 4 : 32 + (b - 128) / 16;
+}
+
+inline int MifareCardCore::blocksPerSector(int sector) const noexcept {
+    return (!is4KCard_ || sector < 32) ? 4 : 16;
+}
+
+inline int MifareCardCore::firstBlockOfSector(int sector) const noexcept {
+    return (!is4KCard_ || sector < 32) ? sector * 4 : 128 + (sector - 32) * 16;
+}
+
+inline BYTE MifareCardCore::trailerBlockOf(int sector) const noexcept {
+    return static_cast<BYTE>(firstBlockOfSector(sector)
+                             + blocksPerSector(sector) - 1);
+}
+
+inline bool MifareCardCore::isTrailerBlock(BYTE block) const noexcept {
+    return block == trailerBlockOf(sectorFromBlock(block));
+}
+
+inline bool MifareCardCore::isManufacturerBlock(BYTE block) const noexcept {
+    return block == 0;
+}
+
+inline void MifareCardCore::checkTrailerBlock(BYTE block) const {
+    if (isTrailerBlock(block)) throw std::runtime_error(std::string(__func__)+": trailer block - use ");
+}
+
+inline void MifareCardCore::checkManufacturerBlock(BYTE block) const {
+    if (isManufacturerBlock(block)) throw std::runtime_error(std::string(__func__)+": manufacturer block is read-only - use ");
+}
+
+// Additional small methods inlined
+inline std::string MifareCardCore::getCardType() const {
+    return is4KCard_ ? "Mifare Classic 4K" : "Mifare Classic 1K";
+}
+
+inline size_t MifareCardCore::getSectorCount() const noexcept { return numberOfSectors_; }
+
+inline void MifareCardCore::setAllSectorsConfig(const SectorKeyConfig& cfg) {
+    std::fill(sectorConfigs_.begin(), sectorConfigs_.end(), cfg);
+}
+
+inline void MifareCardCore::write(BYTE block, const std::string& text) {
+    write(block, BYTEV(text.begin(), text.end()));
+}
+
+inline void MifareCardCore::writeWithKey(BYTE block, const std::string& text, KeyType keyType, BYTE keySlot) {
+    writeWithKey(block, BYTEV(text.begin(), text.end()), keyType, keySlot);
+}
+
+inline void MifareCardCore::applyAllSectorsConfig() {
+    batchApply([this](int s) { applySectorConfigToCard(s); });
+}
+
+inline void MifareCardCore::applyAllSectorsConfigStrict(KeyType authKeyType, bool enableRollback) {
+    batchApply([this, authKeyType, enableRollback](int s) {
+        applySectorConfigStrict(s, authKeyType, enableRollback);
+    });
+}
+
+inline void MifareCardCore::loadAllSectorConfigsFromCard() {
+    batchApply([this](int s) { loadSectorConfigFromCard(s); });
+}
+
+inline void MifareCardCore::invalidateAuthForSector(int sector) noexcept {
+    if (sector >= 0 && sector < static_cast<int>(authCache_.size()))
+        authCache_[sector].slot = 0xFF;   // sentinel: not authorized
+}
+
+inline bool MifareCardCore::hasKey(KeyType kt) const noexcept {
+    return std::any_of(keys_.begin(), keys_.end(),
+                       [kt](const KeyInfo& k) { return k.kt == kt; });
+}
+
+inline void MifareCardCore::requireBothKeys() const {
+    if (!hasKey(KeyType::A) || !hasKey(KeyType::B))
+        throw std::runtime_error(
+            "Both KeyType::A and KeyType::B must be set before changing trailer");
+}
+
+inline void MifareCardCore::validateSectorNumber(int sector) const {
+    if (sector < 0 || sector >= numberOfSectors_) throw std::out_of_range("sector out of range");
 }
 
 #endif // MIFARECLASSIC_H

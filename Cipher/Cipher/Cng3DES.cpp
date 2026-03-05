@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "Cng3DES.h"
 #include "Exceptions/GenericExceptions.h"
 #include <stdexcept>

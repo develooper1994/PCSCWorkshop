@@ -24,6 +24,12 @@ BYTEV Card::getUID() const {
 	return CardUtils::getUid(reader_.cardConnection());
 }
 
+CardTopology Card::getTopology() const {
+	CardTopology topology;
+	topology.cardType = getCardType();
+	return topology;
+}
+
 void Card::authenticate(const BYTE* key, size_t keyLen) {
 	// Default implementation does nothing
 	// Derived classes override with card-specific authentication

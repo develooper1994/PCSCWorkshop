@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "Cipher.h"
 #include "ICipherAAD.h"
 #include "Exceptions/GenericExceptions.h"

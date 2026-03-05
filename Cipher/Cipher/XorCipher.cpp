@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "XorCipher.h"
 #include <algorithm>
 
