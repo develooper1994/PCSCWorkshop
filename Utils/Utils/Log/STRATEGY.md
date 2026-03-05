@@ -1,0 +1,159 @@
+# LOG SISTEMI - STRATEJÝ VE REFERANS
+
+## 3 KATMANLI KONTROL
+
+```
+????????????????????????????????????
+?  1. Global Log Level             ?
+?     (Off/Error/Warning/Info/Debug)
+????????????????????????????????????
+?  2. Baðýmsýz Log Types           ?
+?     (Error/Warning/Info/Debug)   ?
+????????????????????????????????????
+?  3. Log Categories               ?
+?     (6 farklý kategori)          ?
+????????????????????????????????????
+```
+
+## KATMAN 1: GLOBAL LOG LEVEL
+
+```cpp
+LogLevel::Off       // Hiçbir þey yazma
+LogLevel::Error     // Sadece hatalar
+LogLevel::Warning   // Hatalar + uyarýlar
+LogLevel::Info      // + bilgiler
+LogLevel::Debug     // Hepsi (default)
+```
+
+## KATMAN 2: BAÐIMSIZ LOG TÜRLERI
+
+```cpp
+LogType::Error
+LogType::Warning
+LogType::Info
+LogType::Debug
+```
+
+**Kullaným:**
+```cpp
+pcsc::Log::getInstance().enableLogType(LogType::Warning);
+pcsc::Log::getInstance().disableLogType(LogType::Debug);
+pcsc::Log::getInstance().toggleLogType(LogType::Info);
+```
+
+## KATMAN 3: LOG KATEGORÝLERÝ
+
+```cpp
+LogCategory::General      // Genel
+LogCategory::PCSC         // Smart Card iþlemleri
+LogCategory::Reader       // Okuyucu iþlemleri
+LogCategory::Cipher       // Þifreleme
+LogCategory::Connection   // Baðlantý
+LogCategory::Card         // Kart iþlemleri
+```
+
+## KONTROL FONKSÝYONLARI
+
+### Global Level
+```cpp
+setLogLevel(level)
+getLogLevel()
+isDebugEnabled()
+isInfoEnabled()
+isWarningEnabled()
+isErrorEnabled()
+```
+
+### Log Types
+```cpp
+enableLogType(type)
+disableLogType(type)
+toggleLogType(type)
+isLogTypeEnabled(type)
+enableAllLogTypes()
+disableAllLogTypes()
+```
+
+### Categories
+```cpp
+enableCategory(category)
+disableCategory(category)
+isCategoryEnabled(category)
+enableAllCategories()
+disableAllCategories()
+```
+
+### Kombinasyon
+```cpp
+isDebugEnabledForCategory(category)
+isInfoEnabledForCategory(category)
+isWarningEnabledForCategory(category)
+isErrorEnabledForCategory(category)
+```
+
+## SENARYO ÖRNEKLERÝ
+
+### Development (Tüm açýk)
+```cpp
+setLogLevel(Debug);
+enableAllLogTypes();
+enableAllCategories();
+disableCategory(PCSC);  // Kalabalýk olduðu için
+```
+
+### Production (Sadece hatalar)
+```cpp
+setLogLevel(Error);
+```
+
+### Debugging Spesifik Sorun
+```cpp
+setLogLevel(Debug);
+disableAllCategories();
+enableCategory(Connection);
+enableCategory(Card);
+```
+
+### Testing (Uyarý + Hata)
+```cpp
+setLogLevel(Warning);
+disableLogType(Debug);
+disableLogType(Info);
+```
+
+## KONTROL AKIÞI
+
+```
+1. Global Level >= Type Level?
+        ? (AND)
+2. Type[Error/Info/...] enabled?
+        ? (AND)
+3. Category[PCSC/Reader/...] enabled?
+        ?
+   Hepsi TRUE ? Konsola yaz
+   Herhangi biri FALSE ? Hiçbir þey yapma
+```
+
+## BEST PRACTICES
+
+? Kategorileri dosya türlerine göre kullan
+  - CardConnection.cpp ? LOG_CONN_*
+  - PCSC.cpp ? LOG_PCSC_*
+  - Reader.cpp ? LOG_READER_*
+
+? Uygun seviye seç
+  - DEBUG: Trace bilgileri
+  - INFO: Önemli olaylar
+  - WARNING: Potansiyel sorunlar
+  - ERROR: Hata koþullarý
+
+? Production'da minimal log
+  - setLogLevel(Error)
+  - Tüm debug kategorileri kapat
+
+? Koþullu debug kodu
+  ```cpp
+  if (isDebugEnabled()) {
+      // Pahalý iþlem
+  }
+  ```

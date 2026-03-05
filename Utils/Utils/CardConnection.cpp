@@ -1,4 +1,7 @@
 ﻿#include "CardConnection.h"
+#include "PcscUtils.h"
+#include "Exceptions/GenericExceptions.h"
+#include "Log/Log.h"
 #include <iostream>
 
 // Helper function to convert SCARD error codes to user-friendly messages
@@ -69,11 +72,16 @@ bool CardConnection::connect() {
 		&m_activeProtocol);
 
 	if (rc != SCARD_S_SUCCESS) {
-		std::cerr << "SCardConnect failed: " << getSCardErrorMessage(rc) << std::endl;
+		LOG_CONN_ERROR("SCardConnect failed: " + getSCardErrorMessage(rc));
 		return false;
 	}
 	m_connected = true;
-	std::wcout << L"Connected to: " << m_readerName << std::endl;
+	
+	// wide string'i normal string'e çevir (güvenli)
+	std::wstring wideReaderName = m_readerName;
+	std::string narrowReaderName(wideReaderName.begin(), wideReaderName.end());
+	LOG_CONN_INFO("Connected to: " + narrowReaderName);
+	
 	return true;
 }
 
@@ -83,7 +91,7 @@ bool CardConnection::waitAndConnect(int retryMs, int maxRetries) {
 		if (connect()) return true;
 		++attempt;
 		if (maxRetries > 0 && attempt >= maxRetries) return false;
-		std::wcout << L"Waiting for card...\n";
+		LOG_CONN_DEBUG("Waiting for card...");
 		std::this_thread::sleep_for(std::chrono::milliseconds(retryMs));
 	}
 }
@@ -104,7 +112,7 @@ void CardConnection::checkResponseSize(const BYTEV& resp, size_t minSize) const 
 		throw pcsc::ReaderError("Response too short: expected at least " + std::to_string(minSize) + " bytes");
 }
 
-std::pair<BYTE, BYTE> CardConnection::getStatusWords(const BYTEV& resp) const {
+STATUS CardConnection::getStatusWords(const BYTEV& resp) const {
 	checkResponseSize(resp, 2);
 	return { resp[resp.size() - 2], resp[resp.size() - 1] };
 }
@@ -120,13 +128,12 @@ BYTEV CardConnection::transmit(const BYTEV& cmd) const {
 		? *SCARD_PCI_T0
 		: *SCARD_PCI_T1;
 
-	// Debug: hex yazd�r
+	// Debug: hex yazdır
 	{
 		std::ostringstream oss;
 		oss << "APDU send: ";
 		for (auto b : cmd) oss << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << (int)b << ' ';
-		oss << '\n';
-		std::cout << oss.str().c_str() << "\n"; // veya std::cout
+		LOG_PCSC_DEBUG(oss.str());
 	}
 
 	LONG r = SCardTransmit(m_hCard, &pci,
@@ -135,16 +142,16 @@ BYTEV CardConnection::transmit(const BYTEV& cmd) const {
 
 	if (r != SCARD_S_SUCCESS) {
 		std::string errorMsg = "SCardTransmit failed: " + getSCardErrorMessage(r);
+		LOG_PCSC_ERROR(errorMsg);
 		throw pcsc::ReaderError(errorMsg);
 	}
 
-	// Debug: al�nan byte'lar� yazd�r
+	// Debug: alınan byte'ları yazdır
 	{
 		std::ostringstream oss;
 		oss << "APDU recvLen=" << recvLen << " recv: ";
 		for (DWORD i = 0; i < recvLen; ++i) oss << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << (int)recv[i] << ' ';
-		oss << '\n';
-		std::cout << oss.str().c_str() << "\n";
+		LOG_PCSC_DEBUG(oss.str());
 	}
 
 	return BYTEV(recv, recv + recvLen);
@@ -168,8 +175,12 @@ BYTEV CardConnection::sendCommand(BYTEV cmd, bool followChaining) const {
 		}
 		else if (sw2 == 0x00 && (sw1 == 0x91 || sw1 == 0x90)) break;
 		else {
-			std::cerr << "Unexpected SW: ";
-			printHex(&resp[resp.size() - 2], 2);
+			std::ostringstream oss;
+			oss << "Unexpected SW: ";
+			for (size_t i = resp.size() - 2; i < resp.size(); ++i) {
+				oss << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << (int)resp[i] << " ";
+			}
+			LOG_PCSC_ERROR(oss.str());
 			throw pcsc::ReaderError("Card returned error status");
 		}
 	}

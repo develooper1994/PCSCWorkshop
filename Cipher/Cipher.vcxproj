@@ -143,7 +143,6 @@
     <ClInclude Include="Cipher\CaesarCipher.h" />
     <ClInclude Include="Cipher\Cipher.h" />
     <ClInclude Include="Cipher\Ciphers.h" />
-    <ClInclude Include="Cipher\CipherTypes.h" />
     <ClInclude Include="Cipher\CipherUtil.h" />
     <ClInclude Include="Cipher\Cng3DES.h" />
     <ClInclude Include="Cipher\CngAES.h" />

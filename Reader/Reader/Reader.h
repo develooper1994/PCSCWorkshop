@@ -120,7 +120,7 @@ public:
 
 	// New overloads: allow caller to specify LE (bytes per page) for this operation
 	void writeData(BYTE startPage, const BYTEV& data, BYTE le);
-	void writeData(BYTE startPage, const std::string& s, BYTE le);
+	 void writeData(BYTE startPage, const std::string& s, BYTE le);
 
 	virtual BYTEV readData(BYTE startPage, size_t length);
 
@@ -185,42 +185,42 @@ public:
 	}
 	void authNew(const BYTE data[5]);
 
-	bool isAuthRequested() const;
-	void setAuthRequested(bool v);
+	bool isAuthRequested() const noexcept;
+	void setAuthRequested(bool v) noexcept;
 
-	BYTE getLE() const;
-	void setLE(BYTE le);
+	BYTE getLE() const noexcept;
+	void setLE(BYTE le) noexcept;
 
-	KeyType keyType() const;
-	void setKeyType(KeyType kt);
+	KeyType keyType() const noexcept;
+	void setKeyType(KeyType kt) noexcept;
 
-	KeyStructure keyStructure() const;
-	void setKeyStructure(KeyStructure ks);
+	KeyStructure keyStructure() const noexcept;
+	void setKeyStructure(KeyStructure ks) noexcept;
 
-	BYTE getKeyNumber() const;
-	void setKeyNumber(BYTE key); // copies 6 bytes
+	BYTE getKeyNumber() const noexcept;
+	void setKeyNumber(BYTE key) noexcept; // copies 6 bytes
 
 	// Full 16-byte key storage accessor: [keyA(6)|accessbits(4)|keyB(6)]
-	void getKeyAll(BYTE out16[16]) const;
-	void setKeyAll(const BYTE* key16); // copies 16 bytes
+	void getKeyAll(BYTE out16[16]) const noexcept;
+	void setKeyAll(const BYTE* key16) noexcept;
 
 	// Convenience helpers to get/set 6-byte Key A or Key B from the 16-byte blob
-	void getKey(KeyType keyType, BYTE out6[6]) const; // copies 6 bytes
-	void setKey(KeyType keyType, const BYTE* key6); // copies 6 bytes into internal blob
+	void getKey(KeyType keyType, BYTE out6[6]) const noexcept; // copies 6 bytes
+	void setKey(KeyType keyType, const BYTE* key6) noexcept; // copies 6 bytes into internal blob
 
-	bool keyLoaded() const;
-	void setKeyLoaded(bool loaded);
+	bool keyLoaded() const noexcept;
+	void setKeyLoaded(bool loaded) noexcept;
+	
+	// Derived classes access CardConnection through this
+	CardConnection& cardConnection() noexcept;
+	const CardConnection& cardConnection() const noexcept;
 
 protected:
 	struct Impl;
 	std::unique_ptr<Impl> pImpl;
 
-	// Derived classes access CardConnection through this
-	CardConnection& cardConnection();
-	const CardConnection& cardConnection() const;
-
-	virtual BYTE mapKeyStructure(KeyStructure structure) const = 0;
-	virtual BYTE mapKeyKind(KeyType kind) const = 0;
+	virtual BYTE mapKeyStructure(KeyStructure structure) const noexcept = 0;
+	virtual BYTE mapKeyKind(KeyType kind) const noexcept = 0;
 
 	template<typename TReader>
 	struct KeyMapping;

@@ -117,7 +117,9 @@
   <ItemGroup>
     <ClInclude Include="Utils\CardConnection.h" />
     <ClInclude Include="Utils\CardUtils.h" />
+    <ClInclude Include="Utils\CardUtils_new.h" />
     <ClInclude Include="Utils\Exceptions\GenericExceptions.h" />
+    <ClInclude Include="Utils\Log\Log.h" />
     <ClInclude Include="Utils\PCSC.h" />
     <ClInclude Include="Utils\PcscUtils.h" />
     <ClInclude Include="Utils\Tests\ACR1281U\ACR1281UReaderTestHelpers.h" />
@@ -127,6 +129,7 @@
   <ItemGroup>
     <ClCompile Include="ArrayUtils.h" />
     <ClCompile Include="Utils\CardConnection.cpp" />
+    <ClCompile Include="Utils\Log\Log.cpp" />
     <ClCompile Include="Utils\PCSC.cpp" />
     <ClCompile Include="Utils\Tests\ACR1281U\ACR1281UReaderTestHelpers.cpp" />
     <ClCompile Include="Utils\Tests\ACR1281U\ACR1281UReaderTests.cpp" />
@@ -134,6 +137,16 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
+    <Text Include="Utils\Log\ORGANIZATION.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Utils\Log\BUGFIX.md" />
+    <None Include="Utils\Log\INDEX.md" />
+    <None Include="Utils\Log\QUICKSTART.md" />
+    <None Include="Utils\Log\README.md" />
+    <None Include="Utils\Log\START.md" />
+    <None Include="Utils\Log\STRATEGY.md" />
+    <None Include="Utils\Log\STRINGFIX.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

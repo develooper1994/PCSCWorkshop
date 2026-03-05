@@ -39,9 +39,6 @@
     <ClInclude Include="Cipher\Ciphers.h">
       <Filter>Cipher\Header</Filter>
     </ClInclude>
-    <ClInclude Include="Cipher\CipherTypes.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
     <ClInclude Include="Cipher\CipherUtil.h">
       <Filter>Cipher\Header</Filter>
     </ClInclude>

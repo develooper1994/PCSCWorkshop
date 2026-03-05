@@ -1,6 +1,7 @@
 #ifndef PCSC_WORKSHOP1_CARDUTILS_H
 #define PCSC_WORKSHOP1_CARDUTILS_H
 
+#include "PcscUtils.h"
 #include "CardConnection.h"
 #include <algorithm>
 #include <sstream>

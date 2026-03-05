@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <string>
 
-#include "CipherTypes.h"
+#include "Utils.h"
 
 // Forward declare ICipherAAD so we can reference it in implementation file
 class ICipherAAD;

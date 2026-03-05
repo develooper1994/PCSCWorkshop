@@ -1,8 +1,8 @@
 ﻿#ifndef MIFARECLASSIC_H
 #define MIFARECLASSIC_H
 
-#include "CipherTypes.h"
-#include "../../Reader.h"
+#include "Utils.h"
+#include "../Card.h"
 #include <cstdint>
 #include <cstring>
 #include <vector>
@@ -30,7 +30,7 @@ constexpr int LARGE_SECTOR_PAGES  = 16;
 //   BYTEV readPage(BYTE block);
 //   void  writePage(BYTE block, const BYTE*);
 // ============================================================
-class MifareCardCore {
+class MifareCardCore : public Card {
 public:
     // ── type aliases ──
     using KeyType      = ::KeyType;
@@ -45,7 +45,7 @@ public:
         bool keyB_canRead  = true;
         bool keyB_canWrite = true;
         SectorKeyConfig(bool aR = true, bool aW = false,
-                        bool bR = true, bool bW = true);
+                        bool bR = true, bool bW = true) noexcept;
     };
 
     // ════════════════════════════════════════════════════════
@@ -53,7 +53,20 @@ public:
     // ════════════════════════════════════════════════════════
     explicit MifareCardCore(Reader& r, bool is4K = false);
 
-    int getSectorCount() const;
+    // ════════════════════════════════════════════════════════
+    //  Card interface implementation (override from Card base class)
+    // ════════════════════════════════════════════════════════
+    std::string getCardType() const override;
+    size_t getMemorySize() const noexcept override;
+    BYTEV read(size_t address, size_t length) override;
+    void write(size_t address, const BYTEV& data) override;
+    void reset() override;
+    BYTEV getUID() const override;
+
+    // ════════════════════════════════════════════════════════
+    //  Mifare-specific operations
+    // ════════════════════════════════════════════════════════
+    int getSectorCount() const noexcept;
 
     // ════════════════════════════════════════════════════════
     //  Key management
@@ -153,16 +166,14 @@ public:
     // ════════════════════════════════════════════════════════
     //  Access-bits codec (static helpers)
     // ════════════════════════════════════════════════════════
-    static SectorKeyConfig parseAccessBitsToConfig(const BYTE ab[4]);
-    static bool validateAccessBits(const BYTE a[4]);
-    static ACCESSBYTES makeSectorAccessBits(const SectorKeyConfig& dataCfg);
+    static SectorKeyConfig parseAccessBitsToConfig(const BYTE ab[4]) noexcept;
+    static bool validateAccessBits(const BYTE a[4]) noexcept;
+    static ACCESSBYTES makeSectorAccessBits(const SectorKeyConfig& dataCfg) noexcept;
     static BLOCK buildTrailer(const BYTE keyA[6],
                               const BYTE access[4],
                               const BYTE keyB[6]) noexcept;
 
 private:
-    // ── core state ──
-    Reader&   reader_;
     const bool is4KCard_;
     const int  numberOfSectors_;
 
@@ -171,18 +182,18 @@ private:
     std::vector<KeyInfo> authCache_;
 
     // ── auth cache helpers ──
-    bool isSectorAuthorized(int sector, KeyType kt, BYTE slot) const;
+    bool isSectorAuthorized(int sector, KeyType kt, BYTE slot) const noexcept;
     void setAuthCache(int sector, KeyType kt, BYTE slot);
-    void invalidateAuthForSector(int sector);
+    void invalidateAuthForSector(int sector) noexcept;
     void ensureAuthCacheSize(int sector);
 
     // ── layout (1K / 4K aware) ──
-    int sectorFromBlock(BYTE block) const;
-    int blocksPerSector(int sector) const;
-    int firstBlockOfSector(int sector) const;
-    BYTE trailerBlockOf(int sector) const;
-    bool isTrailerBlock(BYTE block) const;
-    bool isManufacturerBlock(BYTE block) const;
+    int sectorFromBlock(BYTE block) const noexcept;
+    int blocksPerSector(int sector) const noexcept;
+    int firstBlockOfSector(int sector) const noexcept;
+    BYTE trailerBlockOf(int sector) const noexcept;
+    bool isTrailerBlock(BYTE block) const noexcept;
+    bool isManufacturerBlock(BYTE block) const noexcept;
     void checkTrailerBlock(BYTE block) const;
     void checkManufacturerBlock(BYTE block) const;
     void validateBlockNumber(int block) const;
@@ -191,7 +202,7 @@ private:
     // ── key / config helpers ──
     KeyType chooseKeyForOperation(int sector, bool isWrite) const;
     const KeyInfo& findKeyOrThrow(KeyType kt) const;
-    bool hasKey(KeyType kt) const;
+    bool hasKey(KeyType kt) const noexcept;
     void requireBothKeys() const;
 
     // ── batch helper ──
@@ -201,8 +212,8 @@ private:
     static void throwIfErrors(const std::vector<std::string>& errors,
                                const char* header);
     static void extractAccessBits(const BYTE ab[4],
-                                  BYTE c1[4], BYTE c2[4], BYTE c3[4]);
-    static SectorKeyConfig configFromC1C2C3(BYTE c1, BYTE c2, BYTE c3);
+                                  BYTE c1[4], BYTE c2[4], BYTE c3[4]) noexcept;
+    static SectorKeyConfig configFromC1C2C3(BYTE c1, BYTE c2, BYTE c3) noexcept;
     static void mapDataBlock(const SectorKeyConfig& cfg,
                              BYTE& c1, BYTE& c2, BYTE& c3);
 };
@@ -220,4 +231,4 @@ void MifareCardCore::batchApply(Fn fn) {
     throwIfErrors(errors, "Batch operation failed on some sectors:\n");
 }
 
-#endif // MIFARECLASSIC_H
+#endif // MIFARECLASSIC_H#endif // MIFARECLASSIC_H

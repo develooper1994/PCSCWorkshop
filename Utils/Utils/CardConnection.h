@@ -7,8 +7,10 @@
 #include "Exceptions/GenericExceptions.h"
 
 // ============================================================
-// Kart iletiþim katmaný
+// Kart iletişim katmanı
 // ============================================================
+
+using STATUS = std::pair<BYTE, BYTE>;
 
 class CardConnection {
 public:
@@ -22,7 +24,7 @@ public:
     bool isConnected() const;
     void checkConnected() const;
     void checkResponseSize(const BYTEV& resp, size_t minSize = 2) const;
-    std::pair<BYTE, BYTE> getStatusWords(const BYTEV& resp) const;
+    STATUS getStatusWords(const BYTEV& resp) const;
     SCARDHANDLE handle() const;
     DWORD protocol() const;
 
@@ -37,4 +39,4 @@ private:
     bool         m_connected;
 };
 
-#endif // PCSC_WORKSHOP1_CARDCONNECTION_H
+#endif // CARDCONNECTION_H

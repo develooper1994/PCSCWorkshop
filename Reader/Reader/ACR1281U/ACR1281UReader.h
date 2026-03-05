@@ -28,18 +28,18 @@ public:
     // Overload that requests a specific length from the reader
     BYTEV readPage(BYTE page, BYTE len) override;
 protected:
-    BYTE mapKeyStructure(KeyStructure structure) const override {
+    BYTE mapKeyStructure(KeyStructure structure) const noexcept override {
         switch (structure) {
             case KeyStructure::Volatile: return 0x00;
             case KeyStructure::NonVolatile: return 0x20;
-			default: throw pcsc::Error("Invalid key structure");
+			default: return 0x00; // Default to volatile instead of throwing
         }
     }
-    BYTE mapKeyKind(KeyType kind) const override {
+    BYTE mapKeyKind(KeyType kind) const noexcept override {
         switch (kind) {
             case KeyType::A: return 0x60;
             case KeyType::B: return 0x61;
-			default: throw pcsc::Error("Invalid key kind");
+			default: return 0x60; // Default to KeyType A instead of throwing
         }
     }
 };

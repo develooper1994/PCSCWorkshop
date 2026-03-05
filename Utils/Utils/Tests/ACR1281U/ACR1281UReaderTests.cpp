@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <CardUtils.h>
+#include <Log/Log.h>
 
 /********************  TESTS ********************/
 
@@ -22,6 +23,7 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
 		// 2) prepare reader & card core
 		// create a MifareCardCore that wraps acr1281u; assume 1K (false). If you have 4K card, pass true.
 		MifareCardCore card(acr1281u, false);  // 1K kart
+		card.loadAllKeysToReader();
 
 		// Keys are already loaded in constructor with default values
 		// If you want to use different keys, call setKey here:
@@ -36,13 +38,15 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
 			<< ", block index in sector: " << card.blockIndexInSector(startPage) << ")\n";
 
 		// 4) Read sector trailers for all sectors and print their access bits (for debugging)
+		pcsc::Log::getInstance().disableCategory(pcsc::LogCategory::PCSC);
 		card.printAllTrailers();
+		pcsc::Log::getInstance().enableCategory(pcsc::LogCategory::PCSC);
 
 		// 5) ensure default sector config: KeyA read-only, KeyB read+write
 		MifareCardCore::SectorKeyConfig defaultCfg(true, false, true, true);
 		std::vector<MifareCardCore::SectorKeyConfig> sectorConfigs(16, defaultCfg);
 		sectorConfigs[0].keyB_canWrite = false; // Sector 0: KeyA read-only, KeyB read-only
-		card.applyAllSectorsConfig(sectorConfigs);
+		card.applyAllSectorsConfigStrict(sectorConfigs);
 
 		// 6) Try a pre-read of the start page using card (safe)
 		{

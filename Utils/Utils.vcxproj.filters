@@ -47,6 +47,12 @@
     <ClInclude Include="Utils\CardConnection.h">
       <Filter>PCSC</Filter>
     </ClInclude>
+    <ClInclude Include="Utils\CardUtils_new.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Log\Log.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Utils\Utils.cpp">
@@ -67,8 +73,21 @@
     <ClCompile Include="Utils\CardConnection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Utils\Log\Log.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
+    <Text Include="Utils\Log\ORGANIZATION.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Utils\Log\QUICKSTART.md" />
+    <None Include="Utils\Log\STRATEGY.md" />
+    <None Include="Utils\Log\README.md" />
+    <None Include="Utils\Log\INDEX.md" />
+    <None Include="Utils\Log\START.md" />
+    <None Include="Utils\Log\BUGFIX.md" />
+    <None Include="Utils\Log\STRINGFIX.md" />
   </ItemGroup>
 </Project>

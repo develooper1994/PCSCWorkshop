@@ -7,17 +7,24 @@
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
+#include <cstddef>
+#include <cstdint>
+#include <array>
 #include <windows.h>
 #include <winscard.h>
 
+#if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma comment(lib, "winscard.lib")
+#endif
 
-#include "../Cipher/CipherTypes.h"
+using BYTE = uint8_t;
+using BYTEV = std::vector<BYTE>;
 
 // ============================================================
 // Yardimci fonksiyonlar
 // ============================================================
 
+// datadan gelen küçük verileri hex çeviriyor.
 inline void printHex(const BYTE* data, DWORD len) {
     for (DWORD i = 0; i < len; ++i)
         std::cout << std::uppercase << std::hex
@@ -36,10 +43,10 @@ inline void printHex(const std::string& data) {
     printHex(reinterpret_cast<const BYTE*>(data.data()), static_cast<DWORD>(data.size()));
 }
 
+// datadan gelen tüm veriyi hex çeviriyor ve string olarak döndürüyor.
 inline std::string toHex(const BYTE* data, size_t len)
 {
-    if (!data || len == 0)
-        return "<empty>";
+    if (!data || len == 0) return "<empty>";
 
     static constexpr char lut[] = "0123456789ABCDEF";
 
@@ -48,19 +55,20 @@ inline std::string toHex(const BYTE* data, size_t len)
 
     size_t j = 0;
 
-    for (size_t i = 0; i < len; ++i)
-    {
+    for (size_t i = 0; i < len; ++i) {
         BYTE c = data[i];
         result[j++] = lut[c >> 4];
         result[j++] = lut[c & 0x0F];
 
-        if (i + 1 < len)
-            result[j++] = ' ';
+        if (i + 1 < len) result[j++] = ' ';
     }
 
     return result;
 }
 inline std::string toHex(const BYTEV& v) { return toHex(v.data(), v.size()); }
+
+template<size_t N>
+inline std::string toHex(const std::array<BYTE, N>& v) { return toHex(v.data(), N); }
 inline std::string toHex(const std::string& s) { return toHex(reinterpret_cast<const BYTE*>(s.data()),s.size()); }
 
 #endif // PCSC_WORKSHOP1_PCSCUTILS_H

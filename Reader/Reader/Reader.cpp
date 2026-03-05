@@ -89,38 +89,38 @@ Reader::Reader(Reader&&) noexcept = default;
 Reader::~Reader() = default;
 Reader& Reader::operator=(Reader&&) noexcept = default;
 
-CardConnection& Reader::cardConnection() { return pImpl->cardConnection; }
-const CardConnection& Reader::cardConnection() const { return pImpl->cardConnection; }
+CardConnection& Reader::cardConnection() noexcept { return pImpl->cardConnection; }
+const CardConnection& Reader::cardConnection() const noexcept { return pImpl->cardConnection; }
 
 // New accessors to expose Impl members
-bool Reader::isAuthRequested() const { return pImpl->isAuthRequested; }
-void Reader::setAuthRequested(bool v) { pImpl->isAuthRequested = v; }
+bool Reader::isAuthRequested() const noexcept { return pImpl->isAuthRequested; }
+void Reader::setAuthRequested(bool v) noexcept { pImpl->isAuthRequested = v; }
 
-BYTE Reader::getLE() const { return pImpl->LE; }
-void Reader::setLE(BYTE le) { pImpl->LE = le; }
+BYTE Reader::getLE() const noexcept { return pImpl->LE; }
+void Reader::setLE(BYTE le) noexcept { pImpl->LE = le; }
 
-KeyType Reader::keyType() const { return pImpl->keyType; }
-void Reader::setKeyType(KeyType kt) { pImpl->keyType = kt; }
+KeyType Reader::keyType() const noexcept { return pImpl->keyType; }
+void Reader::setKeyType(KeyType kt) noexcept { pImpl->keyType = kt; }
 
-KeyStructure Reader::keyStructure() const { return pImpl->keyStructure; }
-void Reader::setKeyStructure(KeyStructure ks) { pImpl->keyStructure = ks; }
+KeyStructure Reader::keyStructure() const noexcept { return pImpl->keyStructure; }
+void Reader::setKeyStructure(KeyStructure ks) noexcept { pImpl->keyStructure = ks; }
 
-BYTE Reader::getKeyNumber() const { return pImpl->keyNumber; }
-void Reader::setKeyNumber(BYTE key) { pImpl->keyNumber = key; }
+BYTE Reader::getKeyNumber() const noexcept { return pImpl->keyNumber; }
+void Reader::setKeyNumber(BYTE key) noexcept { pImpl->keyNumber = key; }
 
 // Full 16-byte key storage accessors: [keyA(6 bytes)|accessbits(4 bytes)|keyB(6 bytes)]
-void Reader::getKeyAll(BYTE out16[16]) const {
+void Reader::getKeyAll(BYTE out16[16]) const noexcept {
 	if (!out16) return;
 	std::memcpy(out16, pImpl->key, 16);
 }
-void Reader::setKeyAll(const BYTE* key16) {
+void Reader::setKeyAll(const BYTE* key16) noexcept {
 	if (!key16) return;
 	std::memcpy(pImpl->key, key16, 16);
 	pImpl->keyLoaded = true;
 }
 
 // partial key accessors: get/set 6-byte Key A or Key B from the 16-byte blob
-void Reader::getKey(KeyType kt, BYTE out[16]) const {
+void Reader::getKey(KeyType kt, BYTE out[16]) const noexcept {
 	if (!out) return;
 	switch (kt) {
 	case KeyType::A:
@@ -143,7 +143,7 @@ void Reader::getKey(KeyType kt, BYTE out[16]) const {
 		break;
 	}
 }
-void Reader::setKey(KeyType kt, const BYTE* key) {
+void Reader::setKey(KeyType kt, const BYTE* key) noexcept {
 	if (!key) return;
 	switch (kt) {
 	case KeyType::A:
@@ -168,8 +168,8 @@ void Reader::setKey(KeyType kt, const BYTE* key) {
 	pImpl->keyLoaded = true;
 }
 
-bool Reader::keyLoaded() const { return pImpl->keyLoaded; }
-void Reader::setKeyLoaded(bool loaded) { pImpl->keyLoaded = loaded; }
+bool Reader::keyLoaded() const noexcept { return pImpl->keyLoaded; }
+void Reader::setKeyLoaded(bool loaded) noexcept { pImpl->keyLoaded = loaded; }
 
 // Provide default implementation that forwards to the simple readPage
 BYTEV Reader::readPage(BYTE page, BYTE len) {
