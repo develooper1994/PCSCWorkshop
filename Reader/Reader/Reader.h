@@ -3,6 +3,7 @@
 
 #include "CardConnection.h"
 #include "Cipher.h"
+#include "StatusWordHandler.h"
 #include <string>
 #include <memory>
 #include <functional>
@@ -31,19 +32,21 @@ struct KeyInfo {
 
 struct ReadPolicy {
 	static void handle(BYTE sw1, BYTE sw2) {
-		std::stringstream ss;
-		ss << "Read failed SW=0x"
-			<< std::hex << (int)sw1 << " 0x" << (int)sw2;
-		throw pcsc::ReaderReadError(ss.str());
+		StatusWord sw(sw1, sw2);
+		throw pcsc::ReaderReadError(sw.getFullMessage("Read"));
+	}
+	static void handle(const StatusWord& sw) {
+		throw pcsc::ReaderReadError(sw.getFullMessage("Read"));
 	}
 };
 
 struct WritePolicy {
 	static void handle(BYTE sw1, BYTE sw2) {
-		std::stringstream ss;
-		ss << "Write failed SW=0x"
-			<< std::hex << (int)sw1 << " 0x" << (int)sw2;
-		throw pcsc::ReaderWriteError(ss.str());
+		StatusWord sw(sw1, sw2);
+		throw pcsc::ReaderWriteError(sw.getFullMessage("Write"));
+	}
+	static void handle(const StatusWord& sw) {
+		throw pcsc::ReaderWriteError(sw.getFullMessage("Write"));
 	}
 };
 
@@ -75,14 +78,15 @@ public:
 		auto resp = cardConnection().transmit(apdu);
 		cardConnection().checkResponseSize(resp);
 		auto sw = cardConnection().getStatusWords(resp);
-		BYTE sw1 = sw.first, sw2 = sw.second;
-		if (sw1 == 0x63 && sw2 == 0x00) {
+		
+		// setAuthRequested(!sw.isError());
+		if (sw.isAuthSentinel()) {
 			setAuthRequested(true);
 			throw pcsc::AuthFailedError("Auth failed");
 		} 
-		else if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00)) {
+		else if (!sw.isSuccess()) {
 			setAuthRequested(true);
-			Policy::handle(sw1, sw2);   // 👈 compile-time dispatch
+			Policy::handle(sw.sw1, sw.sw2);   // 👈 compile-time dispatch
 		}
 		// setAuthRequested(false);
 		return resp;

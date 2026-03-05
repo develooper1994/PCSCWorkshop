@@ -38,9 +38,7 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
 			<< ", block index in sector: " << card.blockIndexInSector(startPage) << ")\n";
 
 		// 4) Read sector trailers for all sectors and print their access bits (for debugging)
-		pcsc::Log::getInstance().disableCategory(pcsc::LogCategory::PCSC);
 		card.printAllTrailers();
-		pcsc::Log::getInstance().enableCategory(pcsc::LogCategory::PCSC);
 
 		// 5) ensure default sector config: KeyA read-only, KeyB read+write
 		MifareCardCore::SectorKeyConfig defaultCfg(true, false, true, true);

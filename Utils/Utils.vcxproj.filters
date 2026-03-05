@@ -21,6 +21,9 @@
     <Filter Include="PCSC">
       <UniqueIdentifier>{70da73f1-fb01-43d2-92b8-491775999538}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Log">
+      <UniqueIdentifier>{9a89cffd-fd9f-4bae-bbf8-97398f98eece}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils\PcscUtils.h">
@@ -51,6 +54,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Utils\Log\Log.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\StatusWordHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -74,20 +80,38 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Utils\Log\Log.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Log</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="CMakeLists.txt" />
-    <Text Include="Utils\Log\ORGANIZATION.txt" />
+    <Text Include="CMakeLists.txt">
+      <Filter>Log</Filter>
+    </Text>
+    <Text Include="Utils\Log\ORGANIZATION.txt">
+      <Filter>Log</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Utils\Log\QUICKSTART.md" />
-    <None Include="Utils\Log\STRATEGY.md" />
-    <None Include="Utils\Log\README.md" />
-    <None Include="Utils\Log\INDEX.md" />
-    <None Include="Utils\Log\START.md" />
-    <None Include="Utils\Log\BUGFIX.md" />
-    <None Include="Utils\Log\STRINGFIX.md" />
+    <None Include="Utils\Log\BUGFIX.md">
+      <Filter>Log</Filter>
+    </None>
+    <None Include="Utils\Log\INDEX.md">
+      <Filter>Log</Filter>
+    </None>
+    <None Include="Utils\Log\QUICKSTART.md">
+      <Filter>Log</Filter>
+    </None>
+    <None Include="Utils\Log\README.md">
+      <Filter>Log</Filter>
+    </None>
+    <None Include="Utils\Log\START.md">
+      <Filter>Log</Filter>
+    </None>
+    <None Include="Utils\Log\STRATEGY.md">
+      <Filter>Log</Filter>
+    </None>
+    <None Include="Utils\Log\STRINGFIX.md">
+      <Filter>Log</Filter>
+    </None>
   </ItemGroup>
 </Project>

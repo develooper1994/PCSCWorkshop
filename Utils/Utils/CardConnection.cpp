@@ -1,5 +1,6 @@
 ﻿#include "CardConnection.h"
 #include "PcscUtils.h"
+#include "StatusWordHandler.h"
 #include "Exceptions/GenericExceptions.h"
 #include "Log/Log.h"
 #include <iostream>
@@ -112,9 +113,9 @@ void CardConnection::checkResponseSize(const BYTEV& resp, size_t minSize) const 
 		throw pcsc::ReaderError("Response too short: expected at least " + std::to_string(minSize) + " bytes");
 }
 
-STATUS CardConnection::getStatusWords(const BYTEV& resp) const {
+StatusWord CardConnection::getStatusWords(const BYTEV& resp) const {
 	checkResponseSize(resp, 2);
-	return { resp[resp.size() - 2], resp[resp.size() - 1] };
+	return StatusWord(resp[resp.size() - 2], resp[resp.size() - 1]);
 }
 
 SCARDHANDLE CardConnection::handle() const { return m_hCard; }
@@ -163,7 +164,7 @@ BYTEV CardConnection::sendCommand(BYTEV cmd, bool followChaining) const {
 	while (true) {
 		BYTEV resp = transmit(cmd);
 		auto sw = getStatusWords(resp);
-		BYTE sw1 = sw.first, sw2 = sw.second;
+		BYTE sw1 = sw.sw1, sw2 = sw.sw2;
 
 		if (resp.size() > 2)
 			full.insert(full.end(), resp.begin(), resp.end() - 2);

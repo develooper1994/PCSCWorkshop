@@ -1,5 +1,7 @@
 #include "Reader.h"
+#include "StatusWordHandler.h"
 #include <sstream>
+#include <iomanip>
 #include <vector>
 #include <cstring>
 
@@ -237,12 +239,7 @@ void Reader::loadKey(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber)
 	auto resp = cardConnection().transmit(apdu);
 	cardConnection().checkResponseSize(resp);
 	auto sw = cardConnection().getStatusWords(resp);
-	BYTE sw1 = sw.first, sw2 = sw.second;
-	if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00)) {
-		std::stringstream ss;
-		ss << "LoadKey failed SW=0x" << std::hex << (int)sw1 << " 0x" << (int)sw2 << '\n';
-		throw pcsc::LoadKeyFailedError(ss.str());
-	}
+	StatusWordChecker::checkLoadKey(sw.sw1, sw.sw2);
 }
 
 void Reader::loadKeyA(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber) {
@@ -282,12 +279,7 @@ void Reader::auth(BYTE blockNumber, KeyType keyType, BYTE keyNumber) {
 	auto resp = cardConnection().transmit(apdu);
 	cardConnection().checkResponseSize(resp);
 	auto sw = cardConnection().getStatusWords(resp);
-	BYTE sw1 = sw.first, sw2 = sw.second;
-	if (!((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00) || (sw1 == 0x63 && sw2==0x00)) {
-		std::stringstream ss;
-		ss << "Auth failed SW=0x" << std::hex << (int)sw1 << " 0x" << (int)sw2 << '\n';
-		throw pcsc::AuthFailedError(ss.str());
-	}
+	StatusWordChecker::checkAuth(sw.sw1, sw.sw2);
 }
 
 // --- Plain convenience overloads ---
@@ -582,11 +574,6 @@ void Reader::authNew(const BYTE data[5]) {
 	BYTEV resp = cardConnection().transmit(apdu);
 	cardConnection().checkResponseSize(resp);
 	auto sw = cardConnection().getStatusWords(resp);
-	BYTE sw1 = sw.first, sw2 = sw.second;
-	// Throw if neither success nor auth-failed sentinel
-	if (! ( ((sw1 == 0x90 || sw1 == 0x91) && sw2 == 0x00) || (sw1 == 0x63 && sw2 == 0x00) ) ) {
-		std::stringstream ss;
-		ss << "Auth failed SW=0x" << std::hex << (int)sw1 << " 0x" << (int)sw2 << '\n';
-		throw pcsc::AuthFailedError(ss.str());
-	}
+	StatusWordChecker::checkAuth(sw.sw1, sw.sw2);
 }
+

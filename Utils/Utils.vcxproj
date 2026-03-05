@@ -122,6 +122,7 @@
     <ClInclude Include="Utils\Log\Log.h" />
     <ClInclude Include="Utils\PCSC.h" />
     <ClInclude Include="Utils\PcscUtils.h" />
+    <ClInclude Include="Utils\StatusWordHandler.h" />
     <ClInclude Include="Utils\Tests\ACR1281U\ACR1281UReaderTestHelpers.h" />
     <ClInclude Include="Utils\Tests\ACR1281U\ACR1281UReaderTests.h" />
     <ClInclude Include="Utils\Utils.h" />

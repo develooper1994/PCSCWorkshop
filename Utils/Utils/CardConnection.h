@@ -2,15 +2,14 @@
 #define CARDCONNECTION_H
 
 #include "PcscUtils.h"
+#include "Exceptions/GenericExceptions.h"
+#include "StatusWordHandler.h"
 #include <thread>
 #include <chrono>
-#include "Exceptions/GenericExceptions.h"
 
 // ============================================================
 // Kart iletişim katmanı
 // ============================================================
-
-using STATUS = std::pair<BYTE, BYTE>;
 
 class CardConnection {
 public:
@@ -24,7 +23,7 @@ public:
     bool isConnected() const;
     void checkConnected() const;
     void checkResponseSize(const BYTEV& resp, size_t minSize = 2) const;
-    STATUS getStatusWords(const BYTEV& resp) const;
+    StatusWord getStatusWords(const BYTEV& resp) const;
     SCARDHANDLE handle() const;
     DWORD protocol() const;
 
@@ -39,4 +38,4 @@ private:
     bool         m_connected;
 };
 
-#endif // CARDCONNECTION_H
+#endif // CARDCONNECTION_H#endif // CARDCONNECTION_H
