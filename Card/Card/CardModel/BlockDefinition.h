@@ -3,6 +3,7 @@
 
 #include "CardDataTypes.h"
 #include <cstring>
+#include <stdexcept>
 
 // ════════════════════════════════════════════════════════════════════════════════
 // Block Definition - Zero-Copy Union for Different Block Types
@@ -118,9 +119,9 @@ struct MifareBlock {
     // Get size (always 16)
     constexpr size_t size() const { return 16; }
 
-    // Pointer to raw data
-    const BYTE* data() const { return raw; }
-    BYTE* data() { return raw; }
+    // Get pointer to raw data
+    const BYTE* getRawPtr() const { return raw; }
+    BYTE* getRawPtr() { return raw; }
 };
 
 #endif // BLOCKDEFINITION_H

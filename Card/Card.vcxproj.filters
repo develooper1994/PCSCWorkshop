@@ -72,6 +72,9 @@
     <ClInclude Include="Card\CardModel\CardMemoryLayout.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Card\CardProtocol\AccessControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Card\Card.cpp">
@@ -102,6 +105,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Card\CardModel\AccessBits.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Card\CardProtocol\AccessControl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -67,8 +67,8 @@ struct Card1KMemoryLayout {
         std::memset(raw, 0, 1024);
     }
 
-    explicit Card1KMemoryLayout(const BYTE data[1024]) {
-        std::memcpy(raw, data, 1024);
+    Card1KMemoryLayout(const BYTE* dataPtr) {
+        std::memcpy(raw, dataPtr, 1024);
     }
 
     // Size info
@@ -125,8 +125,8 @@ struct Card4KMemoryLayout {
         std::memset(raw, 0, 4096);
     }
 
-    explicit Card4KMemoryLayout(const BYTE data[4096]) {
-        std::memcpy(raw, data, 4096);
+    Card4KMemoryLayout(const BYTE* dataPtr) {
+        std::memcpy(raw, dataPtr, 4096);
     }
 
     // Size info
@@ -152,14 +152,14 @@ struct CardMemoryLayout {
         Card4KMemoryLayout card4K;
     } data;
 
-    bool is4K = false;  // Discriminant
+    bool is4K;
 
     // Constructors
-    CardMemoryLayout() : is4K(false) {
+    CardMemoryLayout() : data{}, is4K(false) {
         std::memset(data.card1K.raw, 0, 1024);
     }
 
-    explicit CardMemoryLayout(bool is4KCard) : is4K(is4KCard) {
+    explicit CardMemoryLayout(bool is4KCard) : data{}, is4K(is4KCard) {
         if (is4K) {
             std::memset(data.card4K.raw, 0, 4096);
         } else {
