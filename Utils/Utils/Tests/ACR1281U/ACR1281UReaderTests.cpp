@@ -1,4 +1,3 @@
-#include "MifareClassic/MifareClassic.h"
 #include "ACR1281UReader.h"
 #include "ACR1281UReaderTestHelpers.h"
 #include "ACR1281UReaderTests.h"
@@ -6,74 +5,111 @@
 #include "CardUtils.h"
 #include "Log/Log.h"
 #include "Ciphers.h"
+#include "CardIO.h"
+#include "CardModel/TrailerConfig.h"
 #include <iostream>
 #include <vector>
 #include <string>
+#include <iomanip>
 
 /********************  TESTS ********************/
 
- /********************  Mifare Classic ********************/ 
-// loadkey -> auth block -> read/write block
+ /********************  Mifare Classic ********************/
+// CardIO ile: readCard -> readTrailer -> access config -> read/write
 void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE startPage) {
-	std::cout << "\n--- " << __func__ << ": ---\n";
+	std::cout << "\n--- " << __func__ << ": (CardIO) ---\n";
 	try {
-		// 1) hazýr metin
-		std::string text = "MustafaMustafa77"; // "Mustafa Selcuk Caglar 10/08/1994";
-
-		// 2) prepare reader & card core
-		// create a MifareCardCore that wraps acr1281u; assume 1K (false). If you have 4K card, pass true.
-		MifareCardCore card(acr1281u, false);  // 1K kart
-		card.loadAllKeysToReader();
-
-		// Keys are already loaded in constructor with default values
-		// If you want to use different keys, call setKey here:
-		// const BYTE customKey[6] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 };
-		// card.setKey(KeyType::A, std::array<BYTE, 6>{...}, KeyStructure::NonVolatile, 0x01);
-
-		// 3) print info using card's layout helpers
+		// 1) Hazýr metin
+		std::string text = "MustafaMustafa77";
 		std::cout << "Original: \"" << text << "\" size: " << text.size()
 			<< " bytes, needs " << ((text.size() + 15) / 16)
-			<< " pages. starting page: " << static_cast<int>(startPage)
-			<< " (sector " << card.blockToSector(startPage)
-			<< ", block index in sector: " << card.blockIndexInSector(startPage) << ")\n";
+			<< " pages. Starting at page: " << static_cast<int>(startPage) << "\n";
 
-		// 4) Read sector trailers for all sectors and print their access bits (for debugging)
-		card.printAllTrailers();
+		// 2) CardIO oluþtur
+		CardIO io(acr1281u, false);  // 1K kart
 
-		// 5) ensure default sector config: KeyA read-only, KeyB read+write
-		SectorConfig defaultCfg(true, false, true, true);
-		std::vector<SectorConfig> sectorConfigs(16, defaultCfg);
-		sectorConfigs[0].keyB.writable = false; // Sector 0: KeyA read-only, KeyB read-only
-		card.applyAllSectorsConfigStrict(sectorConfigs);
+		// 3) Default key (factory)
+		KEYBYTES defKey = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+		io.setDefaultKey(defKey, KeyStructure::NonVolatile, 0x01, KeyType::A);
 
-		// 6) Try a pre-read of the start page using card (safe)
+		// 4) Tüm kartý oku
+		std::cout << "\nReading card memory...\n";
+		int okBlocks = io.readCard();
+		std::cout << "OK: " << okBlocks << "/" << io.card().getTotalBlocks() << " blocks\n";
+
+		// 5) UID
+		KEYBYTES uid = io.card().getUID();
+		std::cout << "UID: ";
+		for (int i = 0; i < 4; ++i)
+			std::cout << std::hex << std::setfill('0') << std::setw(2) << (int)uid[i] << " ";
+		std::cout << std::dec << "\n";
+
+		// 6) Blok topology
+		int sector = io.card().getSectorForBlock(startPage);
+		int blockInSector = startPage - io.card().getFirstBlockOfSector(sector);
+		std::cout << "Target block: " << (int)startPage
+			<< " (sector " << sector << ", index " << blockInSector << ")\n";
+
+		// 7) Trailer oku — access bits incele
+		std::cout << "\nReading trailers for sector " << sector << "...\n";
+		TrailerConfig tc = io.readTrailer(sector);
+		SectorAccessConfig cfg = tc.access;
+		DataBlockPermission dp = cfg.dataPermission(0);
+		std::cout << "Data block: read=" << (dp.readA ? "A" : "") << (dp.readB ? "|B" : "")
+			<< " write=" << (dp.writeA ? "A" : "") << (dp.writeB ? "|B" : "") << "\n";
+
+		// 8) Okuma öncesi — boþ blok oku
 		{
-			std::cout << "Reading bytes in block " << static_cast<int>(startPage) << ":\n";
-			auto result = card.read(static_cast<BYTE>(startPage));
-			std::string sread(result.begin(), result.end());
-			std::cout << "Empty Read (single block) : \"" << sread << "\"\n";
-			printHex(result);
+			std::cout << "\nReading block " << (int)startPage << " before write:\n";
+			BYTEV before = io.readBlock(startPage);
+			std::cout << "Bytes: ";
+			size_t displayLen = before.size() < 16 ? before.size() : 16;
+			for (size_t i = 0; i < displayLen; ++i)
+				std::cout << std::hex << std::setfill('0') << std::setw(2) << (int)before[i] << " ";
+			std::cout << std::dec << "\n";
 		}
 
-		// 7) Write the bytes at startPage:
+		// 9) Veri yaz
 		{
-			std::cout << "\nWriting bytes in block " << int(startPage) << ":\n";
-			card.write(static_cast<BYTE>(startPage), text);
+			std::cout << "\nWriting to block " << (int)startPage << ":\n";
+			std::cout << "Text: \"" << text << "\"\n";
+			BYTE payload[16] = {0};
+			size_t copyLen = text.size() < 16 ? text.size() : 16;
+			std::memcpy(payload, text.c_str(), copyLen);
+			io.writeBlock(startPage, payload);
+			std::cout << "Written OK\n";
 		}
 
-		// 8) Read back same length starting at startPage
+		// 10) Okuma sonrasý — veri oku ve doðrula
 		{
-			std::cout << "Reading bytes in block " << static_cast<int>(startPage) << ":\n";
-			auto result = card.read(static_cast<BYTE>(startPage));
-			std::cout << "Read back (reassembled): \"" << std::string(result.begin(), result.end()) << "\"\n";
-			printHex(result);
+			std::cout << "\nReading block " << (int)startPage << " after write:\n";
+			BYTEV after = io.readBlock(startPage);
+			std::string readBack(after.begin(), after.end());
+			std::cout << "Read back: \"" << readBack << "\"\n";
+			
+			bool match = (after.size() >= 16);
+			for (size_t i = 0; match && i < text.size(); ++i)
+				if (after[i] != (BYTE)text[i]) match = false;
+			
+			if (match) {
+				std::cout << ">>> WRITE/READ VERIFIED OK! <<<\n";
+			} else {
+				std::cout << "WARNING: Data mismatch!\n";
+			}
 		}
 
-		// 9) Optionally, print full dump using reader's own readAll (if you prefer original behaviour)
-		std::cout << "\nreadAll from page 0 (reader helper):\n";
-		auto all = acr1281u.readAll(0); // using your original helper
-		std::cout << "Total bytes read: " << all.size() << "\n";
-		printHex(all.data(), static_cast<DWORD>(all.size()));
+		// 11) Full dump - cardIO memory'den
+		std::cout << "\nFull card memory dump (first 32 bytes):\n";
+		const CardMemoryLayout& mem = io.card().getMemory();
+		for (int i = 0; i < 2; ++i) {
+			for (int j = 0; j < 16; ++j) {
+				std::cout << std::hex << std::setfill('0') << std::setw(2)
+					<< (int)mem.getRawMemory()[i*16 + j] << " ";
+			}
+			std::cout << std::dec << "\n";
+		}
+
+		std::cout << "\nTest completed successfully!\n";
 	}
 	catch (const std::exception& ex) {
 		std::cerr << "RW test failed: " << ex.what() << std::endl;

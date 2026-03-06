@@ -27,32 +27,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Card\Card.h">
-      <Filter>Card</Filter>
-    </ClInclude>
     <ClInclude Include="Card\CardDataTypes.h">
       <Filter>Card</Filter>
-    </ClInclude>
-    <ClInclude Include="Card\Topology\SectorConfig.h">
-      <Filter>Card\Topology</Filter>
-    </ClInclude>
-    <ClInclude Include="Card\Topology\Topology.h">
-      <Filter>Card\Topology</Filter>
-    </ClInclude>
-    <ClInclude Include="Card\MifareClassic\MifareClassic.h">
-      <Filter>Card\MifareClassic</Filter>
-    </ClInclude>
-    <ClInclude Include="Card\Desfire\Desfire.h">
-      <Filter>Card\Desfire</Filter>
-    </ClInclude>
-    <ClInclude Include="Card\Topology\SectorConfigBuilder.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Card\MifareClassic\MifareCardSimulator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Card\MifareClassic\SimulatedReader.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Card\CardModel\CardDataTypes.h">
       <Filter>Header Files</Filter>
@@ -61,12 +37,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Card\CardModel\CardTopology.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Card\CardModel\SectorDefinition.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Card\CardModel\AccessBits.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Card\CardModel\CardMemoryLayout.h">
@@ -92,34 +62,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Card\Card.cpp">
-      <Filter>Card</Filter>
-    </ClCompile>
-    <ClCompile Include="Card\Topology\SectorConfig.cpp">
-      <Filter>Card\Topology</Filter>
-    </ClCompile>
-    <ClCompile Include="Card\Topology\Topology.cpp">
-      <Filter>Card\Topology</Filter>
-    </ClCompile>
-    <ClCompile Include="Card\MifareClassic\MifareClassic.cpp">
-      <Filter>Card\MifareClassic</Filter>
-    </ClCompile>
-    <ClCompile Include="Card\Desfire\Desfire.cpp">
-      <Filter>Card\Desfire</Filter>
-    </ClCompile>
-    <ClCompile Include="Card\Topology\SectorConfigBuilder.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Card\MifareClassic\MifareCardSimulator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Card\MifareClassic\SimulatedReader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Card\CardModel\CardTopology.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Card\CardModel\AccessBits.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Card\CardProtocol\AccessControl.cpp">

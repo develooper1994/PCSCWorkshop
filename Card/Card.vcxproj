@@ -139,44 +139,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Card\Card.h" />
     <ClInclude Include="Card\CardDataTypes.h" />
     <ClInclude Include="Card\CardInterface.h" />
     <ClInclude Include="Card\CardIO.h" />
-    <ClInclude Include="Card\CardModel\AccessBits.h" />
     <ClInclude Include="Card\CardModel\BlockDefinition.h" />
     <ClInclude Include="Card\CardModel\CardDataTypes.h" />
     <ClInclude Include="Card\CardModel\CardMemoryLayout.h" />
     <ClInclude Include="Card\CardModel\CardTopology.h" />
-    <ClInclude Include="Card\CardModel\SectorDefinition.h" />
     <ClInclude Include="Card\CardModel\TrailerConfig.h" />
     <ClInclude Include="Card\CardProtocol\AccessControl.h" />
     <ClInclude Include="Card\CardProtocol\AuthenticationState.h" />
     <ClInclude Include="Card\CardProtocol\KeyManagement.h" />
-    <ClInclude Include="Card\Desfire\Desfire.h" />
-    <ClInclude Include="Card\MifareClassic\MifareCardSimulator.h" />
-    <ClInclude Include="Card\MifareClassic\MifareClassic.h" />
-    <ClInclude Include="Card\MifareClassic\SimulatedReader.h" />
-    <ClInclude Include="Card\Topology\SectorConfig.h" />
-    <ClInclude Include="Card\Topology\SectorConfigBuilder.h" />
-    <ClInclude Include="Card\Topology\Topology.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Card\Card.cpp" />
     <ClCompile Include="Card\CardInterface.cpp" />
     <ClCompile Include="Card\CardIO.cpp" />
-    <ClCompile Include="Card\CardModel\AccessBits.cpp" />
     <ClCompile Include="Card\CardModel\CardTopology.cpp" />
     <ClCompile Include="Card\CardProtocol\AccessControl.cpp" />
     <ClCompile Include="Card\CardProtocol\AuthenticationState.cpp" />
     <ClCompile Include="Card\CardProtocol\KeyManagement.cpp" />
-    <ClCompile Include="Card\Desfire\Desfire.cpp" />
-    <ClCompile Include="Card\MifareClassic\MifareCardSimulator.cpp" />
-    <ClCompile Include="Card\MifareClassic\MifareClassic.cpp" />
-    <ClCompile Include="Card\MifareClassic\SimulatedReader.cpp" />
-    <ClCompile Include="Card\Topology\SectorConfig.cpp" />
-    <ClCompile Include="Card\Topology\SectorConfigBuilder.cpp" />
-    <ClCompile Include="Card\Topology\Topology.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Cipher\Cipher.vcxproj">
