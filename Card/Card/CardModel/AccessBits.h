@@ -3,6 +3,41 @@
 
 #include "CardDataTypes.h"
 #include <stdexcept>
+#include <cstring>
+
+// ════════════════════════════════════════════════════════════════════════════════
+// AccessBitsData - Zero-Copy Union for Access Bits
+// ════════════════════════════════════════════════════════════════════════════════
+//
+// 4-byte access control structure with multiple views
+//
+// ════════════════════════════════════════════════════════════════════════════════
+
+struct AccessBitsData {
+    union {
+        BYTE raw[4];           // Raw 4-byte access (zero-copy)
+        
+        struct {
+            BYTE c1;           // Byte 0: C1 bits
+            BYTE c2;           // Byte 1: C2 bits
+            BYTE c3_inv;       // Byte 2: C3 inverted bits
+            BYTE gpb;          // Byte 3: General Purpose Byte
+        } bytes;
+    };
+
+    // Constructor from raw bytes
+    AccessBitsData() {
+        std::memset(raw, 0xFF, 4);
+    }
+
+    explicit AccessBitsData(const BYTE data[4]) {
+        std::memcpy(raw, data, 4);
+    }
+
+    explicit AccessBitsData(const ACCESSBYTES& ab) {
+        std::memcpy(raw, ab.data(), 4);
+    }
+};
 
 // ════════════════════════════════════════════════════════════════════════════════
 // AccessBits - Mifare Classic Access Control Codec
