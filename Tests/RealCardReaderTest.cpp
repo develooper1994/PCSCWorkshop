@@ -5,6 +5,7 @@
 #include "CardUtils.h"
 #include "Readers.h"
 #include "CardIO.h"
+#include "CardModel/TrailerConfig.h"
 #include <iostream>
 #include <iomanip>
 
@@ -217,18 +218,129 @@ int testRealCardReader()
     }
     cout << '\n';
 
+    // ── 8. Trailer okuma ────────────────────────────────────────────────────
+
+    cout << "[14] io.readTrailer() — trailer config oku...\n";
+    bool trailerReadOk = false;
+    int trailerTestSector = (writeSector >= 2) ? writeSector : 0;
+    try {
+        TrailerConfig tc = io.readTrailer(trailerTestSector);
+        trailerReadOk = true;
+
+        cout << "    Sektor " << trailerTestSector << ":\n";
+        cout << "    KeyA: ";
+        for (BYTE b : tc.keyA) cout << hex << setfill('0') << setw(2) << (int)b;
+        cout << dec << '\n';
+        cout << "    KeyB: ";
+        for (BYTE b : tc.keyB) cout << hex << setfill('0') << setw(2) << (int)b;
+        cout << dec << '\n';
+
+        ACCESSBYTES ab = tc.accessBitsRaw();
+        cout << "    Access bits: ";
+        for (BYTE b : ab) cout << hex << setfill('0') << setw(2) << (int)b << ' ';
+        cout << dec;
+        cout << (tc.isValid() ? "(valid)" : "(CORRUPT)") << '\n';
+
+        // Decode
+        SectorAccessConfig cfg = tc.access;
+        auto dp = cfg.dataPermission(0);
+        auto tp = cfg.trailerPermission();
+        cout << "    Data[0]: C1=" << cfg.dataBlock[0].c1
+             << " C2=" << cfg.dataBlock[0].c2
+             << " C3=" << cfg.dataBlock[0].c3 << '\n';
+        cout << "      readA=" << dp.readA << " readB=" << dp.readB
+             << " writeA=" << dp.writeA << " writeB=" << dp.writeB << '\n';
+        cout << "    Trailer: C1=" << cfg.trailer.c1
+             << " C2=" << cfg.trailer.c2
+             << " C3=" << cfg.trailer.c3 << '\n';
+        cout << "      accReadA=" << tp.accReadA << " accReadB=" << tp.accReadB
+             << " accWriteA=" << tp.accWriteA << " accWriteB=" << tp.accWriteB << '\n';
+    }
+    catch (const exception& e) { cout << "    HATA: " << e.what() << '\n'; }
+    cout << '\n';
+
+    // ── 9. Tüm sektör trailer'larını göster ─────────────────────────────────
+
+    cout << "[15] Tum sektorlerin access config'i...\n";
+    for (int s = 0; s < 16; ++s) {
+        try {
+            SectorAccessConfig cfg = io.getAccessConfig(s);
+            auto dp = cfg.dataPermission(0);
+            cout << "  S" << setfill(' ') << setw(2) << s
+                 << ": data=C" << cfg.dataBlock[0].c1 << cfg.dataBlock[0].c2 << cfg.dataBlock[0].c3
+                 << " trail=C" << cfg.trailer.c1 << cfg.trailer.c2 << cfg.trailer.c3
+                 << "  R:" << (dp.readA?"A":"") << (dp.readB?"|B":"")
+                 << " W:" << (dp.writeA?"A":"") << (dp.writeB?"|B":"")
+                 << '\n';
+        }
+        catch (...) { cout << "  S" << setw(2) << s << ": okunamadi\n"; }
+    }
+    cout << '\n';
+
+    // ── 10. Trailer yazma testi ─────────────────────────────────────────────
+
+    cout << "[16] io.writeTrailer() — trailer config yaz/geri al...\n";
+    bool trailerWriteOk = false;
+    if (writeSector < 2) {
+        cout << "    ATLANDI — uygun sektor yok.\n\n";
+    } else {
+        try {
+            // Mevcut config'i yedekle
+            TrailerConfig backup = io.readTrailer(writeSector);
+            cout << "    Yedeklendi (sektor " << writeSector << ").\n";
+
+            // Yeni config hazırla: aynı key'ler, farklı GPB
+            TrailerConfig newCfg = backup;
+            newCfg.access.gpb = 0x42;       // GPB değiştir
+            io.writeTrailer(writeSector, newCfg);
+            cout << "    Yazildi (GPB=0x42).\n";
+
+            // Geri oku ve doğrula
+            TrailerConfig verify = io.readTrailer(writeSector);
+            ACCESSBYTES ab = verify.accessBitsRaw();
+            cout << "    Okunan GPB: 0x" << hex << setfill('0') << setw(2)
+                 << (int)verify.access.gpb << dec << '\n';
+            trailerWriteOk = (verify.access.gpb == 0x42);
+            cout << "    " << (trailerWriteOk ? ">>> TRAILER WRITE DOGRULANDI! <<<"
+                                              : "UYARI: GPB eslesmiyor") << '\n';
+
+            // Eski config'i geri yaz
+            io.writeTrailer(writeSector, backup);
+            cout << "    Yedek geri yazildi.\n";
+        }
+        catch (const exception& e) { cout << "    HATA: " << e.what() << '\n'; }
+    }
+    cout << '\n';
+
+    // ── 11. saveAllTrailers ─────────────────────────────────────────────────
+
+    cout << "[17] io.saveAllTrailers() — bulk backup...\n";
+    try {
+        auto allConfigs = io.saveAllTrailers();
+        cout << "    " << allConfigs.size() << " sektor yedeklendi.\n";
+        int validCount = 0;
+        for (const auto& tc : allConfigs)
+            if (tc.isValid()) ++validCount;
+        cout << "    " << validCount << "/" << allConfigs.size() << " valid access bits.\n";
+    }
+    catch (const exception& e) { cout << "    HATA: " << e.what() << '\n'; }
+    cout << '\n';
+
     // ── Özet ────────────────────────────────────────────────────────────────
 
     cout << "========================================================\n";
     cout << "  SONUC — CardIO + CardInterface (MifareCardCore YOK)\n";
     cout << "========================================================\n";
-    cout << "  readCard()     : " << okBlocks << "/" << io.card().getTotalBlocks() << " blok\n";
-    cout << "  getUID()       : " << (uidOk ? "ESLESDI" : "ESLESMEDI") << '\n';
-    cout << "  Topology       : CALISTI\n";
-    cout << "  Zero-copy view : CALISTI\n";
-    cout << "  readBlock()    : CALISTI\n";
-    cout << "  writeBlock()   : " << (writeSector >= 0 ? "DOGRULANDI" : "ATLANILDI") << '\n';
-    cout << "  readSector()   : " << (rsOk ? "CALISTI" : "HATA") << '\n';
+    cout << "  readCard()       : " << okBlocks << "/" << io.card().getTotalBlocks() << " blok\n";
+    cout << "  getUID()         : " << (uidOk ? "ESLESDI" : "ESLESMEDI") << '\n';
+    cout << "  Topology         : CALISTI\n";
+    cout << "  Zero-copy view   : CALISTI\n";
+    cout << "  readBlock()      : CALISTI\n";
+    cout << "  writeBlock()     : " << (writeSector >= 0 ? "DOGRULANDI" : "ATLANILDI") << '\n';
+    cout << "  readSector()     : " << (rsOk ? "CALISTI" : "HATA") << '\n';
+    cout << "  readTrailer()    : " << (trailerReadOk ? "CALISTI" : "HATA") << '\n';
+    cout << "  writeTrailer()   : " << (trailerWriteOk ? "DOGRULANDI" : "ATLANILDI") << '\n';
+    cout << "  saveAllTrailers(): CALISTI\n";
     cout << "========================================================\n\n";
 
     return 0;

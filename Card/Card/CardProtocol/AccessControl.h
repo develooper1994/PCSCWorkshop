@@ -3,6 +3,7 @@
 
 #include "../CardModel/CardDataTypes.h"
 #include "../CardModel/CardMemoryLayout.h"
+#include "../CardModel/TrailerConfig.h"
 #include <array>
 #include <string>
 
@@ -34,7 +35,7 @@ public:
     // Constructor
     // ────────────────────────────────────────────────────────────────────────────
 
-    explicit AccessControl(const CardMemoryLayout& cardMemory);
+    explicit AccessControl(CardMemoryLayout& cardMemory);
 
     // ────────────────────────────────────────────────────────────────────────────
     // Permission Queries
@@ -95,7 +96,10 @@ public:
     std::string describePermissions(int sector) const;
 
 private:
-    const CardMemoryLayout& cardMemory_;
+    CardMemoryLayout& cardMemory_;
+
+    // Helper: write access bits to trailer in memory
+    void writeAccessBits(int sector, const ACCESSBYTES& bits);
 
     // ────────────────────────────────────────────────────────────────────────────
     // Internal Helpers

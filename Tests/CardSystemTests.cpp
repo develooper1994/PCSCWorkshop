@@ -144,10 +144,17 @@ bool testAccessControl() {
         }
         
         AccessControl access(cardMem);
+        // Factory default: C1=0,C2=0,C3=0 → data: A|B read, A|B write
         if (!access.canReadDataBlock(0, KeyType::A)) return false;
         if (!access.canReadDataBlock(0, KeyType::B)) return false;
-        if (access.canWriteDataBlock(0, KeyType::A)) return false;
+        if (!access.canWriteDataBlock(0, KeyType::A)) return false;
         if (!access.canWriteDataBlock(0, KeyType::B)) return false;
+
+        // Trailer: C1=0,C2=0,C3=1 → accRead: A only, accWrite: A only
+        if (!access.canReadTrailer(0, KeyType::A)) return false;
+        if (access.canReadTrailer(0, KeyType::B)) return false;
+        if (!access.canWriteTrailer(0, KeyType::A)) return false;
+        if (access.canWriteTrailer(0, KeyType::B)) return false;
         
         return true;
     }

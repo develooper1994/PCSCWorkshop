@@ -177,6 +177,121 @@ void CardIO::writeBlock(int block, const BYTEV& data)
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
+// Trailer Okuma / Yazma
+// ════════════════════════════════════════════════════════════════════════════════
+
+TrailerConfig CardIO::readTrailer(int sector)
+{
+    int trailerBlock = card_.getTrailerBlockOfSector(sector);
+    ensureAuth(sector);
+
+    BYTEV raw = reader_.readPage(static_cast<BYTE>(trailerBlock));
+    if (raw.size() < 16)
+        throw std::runtime_error("Trailer block read failed");
+
+    // Memory'yi güncelle
+    CardMemoryLayout& mem = card_.getMemoryMutable();
+    std::memcpy(mem.getRawMemory() + trailerBlock * 16, raw.data(), 16);
+
+    // Parse
+    MifareBlock blk;
+    std::memcpy(blk.raw, raw.data(), 16);
+    return TrailerConfig::fromBlock(blk);
+}
+
+void CardIO::writeTrailer(int sector, const TrailerConfig& config)
+{
+    if (!config.isValid())
+        throw std::invalid_argument("Geçersiz access bits — kart kilitlenebilir!");
+
+    int trailerBlock = card_.getTrailerBlockOfSector(sector);
+    ensureAuth(sector);
+
+    MifareBlock blk = config.toBlock();
+    reader_.writePage(static_cast<BYTE>(trailerBlock), blk.raw);
+
+    // Memory'yi güncelle
+    CardMemoryLayout& mem = card_.getMemoryMutable();
+    std::memcpy(mem.getRawMemory() + trailerBlock * 16, blk.raw, 16);
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Access Bits Konfigürasyonu
+// ════════════════════════════════════════════════════════════════════════════════
+
+SectorAccessConfig CardIO::getAccessConfig(int sector) const
+{
+    const MifareBlock& trailer = card_.getBlock(
+        card_.getTrailerBlockOfSector(sector));
+    ACCESSBYTES ab;
+    std::memcpy(ab.data(), trailer.trailer.accessBits, 4);
+    return AccessBitsCodec::decode(ab);
+}
+
+void CardIO::setAccessConfig(int sector, const SectorAccessConfig& config)
+{
+    // Mevcut trailer'ı oku
+    TrailerConfig tc = readTrailer(sector);
+    tc.access = config;
+    writeTrailer(sector, tc);
+}
+
+void CardIO::setSectorMode(int sector, SectorMode mode)
+{
+    setAccessConfig(sector, sectorModeToConfig(mode));
+}
+
+DataBlockPermission CardIO::getDataPermission(int sector, int blockIndex) const
+{
+    SectorAccessConfig cfg = getAccessConfig(sector);
+    return cfg.dataPermission(blockIndex);
+}
+
+TrailerPermission CardIO::getTrailerPermission(int sector) const
+{
+    SectorAccessConfig cfg = getAccessConfig(sector);
+    return cfg.trailerPermission();
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Bulk Trailer İşlemleri
+// ════════════════════════════════════════════════════════════════════════════════
+
+std::vector<TrailerConfig> CardIO::saveAllTrailers()
+{
+    int totalSectors = card_.getTotalSectors();
+    std::vector<TrailerConfig> configs;
+    configs.reserve(totalSectors);
+
+    for (int s = 0; s < totalSectors; ++s) {
+        try {
+            configs.push_back(readTrailer(s));
+        }
+        catch (...) {
+            // Auth başarısız — factory default ekle (placeholder)
+            configs.push_back(TrailerConfig::factoryDefault());
+        }
+    }
+    return configs;
+}
+
+void CardIO::restoreAllTrailers(const std::vector<TrailerConfig>& configs)
+{
+    int totalSectors = card_.getTotalSectors();
+    int count = static_cast<int>(configs.size());
+    if (count > totalSectors) count = totalSectors;
+
+    for (int s = 0; s < count; ++s) {
+        try {
+            writeTrailer(s, configs[s]);
+        }
+        catch (...) {
+            // Sektör 0 manufacturer — yazılamaz, atla
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
 // Erişim
 // ════════════════════════════════════════════════════════════════════════════════
 

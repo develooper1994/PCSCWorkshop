@@ -2,7 +2,9 @@
 #define CARDIO_H
 
 #include "CardInterface.h"
+#include "CardModel/TrailerConfig.h"
 #include "Reader.h"
+#include <vector>
 
 // ════════════════════════════════════════════════════════════════════════════════
 // CardIO — Gerçek PCSC Kart I/O (MifareCardCore yerine)
@@ -75,6 +77,44 @@ public:
     // Belirli sektör için loadKey + auth
     void authenticate(int sector);
     void authenticate(int sector, KeyType kt, BYTE slot);
+
+    // ────────────────────────────────────────────────────────────────────────────
+    // Trailer Okuma / Yazma
+    // ────────────────────────────────────────────────────────────────────────────
+
+    // Sektörün trailer'ını karttan oku → TrailerConfig olarak döndür
+    TrailerConfig readTrailer(int sector);
+
+    // Trailer'ı karta yaz (KeyA + access bits + KeyB)
+    // DİKKAT: Yanlış access bits kartı kalıcı olarak kilitleyebilir!
+    void writeTrailer(int sector, const TrailerConfig& config);
+
+    // ────────────────────────────────────────────────────────────────────────────
+    // Access Bits Konfigürasyonu
+    // ────────────────────────────────────────────────────────────────────────────
+
+    // Sektörün mevcut access config'ini al (memory'den)
+    SectorAccessConfig getAccessConfig(int sector) const;
+
+    // Sektöre yeni access config uygula (memory + karta yaz)
+    void setAccessConfig(int sector, const SectorAccessConfig& config);
+
+    // Hazır mod uygula (memory + karta yaz)
+    void setSectorMode(int sector, SectorMode mode);
+
+    // Permission sorgula (decode edilmiş)
+    DataBlockPermission getDataPermission(int sector, int blockIndex = 0) const;
+    TrailerPermission   getTrailerPermission(int sector) const;
+
+    // ────────────────────────────────────────────────────────────────────────────
+    // Bulk Trailer İşlemleri
+    // ────────────────────────────────────────────────────────────────────────────
+
+    // Tüm sektörlerin trailer config'ini kaydet (backup)
+    std::vector<TrailerConfig> saveAllTrailers();
+
+    // Kaydedilmiş config'leri karta geri yaz (restore)
+    void restoreAllTrailers(const std::vector<TrailerConfig>& configs);
 
     // ────────────────────────────────────────────────────────────────────────────
     // Erişim
