@@ -81,7 +81,4 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="OPTIMIZATION_FAILED.md" />
-  </ItemGroup>
 </Project>

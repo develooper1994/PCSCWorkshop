@@ -2,13 +2,15 @@
 #define PCSC_WORKSHOP1_READER_H
 
 #include "CardConnection.h"
-#include "Cipher.h"
 #include "StatusWordHandler.h"
 #include "CardDataTypes.h"
 #include <string>
 #include <memory>
 #include <functional>
 #include <array>
+
+// Forward declare (full definition in Cipher.h, included by Reader.cpp)
+class ICipher;
 
 // Reader types enumeration
 enum class ReaderType {

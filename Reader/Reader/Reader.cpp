@@ -1,4 +1,5 @@
 #include "Reader.h"
+#include "Cipher.h"
 #include "StatusWordHandler.h"
 #include <sstream>
 #include <iomanip>

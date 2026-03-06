@@ -1,7 +1,8 @@
 #include "ACR1281UReader.h"
 #include "ACR1281UReaderTestHelpers.h"
 #include "PcscUtils.h"
-#include "Ciphers.h"
+#include "Cipher.h"
+#include "ICipherAAD.h"
 #include <iostream>
 #include <string>
 #include <vector>
