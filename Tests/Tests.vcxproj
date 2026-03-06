@@ -134,6 +134,7 @@
     <ClCompile Include="CardSystemTests.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="cipher_test.cpp" />
+    <ClCompile Include="RealCardReaderTest.cpp" />
     <ClCompile Include="TestCiphers.cpp" />
   </ItemGroup>
   <ItemGroup>
