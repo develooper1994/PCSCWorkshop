@@ -8,7 +8,7 @@
 
 CardInterface::CardInterface(bool is4K) : is4K_(is4K) {
     memory_ = std::make_unique<CardMemoryLayout>(is4K);
-    topology_ = std::make_unique<CardTopology>(is4K);
+    topology_ = std::make_unique<CardLayoutTopology>(is4K);
     accessControl_ = std::make_unique<AccessControl>(*memory_);
     keyMgmt_ = std::make_unique<KeyManagement>(*memory_);
     authState_ = std::make_unique<AuthenticationState>(*memory_);

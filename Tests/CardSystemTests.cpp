@@ -72,7 +72,7 @@ bool testCardMemoryLayout4K() {
 
 bool testCardTopology() {
     try {
-        CardTopology topo(false);
+        CardLayoutTopology topo(false);
         if (topo.sectorCount() != 16) return false;
         if (topo.totalBlocks() != 64) return false;
         if (topo.blocksPerSector(0) != 4) return false;
@@ -81,7 +81,7 @@ bool testCardTopology() {
         if (!topo.isTrailerBlock(3)) return false;
         if (!topo.isDataBlock(1)) return false;
         
-        CardTopology topo4k(true);
+        CardLayoutTopology topo4k(true);
         if (topo4k.sectorCount() != 40) return false;
         if (topo4k.totalBlocks() != 256) return false;
         return true;

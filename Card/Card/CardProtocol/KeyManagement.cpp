@@ -136,17 +136,8 @@ bool KeyManagement::isValidKey(const KEYBYTES& key) {
         }
     }
     if (allZero) return false;
-    
-    // Key must not be all 0xFF (reserved)
-    bool allFF = true;
-    for (BYTE b : key) {
-        if (b != 0xFF) {
-            allFF = false;
-            break;
-        }
-    }
-    if (allFF) return false;
-    
+
+    // Note: all-FF (FFFFFFFFFFFF) is a valid factory default key for Mifare Classic
     return true;
 }
 

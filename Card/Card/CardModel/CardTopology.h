@@ -50,7 +50,7 @@ struct CardTopologyData {
 };
 
 // ════════════════════════════════════════════════════════════════════════════════
-// CardTopology - Pure Card Layout Information (No Logic)
+// CardLayoutTopology - Pure Card Layout Information (No Logic)
 // ════════════════════════════════════════════════════════════════════════════════
 //
 // Responsible for:
@@ -69,14 +69,14 @@ struct CardTopologyData {
 // 
 // ════════════════════════════════════════════════════════════════════════════════
 
-class CardTopology {
+class CardLayoutTopology {
 public:
     // ────────────────────────────────────────────────────────────────────────────
     // Constructor
     // ────────────────────────────────────────────────────────────────────────────
 
     // Create topology for 1K (is4K=false) or 4K (is4K=true) card
-    explicit CardTopology(bool is4K = false);
+    explicit CardLayoutTopology(bool is4K = false);
 
     // ────────────────────────────────────────────────────────────────────────────
     // Card Type Queries

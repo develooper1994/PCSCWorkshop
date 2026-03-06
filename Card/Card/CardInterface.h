@@ -14,7 +14,7 @@
 //
 // High-level unified interface combining:
 // - CardMemoryLayout (physical memory)
-// - CardTopology (layout queries)
+// - CardLayoutTopology (layout queries)
 // - AccessControl (permissions)
 // - KeyManagement (key storage)
 // - AuthenticationState (sessions)
@@ -143,7 +143,7 @@ public:
 private:
     // Components
     std::unique_ptr<CardMemoryLayout> memory_;
-    std::unique_ptr<CardTopology> topology_;
+    std::unique_ptr<CardLayoutTopology> topology_;
     std::unique_ptr<AccessControl> accessControl_;
     std::unique_ptr<KeyManagement> keyMgmt_;
     std::unique_ptr<AuthenticationState> authState_;
