@@ -131,6 +131,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CardSystemTests.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="cipher_test.cpp" />
     <ClCompile Include="TestCiphers.cpp" />
