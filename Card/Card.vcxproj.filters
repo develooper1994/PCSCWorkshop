@@ -45,14 +45,11 @@
     <ClInclude Include="Card\Desfire\Desfire.h">
       <Filter>Card\Desfire</Filter>
     </ClInclude>
-    <ClInclude Include="pch.h">
+    <ClInclude Include="Card\Topology\SectorConfigBuilder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Card.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Card\Card.cpp">
       <Filter>Card</Filter>
     </ClCompile>
@@ -67,6 +64,9 @@
     </ClCompile>
     <ClCompile Include="Card\Desfire\Desfire.cpp">
       <Filter>Card\Desfire</Filter>
+    </ClCompile>
+    <ClCompile Include="Card\Topology\SectorConfigBuilder.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

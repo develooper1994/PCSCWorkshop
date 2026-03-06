@@ -144,6 +144,7 @@
     <ClInclude Include="Card\Desfire\Desfire.h" />
     <ClInclude Include="Card\MifareClassic\MifareClassic.h" />
     <ClInclude Include="Card\Topology\SectorConfig.h" />
+    <ClInclude Include="Card\Topology\SectorConfigBuilder.h" />
     <ClInclude Include="Card\Topology\Topology.h" />
   </ItemGroup>
   <ItemGroup>
@@ -151,6 +152,7 @@
     <ClCompile Include="Card\Desfire\Desfire.cpp" />
     <ClCompile Include="Card\MifareClassic\MifareClassic.cpp" />
     <ClCompile Include="Card\Topology\SectorConfig.cpp" />
+    <ClCompile Include="Card\Topology\SectorConfigBuilder.cpp" />
     <ClCompile Include="Card\Topology\Topology.cpp" />
   </ItemGroup>
   <ItemGroup>
