@@ -148,6 +148,7 @@
     <ClInclude Include="Card\CardModel\CardTopology.h" />
     <ClInclude Include="Card\CardModel\SectorDefinition.h" />
     <ClInclude Include="Card\CardProtocol\AccessControl.h" />
+    <ClInclude Include="Card\CardProtocol\AuthenticationState.h" />
     <ClInclude Include="Card\CardProtocol\KeyManagement.h" />
     <ClInclude Include="Card\Desfire\Desfire.h" />
     <ClInclude Include="Card\MifareClassic\MifareCardSimulator.h" />
@@ -162,6 +163,7 @@
     <ClCompile Include="Card\CardModel\AccessBits.cpp" />
     <ClCompile Include="Card\CardModel\CardTopology.cpp" />
     <ClCompile Include="Card\CardProtocol\AccessControl.cpp" />
+    <ClCompile Include="Card\CardProtocol\AuthenticationState.cpp" />
     <ClCompile Include="Card\CardProtocol\KeyManagement.cpp" />
     <ClCompile Include="Card\Desfire\Desfire.cpp" />
     <ClCompile Include="Card\MifareClassic\MifareCardSimulator.cpp" />
