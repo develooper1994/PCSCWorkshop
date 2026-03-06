@@ -1,56 +1,15 @@
-#ifndef CARDDATATYPES_H
-#define CARDDATATYPES_H
-
-#include <cstdint>
-#include <array>
-#include <vector>
+#ifndef CARDDATATYPES_MODEL_H
+#define CARDDATATYPES_MODEL_H
 
 // ════════════════════════════════════════════════════════════════════════════════
-// Minimal Type Definitions - Pure Data, Zero Logic
+// CardModel Data Types
 // ════════════════════════════════════════════════════════════════════════════════
-// 
-// Current: Mifare Classic 1K/4K only
-// Future: DESFire, Ultralight (separate CardDataTypes if needed)
-//
+// Re-exports the canonical Card/Card/CardDataTypes.h so that every Card
+// subsystem uses the SAME type definitions (no redefinition conflicts).
 
-// Fundamental types
-using BYTE = std::uint8_t;
-using WORD = std::uint16_t;
-using DWORD = std::uint32_t;
+#include "../CardDataTypes.h"     // canonical: BYTE, BYTEV, KEYBYTES, KeyType, ...
 
-// Collections
-using BYTEV = std::vector<BYTE>;
-using KEYBYTES = std::array<BYTE, 6>;      // Mifare key = 6 bytes
-using BLOCK = std::array<BYTE, 16>;        // Block = 16 bytes
-using ACCESSBYTES = std::array<BYTE, 4>;   // Access bits = 4 bytes (C1 C2 C3 GPB)
-
-// ════════════════════════════════════════════════════════════════════════════════
-// Enumerations
-// ════════════════════════════════════════════════════════════════════════════════
-
-enum class CardType {
-    MifareClassic1K,
-    MifareClassic4K,
-    DESFire,           // Future
-    Ultralight         // Future
-};
-
-enum class KeyType {
-    A,
-    B
-};
-
-enum class KeyStructure {
-    Volatile,
-    NonVolatile
-};
-
-enum class CardBlockKind {
-    Manufacturer,   // Block 0, read-only
-    Data,           // Regular data blocks
-    Trailer         // Sector trailer (keys + access bits)
-};
-
+// Additional permission enum (not in the base header)
 enum class Permission {
     None       = 0b00,
     Read       = 0b01,
@@ -58,4 +17,4 @@ enum class Permission {
     ReadWrite  = 0b11
 };
 
-#endif // CARDDATATYPES_H
+#endif // CARDDATATYPES_MODEL_H

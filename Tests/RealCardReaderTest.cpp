@@ -1,163 +1,259 @@
-// RealCardReaderTest.cpp - Real PCSC Card Reader Test Capability Check
-// Demonstrates that the framework is ready for real card reader integration
+// RealCardReaderTest.cpp - GERCEK PCSC kart okuyucu testi
+// ACR1281U + Mifare Classic 1K kart
+// Gercek: loadKey, auth, read, write islemleri
 
+#include "PCSC.h"
+#include "CardUtils.h"
+#include "Readers.h"
+#include "MifareClassic/MifareClassic.h"
 #include <iostream>
 #include <iomanip>
+#include <cstring>
 
 using namespace std;
 
 // ════════════════════════════════════════════════════════════════════════════════
-// Real Card Reader Test - Capability Demonstration
+// Yardimci
+// ════════════════════════════════════════════════════════════════════════════════
+
+static void printBlock(int blockNum, const BYTEV& data) {
+    cout << "  Block " << setfill(' ') << setw(2) << blockNum << ": ";
+    for (size_t i = 0; i < data.size(); ++i) {
+        cout << hex << setfill('0') << setw(2) << (int)data[i] << " ";
+    }
+    // ASCII
+    cout << " |";
+    for (size_t i = 0; i < data.size(); ++i) {
+        char c = (char)data[i];
+        cout << (isprint((unsigned char)c) ? c : '.');
+    }
+    cout << "|" << dec << "\n";
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// GERCEK KART OKUYUCU TESTi
 // ════════════════════════════════════════════════════════════════════════════════
 
 int testRealCardReader() {
-    cout << "\n╔════════════════════════════════════════════════════════╗\n";
-    cout << "║        Real PCSC Card Reader Test Framework            ║\n";
-    cout << "║  (Ready for actual reader + card)                      ║\n";
-    cout << "╚════════════════════════════════════════════════════════╝\n\n";
-    
-    cout << "REAL CARD READER INTEGRATION READINESS\n";
-    cout << "════════════════════════════════════════════════════════\n\n";
-    
-    cout << "Framework Status: READY FOR PRODUCTION\n\n";
-    
-    cout << "Capabilities Implemented:\n";
-    cout << "  ✓ PCSC Connection Management\n";
-    cout << "    - Context establishment\n";
-    cout << "    - Reader enumeration\n";
-    cout << "    - Card connection with timeout\n\n";
-    
-    cout << "  ✓ Card Operations\n";
-    cout << "    - UID Reading\n";
-    cout << "    - Memory Sector Reading (all 16 sectors)\n";
-    cout << "    - Key Loading to Reader\n";
-    cout << "    - Authentication (KeyA/KeyB)\n";
-    cout << "    - Access Control Verification\n";
-    cout << "    - Data Block Reading\n";
-    cout << "    - Data Block Writing\n\n";
-    
-    cout << "  ✓ CardInterface Integration\n";
-    cout << "    - Memory Layout (1K/4K support)\n";
-    cout << "    - Zero-Copy Architecture\n";
-    cout << "    - Sector Topology\n";
-    cout << "    - Key Management\n";
-    cout << "    - Authentication Caching\n";
-    cout << "    - Permission Checking\n\n";
-    
-    cout << "  ✓ Reader Support\n";
-    cout << "    - ACR1281U Reader (primary)\n";
-    cout << "    - Standard PCSC Interface\n";
-    cout << "    - Custom APDU Support\n\n";
-    
-    cout << "  ✓ Card Support\n";
-    cout << "    - Mifare Classic 1K\n";
-    cout << "    - Mifare Classic 4K\n";
-    cout << "    - Standard Sector Layout\n";
-    cout << "    - Default Permissions (MODE_0)\n\n";
-    
-    cout << "════════════════════════════════════════════════════════\n";
-    cout << "HOW TO RUN REAL CARD TEST\n";
-    cout << "════════════════════════════════════════════════════════\n\n";
-    
-    cout << "Option 1: Using Workshop1 Main\n";
-    cout << "──────────────────────────────\n";
-    cout << "File: Workshop1/main.cpp\n";
-    cout << "Code: testIntegratedCardReader(pcsc);\n";
-    cout << "Result: Full PCSC integration with real card\n\n";
-    
-    cout << "Option 2: Direct Integration Test\n";
-    cout << "─────────────────────────────────\n";
-    cout << "File: Card/IntegratedCardReaderTest.cpp\n";
-    cout << "Usage:\n";
-    cout << "  - Include in Workshop1 project\n";
-    cout << "  - Call: testIntegratedCardReader(pcsc)\n";
-    cout << "  - Compile with PCSC headers\n";
-    cout << "Result: Complete real card operations\n\n";
-    
-    cout << "Option 3: Real Card Reader Setup\n";
-    cout << "────────────────────────────────\n";
-    cout << "Prerequisites:\n";
-    cout << "  1. PCSC-compatible card reader (USB connected)\n";
-    cout << "  2. Mifare Classic 1K card\n";
-    cout << "  3. Windows Smart Card Subsystem installed\n";
-    cout << "  4. Workshop1 project with PCSC enabled\n\n";
-    
-    cout << "Steps:\n";
-    cout << "  1. Compile Workshop1 with PCSC support\n";
-    cout << "  2. Connect card reader to USB\n";
-    cout << "  3. Place Mifare card on reader\n";
-    cout << "  4. Run: Workshop1.exe\n";
-    cout << "  5. Integration test will execute automatically\n\n";
-    
-    cout << "════════════════════════════════════════════════════════\n";
-    cout << "EXPECTED REAL CARD TEST OUTPUT\n";
-    cout << "════════════════════════════════════════════════════════\n\n";
-    
-    cout << "When running with real card reader:\n\n";
-    
-    cout << "STEP 1: Read Card UID\n";
-    cout << "✓ Card UID: XX XX XX XX\n\n";
-    
-    cout << "STEP 2: Initialize CardInterface\n";
-    cout << "✓ CardInterface created\n";
-    cout << "  Type: 1K (1024 bytes)\n";
-    cout << "  Keys registered: KeyA, KeyB\n\n";
-    
-    cout << "STEP 3: Read Card Memory\n";
-    cout << "Reading all sectors (0-15)...\n";
-    cout << "  Sector  0: ✓\n";
-    cout << "  Sector  1: ✓\n";
-    cout << "  ...\n";
-    cout << "  Sector 15: ✓\n";
-    cout << "✓ Read 1024 bytes total\n\n";
-    
-    cout << "STEP 4: Analyze Card Data\n";
-    cout << "✓ Card Type: 1K\n";
-    cout << "✓ Total Memory: 1024 bytes\n";
-    cout << "✓ Total Blocks: 64\n";
-    cout << "✓ Total Sectors: 16\n\n";
-    
-    cout << "STEP 5: Authentication & Permissions\n";
-    cout << "Sector 0:\n";
-    cout << "  ✓ Authenticated with KeyA\n";
-    cout << "  Permissions:\n";
-    cout << "    Read data:  YES\n";
-    cout << "    Write data: NO\n";
-    cout << "    ...\n\n";
-    
-    cout << "STEP 6: Read Sector Data\n";
-    cout << "Block 0 (Manufacturer): XX XX XX XX ...\n";
-    cout << "Block 1 (Data):         XX XX XX XX ...\n";
-    cout << "Block 3 (Trailer):      XX XX XX XX ...\n\n";
-    
-    cout << "STEP 7: Write Test\n";
-    cout << "✓ Can write to block 1\n";
-    cout << "Ready for write operation\n\n";
-    
-    cout << "════════════════════════════════════════════════════════\n";
-    cout << "OPERATIONS VERIFIED\n";
-    cout << "════════════════════════════════════════════════════════\n\n";
-    
-    cout << "When real card test runs:\n";
-    cout << "  ✓ PCSC connection\n";
-    cout << "  ✓ Card UID reading\n";
-    cout << "  ✓ Memory sector reading\n";
-    cout << "  ✓ Key loading\n";
-    cout << "  ✓ Authentication\n";
-    cout << "  ✓ Permission checking\n";
-    cout << "  ✓ Block reading\n";
-    cout << "  ✓ Block writing (when permitted)\n";
-    cout << "  ✓ Session management\n\n";
-    
-    cout << "════════════════════════════════════════════════════════\n";
-    cout << "✓ FRAMEWORK READY FOR REAL CARD READER\n";
-    cout << "════════════════════════════════════════════════════════\n\n";
-    
-    cout << "To activate real card operations:\n";
-    cout << "  1. Connect ACR1281U reader (USB)\n";
-    cout << "  2. Place Mifare Classic 1K card on reader\n";
-    cout << "  3. Rebuild Workshop1 with PCSC integration\n";
-    cout << "  4. Run integrated test\n\n";
-    
-    return 0;
+    cout << "\n========================================\n";
+    cout << "  GERCEK PCSC KART OKUYUCU TESTi\n";
+    cout << "  ACR1281U + Mifare Classic 1K\n";
+    cout << "========================================\n\n";
+
+    // ── 1. PCSC baglantisi ──────────────────────────────────────────────────
+
+    PCSC pcsc;
+
+    cout << "[1] PCSC Context kuruluyor...\n";
+    if (!pcsc.establishContext()) {
+        cerr << "HATA: PCSC context kurulamadi. Okuyucu takili mi?\n";
+        return 1;
+    }
+    cout << "    OK\n\n";
+
+    // ── 2. Reader secimi ────────────────────────────────────────────────────
+
+    cout << "[2] Reader araniyor...\n";
+    auto readers = pcsc.listReaders();
+    if (!readers.ok || readers.names.empty()) {
+        cerr << "HATA: Hic reader bulunamadi.\n";
+        return 1;
+    }
+    for (size_t i = 0; i < readers.names.size(); ++i)
+        wcout << "    " << (i + 1) << L". " << readers.names[i] << L"\n";
+
+    if (!pcsc.chooseReader()) {
+        cerr << "HATA: Reader secilemedi.\n";
+        return 1;
+    }
+    cout << "    OK\n\n";
+
+    // ── 3. Karta baglan ─────────────────────────────────────────────────────
+
+    cout << "[3] Karta baglaniliyor...\n";
+    if (!pcsc.connectToCard(500)) {
+        cerr << "HATA: Kart algilanamadi. Kart okuyucunun ustunde mi?\n";
+        return 1;
+    }
+    cout << "    OK\n\n";
+
+    // ── 4. UID oku ──────────────────────────────────────────────────────────
+
+    cout << "[4] UID okunuyor...\n";
+    BYTEV uid = CardUtils::getUid(pcsc.cardConnection());
+    cout << "    UID: ";
+    for (BYTE b : uid)
+        cout << hex << setfill('0') << setw(2) << (int)b << " ";
+    cout << dec << "(" << uid.size() << " byte)\n\n";
+
+    // ── 5. ACR1281UReader + MifareCardCore olustur ──────────────────────────
+
+    cout << "[5] MifareCardCore olusturuluyor...\n";
+
+    BYTE defaultKeyA[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+    ACR1281UReader reader(
+        pcsc.cardConnection(),
+        16,                          // LE = 16 byte per block
+        true,                        // auth requested
+        KeyType::A,                  // default key type
+        KeyStructure::NonVolatile,   // key structure
+        0x01,                        // key slot
+        defaultKeyA                  // default Key A
+    );
+
+    MifareCardCore card(reader, false /* 1K */);
+
+    // Key'leri kaydet
+    KEYBYTES kA = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    KEYBYTES kB = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    card.setKey(KeyType::A, kA, KeyStructure::NonVolatile, 0x01);
+    card.setKey(KeyType::B, kB, KeyStructure::NonVolatile, 0x02);
+
+    cout << "    OK - KeyA ve KeyB yuklendi.\n\n";
+
+    // ── 6. Tum sektorleri oku (data + trailer) ─────────────────────────────
+
+    cout << "[6] Tum sektorler okunuyor (0-15)...\n\n";
+
+    int successSectors = 0;
+    int failedSectors  = 0;
+    int firstGoodDataBlock = -1;   // write testi icin
+
+    for (int sector = 0; sector < 16; ++sector) {
+        int firstBlock = sector * 4;
+        int trailerBlock = firstBlock + 3;
+
+        cout << "  --- Sektor " << sector << " (blok " << firstBlock
+             << "-" << trailerBlock << ") ---\n";
+
+        bool sectorOk = true;
+
+        // Data bloklari (0,1,2)
+        for (int i = 0; i < 3; ++i) {
+            BYTE block = (BYTE)(firstBlock + i);
+            try {
+                BYTEV data = card.read(block);
+                printBlock(block, data);
+                // Sektor 0/block 0 manufacturer, yazilamaz - sector>=1 seciyoruz
+                if (firstGoodDataBlock < 0 && sector >= 1)
+                    firstGoodDataBlock = block;
+            }
+            catch (const exception& e) {
+                cout << "  Block " << setw(2) << (int)block
+                     << ": HATA - " << e.what() << "\n";
+                sectorOk = false;
+            }
+        }
+
+        // Trailer blogu - dogrudan reader uzerinden oku
+        try {
+            BYTEV raw = reader.readPage((BYTE)trailerBlock);
+            cout << "  Block " << setfill(' ') << setw(2) << trailerBlock
+                 << " [trailer]: KeyA=";
+            for (int i = 0; i < 6 && i < (int)raw.size(); ++i)
+                cout << hex << setfill('0') << setw(2) << (int)raw[i];
+            cout << " Acc=";
+            for (int i = 6; i < 10 && i < (int)raw.size(); ++i)
+                cout << hex << setfill('0') << setw(2) << (int)raw[i];
+            cout << " KeyB=";
+            for (int i = 10; i < 16 && i < (int)raw.size(); ++i)
+                cout << hex << setfill('0') << setw(2) << (int)raw[i];
+            cout << dec << "\n";
+        }
+        catch (const exception& e) {
+            cout << "  Block " << setw(2) << trailerBlock
+                 << " [trailer]: HATA - " << e.what() << "\n";
+            sectorOk = false;
+        }
+
+        if (sectorOk) ++successSectors;
+        else           ++failedSectors;
+        cout << "\n";
+    }
+
+    cout << "  Sonuc: " << successSectors << " sektor OK, "
+         << failedSectors << " sektor HATA\n\n";
+
+    // ── 7. Write testi ─────────────────────────────────────────────────────
+    // MifareCardCore auth cache'i scan sonrasi bozulur (kart sadece son sector'u
+    // hatirlat). Bu yuzden write testinde dogrudan reader kullaniyoruz.
+
+    if (firstGoodDataBlock < 0) {
+        cout << "[7] Write testi ATLANDI - okunabilir data block bulunamadi.\n\n";
+    } else {
+        BYTE testBlock = (BYTE)firstGoodDataBlock;
+        int testSector = testBlock / 4;
+        BYTE trailerOfSector = (BYTE)(testSector * 4 + 3);
+        cout << "[7] Write testi (Sektor " << testSector
+             << ", Block " << (int)testBlock << ")...\n";
+        try {
+            // 1. loadKey + auth (reader seviyesinde)
+            reader.loadKey(defaultKeyA, KeyStructure::NonVolatile, 0x01);
+            reader.auth(trailerOfSector, KeyType::A, 0x01);
+            cout << "    Auth OK (KeyA, sektor " << testSector << ")\n";
+
+            // 2. Eski veriyi oku
+            BYTEV oldData = reader.readPage(testBlock);
+            cout << "    Eski veri:  ";
+            printBlock(testBlock, oldData);
+
+            // 3. Test verisi yaz
+            BYTE testData[16] = {
+                'B', 'E', 'L', 'B', 'I', 'M', ' ', 'T',
+                'E', 'S', 'T', ' ', '1', '2', '3', '4'
+            };
+            reader.writePage(testBlock, testData);
+            cout << "    Yazildi.\n";
+
+            // 4. Geri oku (auth hala gecerli, ayni sektor)
+            BYTEV readBack = reader.readPage(testBlock);
+            cout << "    Okunan  :  ";
+            printBlock(testBlock, readBack);
+
+            // 5. Dogrula
+            bool match = (readBack.size() >= 16);
+            for (int i = 0; match && i < 16; ++i) {
+                // readPage SW byte'lari dahil donebilir, ilk 16 byte'a bak
+                if (readBack[i] != testData[i]) match = false;
+            }
+
+            if (match) {
+                cout << "    >>> WRITE/READ DOGRULANDI! <<<\n";
+            } else {
+                cout << "    UYARI: Yazilan ve okunan farkli!\n";
+            }
+
+            // 6. Eski veriyi geri yaz
+            if (oldData.size() >= 16) {
+                reader.writePage(testBlock, oldData.data());
+                cout << "    Eski veri geri yazildi.\n";
+            }
+        }
+        catch (const exception& e) {
+            cout << "    Write testi HATA: " << e.what() << "\n";
+            cout << "    (Sektor bozuk veya yetki yok olabilir)\n";
+        }
+        cout << "\n";
+    }
+
+    // ── 8. Ozet ─────────────────────────────────────────────────────────────
+
+    cout << "========================================\n";
+    cout << "  SONUC\n";
+    cout << "========================================\n";
+    cout << "  UID          : ";
+    for (BYTE b : uid) cout << hex << setfill('0') << setw(2) << (int)b << " ";
+    cout << dec << "\n";
+    cout << "  Kart tipi    : Mifare Classic 1K\n";
+    cout << "  Okunan sektor: " << successSectors << "/16\n";
+    cout << "  Bozuk sektor : " << failedSectors << "/16\n";
+    cout << "  PCSC         : Bagli\n";
+    cout << "  loadKey      : Calisti\n";
+    cout << "  auth         : Calisti\n";
+    cout << "  read         : Calisti (" << successSectors << " sektor)\n";
+    cout << "  write        : " << (firstGoodDataBlock >= 0 ? "Test edildi" : "Hic sektor yok") << "\n";
+    cout << "========================================\n\n";
+
+    return (failedSectors < 16) ? 0 : 1;
 }

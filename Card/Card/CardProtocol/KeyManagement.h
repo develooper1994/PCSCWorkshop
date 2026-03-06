@@ -29,17 +29,17 @@
 //
 // ════════════════════════════════════════════════════════════════════════════════
 
-struct KeyInfo {
-    KEYBYTES key;           // 6-byte key
-    KeyStructure structure; // Volatile or NonVolatile
-    BYTE slot;              // Slot number (0x01, 0x02, etc.)
-    std::string name;       // Optional name/description
-
-    KeyInfo() : key{}, structure(KeyStructure::NonVolatile), slot(0) {}
-    
-    KeyInfo(const KEYBYTES& k, KeyStructure s, BYTE slotNum, const std::string& n = "")
-        : key(k), structure(s), slot(slotNum), name(n) {}
-};
+// Use the canonical KeyInfo from CardDataTypes.h (already included via CardModel).
+// Map fields: key, ks (KeyStructure), slot, name.
+// Helper constructor to keep KeyManagement call-sites unchanged:
+inline KeyInfo makeKeyInfo(const KEYBYTES& k, KeyStructure s, BYTE slotNum, const std::string& n = "") {
+    KeyInfo info;
+    info.key  = k;
+    info.ks   = s;
+    info.slot = slotNum;
+    info.name = n;
+    return info;
+}
 
 class KeyManagement {
 public:

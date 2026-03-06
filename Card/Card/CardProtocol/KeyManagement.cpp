@@ -23,7 +23,7 @@ void KeyManagement::registerKey(KeyType kt, const KEYBYTES& key,
         throw std::invalid_argument("Invalid key format");
     }
     
-    keys_[kt][slot] = KeyInfo(key, structure, slot, name);
+    keys_[kt][slot] = makeKeyInfo(key, structure, slot, name);
 }
 
 void KeyManagement::registerKey(KeyType kt, const BYTE key[6],
@@ -188,7 +188,7 @@ std::string KeyManagement::describeKey(KeyType kt, BYTE slot) const {
     for (BYTE b : info.key) {
         oss << std::hex << std::setfill('0') << std::setw(2) << (int)b << " ";
     }
-    oss << "(" << (info.structure == KeyStructure::Volatile ? "Volatile" : "NonVolatile");
+    oss << "(" << (info.ks == KeyStructure::Volatile ? "Volatile" : "NonVolatile");
     if (!info.name.empty()) {
         oss << ", " << info.name;
     }
