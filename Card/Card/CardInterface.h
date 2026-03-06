@@ -84,8 +84,11 @@ public:
     // Constructor
     // ────────────────────────────────────────────────────────────────────────────
 
-    // Create interface for 1K (is4K=false) or 4K (is4K=true)
-    explicit CardInterface(bool is4K = false);
+    // Create interface for given card type
+    explicit CardInterface(CardType ct = CardType::MifareClassic1K);
+
+    // Backward-compatible: bool is4K → CardType
+    explicit CardInterface(bool is4K);
 
     // Destructor (defined in cpp — required for unique_ptr forward declares)
     ~CardInterface();
@@ -173,8 +176,11 @@ public:
     // ────────────────────────────────────────────────────────────────────────────
 
     // Get card type
+    CardType getCardType() const;
     bool is4K() const;
     bool is1K() const;
+    bool isUltralight() const;
+    bool isClassic() const;
 
     // Get card size info
     size_t getTotalMemory() const;
@@ -202,7 +208,7 @@ private:
     std::unique_ptr<KeyManagement> keyMgmt_;
     std::unique_ptr<AuthenticationState> authState_;
 
-    bool is4K_;
+    CardType cardType_;
 };
 
 #endif // CARDINTERFACE_H

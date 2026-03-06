@@ -82,13 +82,13 @@ bool AccessControl::canWriteTrailer(int sector, KeyType kt) const {
 // ════════════════════════════════════════════════════════════════════════════════
 
 bool AccessControl::canRead(int block, KeyType kt) const {
-    int sector = sectorOf(block, cardMemory_.is4K);
-    int idxInSec = blockInSector(block, cardMemory_.is4K);
+    int sector = sectorOf(block, cardMemory_.is4K());
+    int idxInSec = blockInSector(block, cardMemory_.is4K());
     ACCESSBYTES bits = getAccessBits(sector);
     SectorAccessConfig cfg = getSectorConfig(bits);
 
     // Trailer blok: sektördeki son blok
-    int bps = cardMemory_.is4K ? (sector < 32 ? 4 : 16) : 4;
+    int bps = cardMemory_.is4K() ? (sector < 32 ? 4 : 16) : 4;
     if (idxInSec == bps - 1) {
         return cfg.trailerPermission().canRead(kt);
     }
@@ -98,12 +98,12 @@ bool AccessControl::canRead(int block, KeyType kt) const {
 }
 
 bool AccessControl::canWrite(int block, KeyType kt) const {
-    int sector = sectorOf(block, cardMemory_.is4K);
-    int idxInSec = blockInSector(block, cardMemory_.is4K);
+    int sector = sectorOf(block, cardMemory_.is4K());
+    int idxInSec = blockInSector(block, cardMemory_.is4K());
     ACCESSBYTES bits = getAccessBits(sector);
     SectorAccessConfig cfg = getSectorConfig(bits);
 
-    int bps = cardMemory_.is4K ? (sector < 32 ? 4 : 16) : 4;
+    int bps = cardMemory_.is4K() ? (sector < 32 ? 4 : 16) : 4;
     if (idxInSec == bps - 1) {
         return cfg.trailerPermission().canWrite(kt);
     }
@@ -218,11 +218,11 @@ std::string AccessControl::describePermissions(int sector) const {
 // ════════════════════════════════════════════════════════════════════════════════
 
 MifareBlock AccessControl::getTrailer(int sector) const {
-    if (cardMemory_.is4K) {
+    if (cardMemory_.is4K()) {
         if (sector < 32) {
-            return cardMemory_.data.card4K.detailedNormal.sector[sector].trailerBlock;
+            return cardMemory_.data.card4K.detailed.normalSector[sector].trailerBlock;
         } else {
-            return cardMemory_.data.card4K.detailedExtended.sector[sector - 32].trailerBlock;
+            return cardMemory_.data.card4K.detailed.extendedSector[sector - 32].trailerBlock;
         }
     } else {
         return cardMemory_.data.card1K.detailed.sector[sector].trailerBlock;
@@ -262,11 +262,11 @@ ACCESSBYTES AccessControl::encodeAccessBits(bool dataReadA, bool dataWriteA,
 
 void AccessControl::writeAccessBits(int sector, const ACCESSBYTES& bits) {
     MifareBlock* trailer;
-    if (cardMemory_.is4K) {
+    if (cardMemory_.is4K()) {
         if (sector < 32)
-            trailer = &cardMemory_.data.card4K.detailedNormal.sector[sector].trailerBlock;
+            trailer = &cardMemory_.data.card4K.detailed.normalSector[sector].trailerBlock;
         else
-            trailer = &cardMemory_.data.card4K.detailedExtended.sector[sector - 32].trailerBlock;
+            trailer = &cardMemory_.data.card4K.detailed.extendedSector[sector - 32].trailerBlock;
     } else {
         trailer = &cardMemory_.data.card1K.detailed.sector[sector].trailerBlock;
     }

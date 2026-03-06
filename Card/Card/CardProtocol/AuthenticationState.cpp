@@ -99,7 +99,7 @@ void AuthenticationState::printAuthenticationStatus() const {
         return;
     }
     
-    int sectorCount = cardMemory_.is4K ? 40 : 16;
+    int sectorCount = cardMemory_.is4K() ? 40 : 16;
     for (int s = 0; s < sectorCount; ++s) {
         auto it = sessions_.find(s);
         if (it != sessions_.end()) {
@@ -192,6 +192,6 @@ std::chrono::milliseconds AuthenticationState::getTimeRemaining(int sector) cons
 // ════════════════════════════════════════════════════════════════════════════════
 
 bool AuthenticationState::isValidSector(int sector) const {
-    int maxSector = cardMemory_.is4K ? 40 : 16;
+    int maxSector = cardMemory_.is4K() ? 40 : 16;
     return sector >= 0 && sector < maxSector;
 }

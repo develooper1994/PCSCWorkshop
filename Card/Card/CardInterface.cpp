@@ -13,29 +13,30 @@
 
 CardInterface::~CardInterface() = default;
 
-CardInterface::CardInterface(bool is4K) : is4K_(is4K) {
-    memory_ = std::make_unique<CardMemoryLayout>(is4K);
-    topology_ = std::make_unique<CardLayoutTopology>(is4K);
+CardInterface::CardInterface(CardType ct) : cardType_(ct) {
+    memory_ = std::make_unique<CardMemoryLayout>(ct);
+    topology_ = std::make_unique<CardLayoutTopology>(ct);
+
+    // Classic-specific bileşenler; Ultralight'ta kullanılmaz ama
+    // oluşturmak zararsızdır — facade kısa devre yapar.
     accessControl_ = std::make_unique<AccessControl>(*memory_);
     keyMgmt_ = std::make_unique<KeyManagement>(*memory_);
     authState_ = std::make_unique<AuthenticationState>(*memory_);
 }
+
+CardInterface::CardInterface(bool is4K)
+    : CardInterface(is4K ? CardType::MifareClassic4K
+                         : CardType::MifareClassic1K) {}
 
 // ════════════════════════════════════════════════════════════════════════════════
 // Memory Management
 // ════════════════════════════════════════════════════════════════════════════════
 
 void CardInterface::loadMemory(const BYTE* data, size_t size) {
-    size_t expectedSize = is4K_ ? 4096 : 1024;
-    if (size != expectedSize) {
+    if (size != memory_->memorySize()) {
         throw std::invalid_argument("Invalid memory size for card type");
     }
-    
-    if (is4K_) {
-        std::memcpy(memory_->data.card4K.raw, data, 4096);
-    } else {
-        std::memcpy(memory_->data.card1K.raw, data, 1024);
-    }
+    std::memcpy(memory_->getRawMemory(), data, size);
 }
 
 const CardMemoryLayout& CardInterface::getMemory() const {
@@ -75,15 +76,18 @@ KEYBYTES CardInterface::getCardKey(int sector, KeyType kt) const {
 // ════════════════════════════════════════════════════════════════════════════════
 
 void CardInterface::authenticate(int sector, KeyType kt) {
+    if (isUltralight()) return;   // Ultralight'ta auth yok
     topology_->validateSector(sector);
     authState_->markAuthenticated(sector, kt);
 }
 
 bool CardInterface::isAuthenticated(int sector) const {
+    if (isUltralight()) return true;
     return authState_->isAuthenticated(sector);
 }
 
 bool CardInterface::isAuthenticatedWith(int sector, KeyType kt) const {
+    if (isUltralight()) return true;
     return authState_->isAuthenticatedWith(sector, kt);
 }
 
@@ -100,18 +104,22 @@ void CardInterface::clearAuthentication() {
 // ════════════════════════════════════════════════════════════════════════════════
 
 bool CardInterface::canRead(int block, KeyType kt) const {
+    if (isUltralight()) return true;
     return accessControl_->canRead(block, kt);
 }
 
 bool CardInterface::canWrite(int block, KeyType kt) const {
+    if (isUltralight()) return true;
     return accessControl_->canWrite(block, kt);
 }
 
 bool CardInterface::canReadDataBlocks(int sector, KeyType kt) const {
+    if (isUltralight()) return true;
     return accessControl_->canReadDataBlock(sector, kt);
 }
 
 bool CardInterface::canWriteDataBlocks(int sector, KeyType kt) const {
+    if (isUltralight()) return true;
     return accessControl_->canWriteDataBlock(sector, kt);
 }
 
@@ -161,12 +169,24 @@ bool CardInterface::isDataBlock(int block) const {
 // Card Metadata
 // ════════════════════════════════════════════════════════════════════════════════
 
+CardType CardInterface::getCardType() const {
+    return cardType_;
+}
+
 bool CardInterface::is4K() const {
-    return is4K_;
+    return cardType_ == CardType::MifareClassic4K;
 }
 
 bool CardInterface::is1K() const {
-    return !is4K_;
+    return cardType_ == CardType::MifareClassic1K;
+}
+
+bool CardInterface::isUltralight() const {
+    return cardType_ == CardType::MifareUltralight;
+}
+
+bool CardInterface::isClassic() const {
+    return is1K() || is4K();
 }
 
 size_t CardInterface::getTotalMemory() const {
@@ -189,7 +209,15 @@ void CardInterface::printCardInfo() const {
     std::cout << "════════════════════════════════════════════\n";
     std::cout << "  CARD INFORMATION\n";
     std::cout << "════════════════════════════════════════════\n";
-    std::cout << "Card Type: " << (is4K_ ? "4K" : "1K") << "\n";
+
+    const char* typeName = "Unknown";
+    switch (cardType_) {
+        case CardType::MifareClassic1K:  typeName = "Classic 1K"; break;
+        case CardType::MifareClassic4K:  typeName = "Classic 4K"; break;
+        case CardType::MifareUltralight: typeName = "Ultralight"; break;
+        default: break;
+    }
+    std::cout << "Card Type: " << typeName << "\n";
     std::cout << "Total Memory: " << getTotalMemory() << " bytes\n";
     std::cout << "Total Blocks: " << getTotalBlocks() << "\n";
     std::cout << "Total Sectors: " << getTotalSectors() << "\n";
@@ -209,10 +237,22 @@ void CardInterface::printAuthenticationStatus() const {
 }
 
 KEYBYTES CardInterface::getUID() const {
-    KEYBYTES uid;
-    const MifareBlock& mfg = memory_->getBlock(0);
-    std::copy(mfg.manufacturer.uid, mfg.manufacturer.uid + 4, uid.begin());
-    uid[4] = 0;
-    uid[5] = 0;
+    KEYBYTES uid{};
+    if (isUltralight()) {
+        // Ultralight UID: page0[0-2] + page1[0-3] = 7 byte, ilk 4'ü döndür
+        const auto& pg0 = memory_->data.ultralight.detailed.serial0;
+        uid[0] = pg0.serial0.sn0;
+        uid[1] = pg0.serial0.sn1;
+        uid[2] = pg0.serial0.sn2;
+        const auto& pg1 = memory_->data.ultralight.detailed.serial1;
+        uid[3] = pg1.serial1.sn3;
+        uid[4] = pg1.serial1.sn4;
+        uid[5] = pg1.serial1.sn5;
+    } else {
+        const MifareBlock& mfg = memory_->getBlock(0);
+        std::copy(mfg.manufacturer.uid, mfg.manufacturer.uid + 4, uid.begin());
+        uid[4] = 0;
+        uid[5] = 0;
+    }
     return uid;
 }

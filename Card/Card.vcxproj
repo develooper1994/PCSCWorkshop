@@ -146,6 +146,7 @@
     <ClInclude Include="Card\CardModel\CardDataTypes.h" />
     <ClInclude Include="Card\CardModel\CardMemoryLayout.h" />
     <ClInclude Include="Card\CardModel\CardTopology.h" />
+    <ClInclude Include="Card\CardModel\PageDefinition.h" />
     <ClInclude Include="Card\CardModel\TrailerConfig.h" />
     <ClInclude Include="Card\CardProtocol\AccessControl.h" />
     <ClInclude Include="Card\CardProtocol\AuthenticationState.h" />
@@ -169,6 +170,9 @@
     <ProjectReference Include="..\Utils\Utils.vcxproj">
       <Project>{a1b2c3d4-e5f6-7890-abcd-ef1234567890}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="DESFIRE_PLAN.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

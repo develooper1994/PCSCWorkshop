@@ -98,7 +98,10 @@ public:
     // Construction
     // ────────────────────────────────────────────────────────────────────────────
 
-    explicit CardIO(Reader& reader, bool is4K = false);
+    explicit CardIO(Reader& reader, CardType ct = CardType::MifareClassic1K);
+
+    // Backward-compatible: bool is4K → CardType
+    explicit CardIO(Reader& reader, bool is4K);
 
     // ────────────────────────────────────────────────────────────────────────────
     // Key Ayarları  (auth öncesi çağrılmalı)

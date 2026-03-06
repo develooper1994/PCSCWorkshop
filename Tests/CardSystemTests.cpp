@@ -43,7 +43,7 @@ void recordTest(const std::string& name, bool passed, const std::string& error =
 bool testCardMemoryLayout1K() {
     try {
         CardMemoryLayout cardMem(false);
-        if (cardMem.is4K != false) return false;
+        if (cardMem.cardType != CardType::MifareClassic1K) return false;
         if (cardMem.memorySize() != 1024) return false;
         if (cardMem.getRawMemory() == nullptr) return false;
         return true;
@@ -57,7 +57,7 @@ bool testCardMemoryLayout1K() {
 bool testCardMemoryLayout4K() {
     try {
         CardMemoryLayout cardMem(true);
-        if (cardMem.is4K != true) return false;
+        if (cardMem.cardType != CardType::MifareClassic4K) return false;
         if (cardMem.memorySize() != 4096) return false;
         if (cardMem.getRawMemory() == nullptr) return false;
         return true;

@@ -3,8 +3,10 @@
 
 #include "CardDataTypes.h"
 #include "BlockDefinition.h"
+#include "PageDefinition.h"
 #include <array>
 #include <cstring>
+#include <stdexcept>
 
 // ════════════════════════════════════════════════════════════════════════════════
 // CardMemoryLayout - Zero-Copy Union for Complete Card Memory
@@ -36,6 +38,13 @@
 
 // ────────────────────────────────────────────────────────────────────────────
 // 1K Card Memory Layout
+// ────────────────────────────────────────────────────────────────────────────
+// Tasarım Notu:
+// 1K ve 4K yalnızca toplam sektör sayısıyla değil, sektör içi blok organizasyonu
+// ile de farklıdır.
+// - 1K: tüm sektörler 4 blok
+// - 4K: sektör 0-31 -> 4 blok, sektör 32-39 -> 16 blok
+// Bu nedenle 4K için karma (normal+extended) sektör görünümü gerekir.
 // ────────────────────────────────────────────────────────────────────────────
 
 struct Card1KMemoryLayout {
@@ -81,6 +90,13 @@ struct Card1KMemoryLayout {
 // ────────────────────────────────────────────────────────────────────────────
 // 4K Card Memory Layout
 // ────────────────────────────────────────────────────────────────────────────
+// Tasarım Notu:
+// 4K detay görünümünde extended sektörlerin normal sektörlerden sonra bellek içinde
+// bitişik yerleşmesi kritik. Bu yüzden tek bir `detailed` altında
+// `normalSector[32] + extendedSector[8]` kullanılır.
+// Ayrı union üyeleri (ör. detailedNormal / detailedExtended) offset=0 çakışması
+// yaratabileceğinden tercih edilmez.
+// ────────────────────────────────────────────────────────────────────────────
 
 struct Card4KMemoryLayout {
     union {
@@ -101,23 +117,20 @@ struct Card4KMemoryLayout {
             } extended[8];
         } sectors;
 
-        // View 4: Detailed sector structure (normal sectors)
+        // View 4: Detailed sector structure (normal + extended, contiguous)
         struct {
             struct {
                 MifareBlock dataBlock0;      // Block 0 (data)
                 MifareBlock dataBlock1;      // Block 1 (data)
                 MifareBlock dataBlock2;      // Block 2 (data)
                 MifareBlock trailerBlock;    // Block 3 (trailer)
-            } sector[32];
-        } detailedNormal;
+            } normalSector[32];              // Sectors 0-31:  offset 0-2047
 
-        // View 5: Detailed sector structure (extended sectors)
-        struct {
             struct {
                 MifareBlock dataBlocks[15];  // Blocks 0-14 (data)
                 MifareBlock trailerBlock;    // Block 15 (trailer)
-            } sector[8];
-        } detailedExtended;
+            } extendedSector[8];             // Sectors 32-39: offset 2048-4095
+        } detailed;
     };
 
     // Constructors
@@ -137,12 +150,68 @@ struct Card4KMemoryLayout {
     static constexpr int EXTENDED_SECTORS = 8;
 };
 
+// ────────────────────────────────────────────────────────────────────────────
+// Ultralight Memory Layout
+// ────────────────────────────────────────────────────────────────────────────
+// Tasarım Notu:
+// Ultralight 16 page × 4 byte = 64 byte düz bellektir.
+// Ultralight READ komutu (0x30) her seferinde 4 ardışık page = 16 byte döndürür.
+// Bu sayede Classic'teki MifareBlock (16B) Ultralight'ta da "virtual block"
+// olarak kullanılır: blocks[0]=page 0-3, blocks[1]=page 4-7 …
+// Sektör/trailer kavramı yoktur.
+// ────────────────────────────────────────────────────────────────────────────
+
+struct UltralightMemoryLayout {
+    union {
+        // View 1: Raw bytes
+        BYTE raw[64];
+
+        // View 2: Virtual blocks (4 × 16 bytes — APDU read granularity)
+        MifareBlock blocks[4];
+
+        // View 3: Pages (16 × 4 bytes — actual page granularity)
+        UltralightPage pages[16];
+
+        // View 4: Detailed page structure
+        struct {
+            UltralightPage serial0;      // page 0 : SN0-SN2 + BCC0
+            UltralightPage serial1;      // page 1 : SN3-SN6
+            UltralightPage lockPage;     // page 2 : BCC1 + internal + Lock0 + Lock1
+            UltralightPage otpPage;      // page 3 : OTP
+            UltralightPage userData[12]; // page 4-15 : user data (48 bytes)
+        } detailed;
+    };
+
+    // Constructors
+    UltralightMemoryLayout() {
+        std::memset(raw, 0, 64);
+    }
+
+    UltralightMemoryLayout(const BYTE* dataPtr) {
+        std::memcpy(raw, dataPtr, 64);
+    }
+
+    // Size info
+    static constexpr size_t MEMORY_SIZE = 64;
+    static constexpr int TOTAL_BLOCKS = 4;
+    static constexpr int TOTAL_PAGES = 16;
+    static constexpr int USER_DATA_PAGES = 12;
+};
+
 // ════════════════════════════════════════════════════════════════════════════════
 // CardMemoryLayout - Type-Safe Wrapper
 // ════════════════════════════════════════════════════════════════════════════════
+// Tasarım Notu:
+// Dış API tek tip `CardMemoryLayout` ile çalışır; kart türü runtime'da `cardType`
+// ile belirlenir.
+// - `getRawMemory()` ve `getBlock()` erişim noktalarıdır; kart türünden bağımsız.
+// - Sınır kontrolü `getBlock()` içinde merkezi olarak uygulanır.
+// - Topoloji hesapları (`sector->block`, trailer konumu vb.) CardTopology katmanında
+//   tutulmalı; bellek modeli ham görünüm sağlamalıdır.
+// - Ultralight'ta `getBlock(i)` → 4 ardışık page'i 16-byte virtual block olarak verir.
 //
-// Union-based memory layout for either 1K or 4K card.
-// Discriminant (is4K) determines which layout is active.
+// Union-based memory layout for Classic 1K, Classic 4K, or Ultralight.
+// Discriminant (cardType) determines which layout is active.
 //
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -150,51 +219,90 @@ struct CardMemoryLayout {
     union {
         Card1KMemoryLayout card1K;
         Card4KMemoryLayout card4K;
+        UltralightMemoryLayout ultralight;
     } data = {};
 
-    bool is4K = false;
+    CardType cardType = CardType::MifareClassic1K;
 
-    // Constructors
+    // ── Backward-compatible type queries ────────────────────────────────────
+
+    bool is4K()        const { return cardType == CardType::MifareClassic4K; }
+    bool is1K()        const { return cardType == CardType::MifareClassic1K; }
+    bool isUltralight()const { return cardType == CardType::MifareUltralight; }
+    bool isClassic()   const { return is1K() || is4K(); }
+
+    // ── Constructors ────────────────────────────────────────────────────────
+
     CardMemoryLayout() {
-        std::memset(data.card1K.raw, 0, 1024);
+        std::memset(data.card1K.raw, 0, Card1KMemoryLayout::MEMORY_SIZE);
     }
 
-    explicit CardMemoryLayout(bool is4KCard) : is4K(is4KCard) {
-        if (is4K) {
-            std::memset(data.card4K.raw, 0, 4096);
-        } else {
-            std::memset(data.card1K.raw, 0, 1024);
+    explicit CardMemoryLayout(CardType ct) : cardType(ct) {
+        std::memset(getRawMemory(), 0, memorySize());
+    }
+
+    // Backward-compatible: bool is4K → CardType
+    explicit CardMemoryLayout(bool is4KCard)
+        : CardMemoryLayout(is4KCard ? CardType::MifareClassic4K
+                                    : CardType::MifareClassic1K) {}
+
+    // ── Memory size ─────────────────────────────────────────────────────────
+
+    size_t memorySize() const {
+        switch (cardType) {
+            case CardType::MifareClassic4K:  return Card4KMemoryLayout::MEMORY_SIZE;
+            case CardType::MifareUltralight: return UltralightMemoryLayout::MEMORY_SIZE;
+            default:                         return Card1KMemoryLayout::MEMORY_SIZE;
         }
     }
 
-    // Get total memory size
-    size_t memorySize() const {
-        return is4K ? 4096 : 1024;
+    int totalBlocks() const {
+        switch (cardType) {
+            case CardType::MifareClassic4K:  return Card4KMemoryLayout::TOTAL_BLOCKS;
+            case CardType::MifareUltralight: return UltralightMemoryLayout::TOTAL_BLOCKS;
+            default:                         return Card1KMemoryLayout::TOTAL_BLOCKS;
+        }
     }
 
-    // Get pointer to raw memory
+    // ── Raw memory access ───────────────────────────────────────────────────
+
     BYTE* getRawMemory() {
-        return is4K ? data.card4K.raw : data.card1K.raw;
+        switch (cardType) {
+            case CardType::MifareClassic4K:  return data.card4K.raw;
+            case CardType::MifareUltralight: return data.ultralight.raw;
+            default:                         return data.card1K.raw;
+        }
     }
 
     const BYTE* getRawMemory() const {
-        return is4K ? data.card4K.raw : data.card1K.raw;
+        switch (cardType) {
+            case CardType::MifareClassic4K:  return data.card4K.raw;
+            case CardType::MifareUltralight: return data.ultralight.raw;
+            default:                         return data.card1K.raw;
+        }
     }
 
-    // Get block by index
+    // ── Block access (transparent for all card types) ───────────────────────
+
     MifareBlock& getBlock(int index) {
-        if (is4K) {
-            return data.card4K.blocks[index];
-        } else {
-            return data.card1K.blocks[index];
+        if (index < 0 || index >= totalBlocks()) {
+            throw std::out_of_range("Block index out of range");
+        }
+        switch (cardType) {
+            case CardType::MifareClassic4K:  return data.card4K.blocks[index];
+            case CardType::MifareUltralight: return data.ultralight.blocks[index];
+            default:                         return data.card1K.blocks[index];
         }
     }
 
     const MifareBlock& getBlock(int index) const {
-        if (is4K) {
-            return data.card4K.blocks[index];
-        } else {
-            return data.card1K.blocks[index];
+        if (index < 0 || index >= totalBlocks()) {
+            throw std::out_of_range("Block index out of range");
+        }
+        switch (cardType) {
+            case CardType::MifareClassic4K:  return data.card4K.blocks[index];
+            case CardType::MifareUltralight: return data.ultralight.blocks[index];
+            default:                         return data.card1K.blocks[index];
         }
     }
 };

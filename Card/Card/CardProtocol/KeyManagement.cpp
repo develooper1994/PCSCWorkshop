@@ -215,11 +215,11 @@ void KeyManagement::clearAllKeys() {
 // ════════════════════════════════════════════════════════════════════════════════
 
 const MifareBlock& KeyManagement::getTrailer(int sector) const {
-    if (cardMemory_.is4K) {
+    if (cardMemory_.is4K()) {
         if (sector < 32) {
-            return cardMemory_.data.card4K.detailedNormal.sector[sector].trailerBlock;
+            return cardMemory_.data.card4K.detailed.normalSector[sector].trailerBlock;
         } else {
-            return cardMemory_.data.card4K.detailedExtended.sector[sector - 32].trailerBlock;
+            return cardMemory_.data.card4K.detailed.extendedSector[sector - 32].trailerBlock;
         }
     } else {
         return cardMemory_.data.card1K.detailed.sector[sector].trailerBlock;

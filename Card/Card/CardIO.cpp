@@ -8,11 +8,16 @@
 // Construction
 // ════════════════════════════════════════════════════════════════════════════════
 
-CardIO::CardIO(Reader& reader, bool is4K)
-    : reader_(reader), card_(is4K)
+CardIO::CardIO(Reader& reader, CardType ct)
+    : reader_(reader), card_(ct)
 {
-    // Reader'ın auto-auth'unu kapat; auth'u biz yöneteceğiz
     reader_.setAuthRequested(false);
+}
+
+CardIO::CardIO(Reader& reader, bool is4K)
+    : CardIO(reader, is4K ? CardType::MifareClassic4K
+                          : CardType::MifareClassic1K)
+{
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -46,6 +51,7 @@ void CardIO::setKeys(const KEYBYTES& keyA, BYTE slotA,
 
 void CardIO::ensureAuth(int sector)
 {
+    if (card_.isUltralight()) return;       // Ultralight'ta auth yok
     if (sector == lastAuthSector_) return;
 
     int trailer = card_.getTrailerBlockOfSector(sector);
@@ -164,7 +170,16 @@ void CardIO::writeBlock(int block, const BYTE data[16])
     int sector = card_.getSectorForBlock(block);
     ensureAuth(sector);
 
-    reader_.writePage(static_cast<BYTE>(block), data);
+    if (card_.isUltralight()) {
+        // Ultralight WRITE komutu: sayfa başına 4 byte
+        // Virtual block içindeki 4 page'i sırayla yaz
+        int basePage = block * 4;
+        for (int p = 0; p < 4; ++p) {
+            reader_.writePage(static_cast<BYTE>(basePage + p), data + p * 4);
+        }
+    } else {
+        reader_.writePage(static_cast<BYTE>(block), data);
+    }
 
     // Memory'yi de güncelle
     CardMemoryLayout& mem = card_.getMemoryMutable();
