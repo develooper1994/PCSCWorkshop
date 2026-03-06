@@ -1,4 +1,5 @@
 #include "Card.h"
+#include "Reader.h"
 #include "CardUtils.h"
 #include <stdexcept>
 

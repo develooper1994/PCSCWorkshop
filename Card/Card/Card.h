@@ -2,11 +2,13 @@
 #define CARD_H
 
 #include "Topology/Topology.h"
-#include "../Reader.h"
 #include "Topology/SectorConfig.h"
 #include <string>
 #include <vector>
 #include <memory>  // unique_ptr için
+
+// Forward declaration - Reader definition gerekli değil
+class Reader;
 
 // ============================================================
 // Card — Abstract base class for all card types

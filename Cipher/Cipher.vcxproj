@@ -151,7 +151,6 @@
     <ClInclude Include="Cipher\CngAESGcmUtil.h" />
     <ClInclude Include="Cipher\ICipherAAD.h" />
     <ClInclude Include="Cipher\XorCipher.h" />
-    <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Cipher\AffineCipher.cpp" />
@@ -161,7 +160,6 @@
     <ClCompile Include="Cipher\CngAES.cpp" />
     <ClCompile Include="Cipher\CngAESGcm.cpp" />
     <ClCompile Include="Cipher\XorCipher.cpp" />
-    <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

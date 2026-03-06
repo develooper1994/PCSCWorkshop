@@ -1,14 +1,15 @@
-#include "Card/MifareClassic/MifareClassic.h"
+#include "MifareClassic/MifareClassic.h"
 #include "ACR1281UReader.h"
 #include "ACR1281UReaderTestHelpers.h"
 #include "ACR1281UReaderTests.h"
 #include "PcscUtils.h"
+#include "CardUtils.h"
+#include "Log/Log.h"
+
 #include "Ciphers.h"
 #include <iostream>
 #include <vector>
 #include <string>
-#include <CardUtils.h>
-#include <Log/Log.h>
 
 /********************  TESTS ********************/
 

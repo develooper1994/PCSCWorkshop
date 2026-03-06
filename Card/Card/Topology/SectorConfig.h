@@ -6,17 +6,6 @@
 #include <cstdint>
 #include <string>
 
-// represents a single key with its metadata; for KeyType::ACCESS, the key field is ignored and access bits should be stored in the key field of the KeyInfo with kt=KeyType::ACCESS
-struct KeyInfo {
-	KEYBYTES key{};
-	bool readable = true;
-	bool writable = true;
-	KeyType kt = KeyType::A;
-	KeyStructure ks = KeyStructure::NonVolatile;
-	BYTE slot = 0x00;
-	std::string name;
-};
-
 // ════════════════════════════════════════════════════════
 // [keyA(6 Byte)|AccessBytes(4 Byte)|keyB(6 Byte)|]
 // SectorKeyConfig — sector permission descriptor (host-side)

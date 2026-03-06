@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Card">
+      <UniqueIdentifier>{66c81aab-0fc3-4108-bced-2246a6ae0b82}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Card\Topology">
+      <UniqueIdentifier>{0abcdb7f-6713-436a-a534-b8cbd4c3259c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Card\Desfire">
+      <UniqueIdentifier>{4978c0a4-8546-42f2-b442-916f90cfa87c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Card\MifareClassic">
+      <UniqueIdentifier>{ef97a8f4-7e37-46db-8e77-0b41f6d46f78}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Card\Card.h">
+      <Filter>Card</Filter>
+    </ClInclude>
+    <ClInclude Include="Card\CardDataTypes.h">
+      <Filter>Card</Filter>
+    </ClInclude>
+    <ClInclude Include="Card\Topology\SectorConfig.h">
+      <Filter>Card\Topology</Filter>
+    </ClInclude>
+    <ClInclude Include="Card\Topology\Topology.h">
+      <Filter>Card\Topology</Filter>
+    </ClInclude>
+    <ClInclude Include="Card\MifareClassic\MifareClassic.h">
+      <Filter>Card\MifareClassic</Filter>
+    </ClInclude>
+    <ClInclude Include="Card\Desfire\Desfire.h">
+      <Filter>Card\Desfire</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Card.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Card\Card.cpp">
+      <Filter>Card</Filter>
+    </ClCompile>
+    <ClCompile Include="Card\Topology\SectorConfig.cpp">
+      <Filter>Card\Topology</Filter>
+    </ClCompile>
+    <ClCompile Include="Card\Topology\Topology.cpp">
+      <Filter>Card\Topology</Filter>
+    </ClCompile>
+    <ClCompile Include="Card\MifareClassic\MifareClassic.cpp">
+      <Filter>Card\MifareClassic</Filter>
+    </ClCompile>
+    <ClCompile Include="Card\Desfire\Desfire.cpp">
+      <Filter>Card\Desfire</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

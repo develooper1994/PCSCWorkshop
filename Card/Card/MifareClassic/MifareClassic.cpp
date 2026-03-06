@@ -3,6 +3,7 @@
 #include "Utils.h"
 #include <Log/Log.h>
 #include <algorithm>
+#include "Reader.h"
 
 // ════════════════════════════════════════════════════════
 //  Construction

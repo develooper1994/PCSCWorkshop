@@ -4,7 +4,7 @@
 #include "CardConnection.h"
 #include "Cipher.h"
 #include "StatusWordHandler.h"
-#include "../Card/Topology/Topology.h"
+#include "CardDataTypes.h"
 #include <string>
 #include <memory>
 #include <functional>

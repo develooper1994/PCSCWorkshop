@@ -3,6 +3,7 @@
 
 #include "Types.h"
 #include <array>
+#include <string>
 
 // Type aliases for Mifare sector operations
 using ACCESSBYTES = std::array<BYTE, 4>;
@@ -52,6 +53,17 @@ enum class CardBlockKind {
 	Data,
 	Manufacturer,
 	Trailer
+};
+
+// represents a single key with its metadata; for KeyType::ACCESS, the key field is ignored
+struct KeyInfo {
+	KEYBYTES key{};
+	bool readable = true;
+	bool writable = true;
+	KeyType kt = KeyType::A;
+	KeyStructure ks = KeyStructure::NonVolatile;
+	BYTE slot = 0x00;
+	std::string name;
 };
 
 #endif // !CARDTYPES_H
