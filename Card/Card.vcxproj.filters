@@ -63,6 +63,9 @@
     <ClInclude Include="Card\CardModel\CardTopology.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Card\CardModel\SectorDefinition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Card\Card.cpp">
