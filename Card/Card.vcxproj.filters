@@ -69,6 +69,9 @@
     <ClInclude Include="Card\CardModel\AccessBits.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Card\CardModel\CardMemoryLayout.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Card\Card.cpp">

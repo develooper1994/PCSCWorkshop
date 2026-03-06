@@ -144,6 +144,7 @@
     <ClInclude Include="Card\CardModel\AccessBits.h" />
     <ClInclude Include="Card\CardModel\BlockDefinition.h" />
     <ClInclude Include="Card\CardModel\CardDataTypes.h" />
+    <ClInclude Include="Card\CardModel\CardMemoryLayout.h" />
     <ClInclude Include="Card\CardModel\CardTopology.h" />
     <ClInclude Include="Card\CardModel\SectorDefinition.h" />
     <ClInclude Include="Card\Desfire\Desfire.h" />
