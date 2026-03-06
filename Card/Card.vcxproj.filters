@@ -75,6 +75,9 @@
     <ClInclude Include="Card\CardProtocol\AccessControl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Card\CardProtocol\KeyManagement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Card\Card.cpp">
@@ -108,6 +111,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Card\CardProtocol\AccessControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Card\CardProtocol\KeyManagement.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
