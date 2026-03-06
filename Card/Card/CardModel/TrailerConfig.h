@@ -12,16 +12,66 @@
 // Mifare Classic Access Bits — Tam Spec Implementasyonu
 // ════════════════════════════════════════════════════════════════════════════════
 //
-// Trailer block (16 byte):
-//   [KeyA: 6 byte] [Access: 4 byte] [KeyB: 6 byte]
+// Bu header Mifare Classic trailer bloğunun tüm bileşenlerini modeller:
+//   - AccessCondition      : Tek blok için C1/C2/C3 bit üçlüsü
+//   - DataBlockPermission  : C1C2C3 → data blok izin matrisi (spec tablosu)
+//   - TrailerPermission    : C1C2C3 → trailer blok izin matrisi (spec tablosu)
+//   - SectorAccessConfig   : Sektördeki 4 blok için access condition + GPB
+//   - AccessBitsCodec      : ACCESSBYTES ↔ SectorAccessConfig encode/decode
+//   - SectorMode           : Hazır izin şablonları (TRANSPORT, READ_ONLY_AB, ...)
+//   - TrailerConfig        : KeyA + access + KeyB → MifareBlock serialize/parse
 //
-// Access bytes layout (bytes 6-9 of trailer):
-//   Byte 6:  ~C2[3] ~C2[2] ~C2[1] ~C2[0]  ~C1[3] ~C1[2] ~C1[1] ~C1[0]
-//   Byte 7:   C1[3]  C1[2]  C1[1]  C1[0]  ~C3[3] ~C3[2] ~C3[1] ~C3[0]
-//   Byte 8:   C3[3]  C3[2]  C3[1]  C3[0]   C2[3]  C2[2]  C2[1]  C2[0]
-//   Byte 9:  GPB (General Purpose Byte)
+// ─── Trailer Block Yapısı (16 byte) ────────────────────────────────────────
 //
-// Block index: 0,1,2 = data blocks, 3 = trailer (within sector)
+//   Offset  Boyut  İçerik
+//   ─────── ────── ─────────────────────────────────
+//   0       6      Key A  (PCSC okumada 00 döner — asla okunamaz)
+//   6       4      Access Bits  [byte6 byte7 byte8 GPB]
+//   10      6      Key B
+//
+// ─── Access Bytes Bit Düzeni (byte 6-8) ────────────────────────────────────
+//
+//   Byte 6:  ~C2[3] ~C2[2] ~C2[1] ~C2[0] | ~C1[3] ~C1[2] ~C1[1] ~C1[0]
+//   Byte 7:   C1[3]  C1[2]  C1[1]  C1[0] | ~C3[3] ~C3[2] ~C3[1] ~C3[0]
+//   Byte 8:   C3[3]  C3[2]  C3[1]  C3[0] |  C2[3]  C2[2]  C2[1]  C2[0]
+//   Byte 9:  GPB (General Purpose Byte — kullanıcı verisi)
+//
+//   Blok index: 0,1,2 = data blokları, 3 = trailer (sektör içi)
+//   Her bitin ters kopyası (~ ile işaretli) bütünlük kontrolü için tutulur.
+//   Factory default: FF 07 80 69  (data=000, trailer=001)
+//
+// ─── Kullanım Örnekleri ────────────────────────────────────────────────────
+//
+//   // 1) Raw access bits decode:
+//   ACCESSBYTES raw = {0xFF, 0x07, 0x80, 0x69};
+//   SectorAccessConfig cfg = AccessBitsCodec::decode(raw);
+//   DataBlockPermission dp = cfg.dataPermission(0);
+//   // dp.readA == true, dp.writeA == true  (transport mode)
+//
+//   // 2) Bütünlük kontrolü:
+//   bool ok = AccessBitsCodec::verify(raw);   // true
+//
+//   // 3) Hazır mod ile yeni config oluştur:
+//   SectorAccessConfig newCfg = sectorModeToConfig(SectorMode::READ_AB_WRITE_B);
+//   ACCESSBYTES encoded = AccessBitsCodec::encode(newCfg);
+//
+//   // 4) Trailer config oluştur + serialize:
+//   TrailerConfig tc;
+//   tc.keyA  = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+//   tc.keyB  = {0xA0,0xA1,0xA2,0xA3,0xA4,0xA5};
+//   tc.access = sectorModeToConfig(SectorMode::READ_AB_WRITE_B);
+//   MifareBlock blk = tc.toBlock();          // → 16 byte trailer
+//   bool valid = tc.isValid();               // bütünlük kontrolü
+//
+//   // 5) Trailer bloğunu parse et:
+//   TrailerConfig parsed = TrailerConfig::fromBlock(someBlock);
+//   KEYBYTES keyB = parsed.keyB;
+//   TrailerPermission tp = parsed.access.trailerPermission();
+//   // tp.accReadA, tp.keyBWriteB, ...
+//
+//   // 6) Permission sorgula:
+//   DataBlockPermission dp = DataBlockPermission::fromCondition({true,false,false});
+//   // C1=1,C2=0,C3=0 → readA=true, readB=true, writeA=false, writeB=true
 //
 // ════════════════════════════════════════════════════════════════════════════════
 

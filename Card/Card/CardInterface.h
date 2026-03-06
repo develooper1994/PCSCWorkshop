@@ -9,21 +9,67 @@
 #include <memory>
 
 // ════════════════════════════════════════════════════════════════════════════════
-// CardInterface - Complete Card Management System
+// CardInterface — Mifare Classic Kart Modeli (In-Memory)
 // ════════════════════════════════════════════════════════════════════════════════
 //
-// High-level unified interface combining:
-// - CardMemoryLayout (physical memory)
-// - CardLayoutTopology (layout queries)
-// - AccessControl (permissions)
-// - KeyManagement (key storage)
-// - AuthenticationState (sessions)
+// Kart bellegi, topology, key yönetimi, auth durumu ve erisim kontrolünü
+// tek bir arayüzde birlestiren sinif. I/O yapmaz — saf bellek modelidir.
+// Gerçek kart I/O için CardIO sinifini kullanin.
 //
-// Usage:
-// CardInterface card(false);  // 1K card
-// card.loadMemory(rawBytes);
-// card.authenticate(5, keyA);
-// if (card.canRead(block)) { ... }
+// ─── Mimari ────────────────────────────────────────────────────────────────
+//
+//   CardInterface
+//   ├── CardMemoryLayout      raw bellek (union: 1K veya 4K)
+//   ├── CardLayoutTopology    blok/sektör hesaplamalari
+//   ├── AccessControl         trailer'dan izin matrisi decode
+//   ├── KeyManagement         key kayit/sorgulama
+//   └── AuthenticationState   auth oturum takibi
+//
+// ─── Kullanim Örnekleri ────────────────────────────────────────────────────
+//
+//   // 1) Olustur ve bellek yükle:
+//   CardInterface card(false);                  // 1K kart
+//   card.loadMemory(rawBytes, 1024);            // PCSC'den okunan 1024 byte
+//
+//   // 2) Kart bilgisi:
+//   KEYBYTES uid  = card.getUID();              // manufacturer blogundan UID
+//   bool     is1k = card.is1K();                // true
+//   int      blks = card.getTotalBlocks();      // 64
+//
+//   // 3) Topology sorgulari:
+//   int sector  = card.getSectorForBlock(9);    // 2
+//   int trailer = card.getTrailerBlockOfSector(2); // 11
+//   bool isMfg  = card.isManufacturerBlock(0);  // true
+//   bool isTrl  = card.isTrailerBlock(3);        // true
+//
+//   // 4) Bellek erisimi (zero-copy union view):
+//   const CardMemoryLayout& mem = card.getMemory();
+//   BYTE uid0 = mem.data.card1K.blocks[0].manufacturer.uid[0];
+//   BYTE keyB = mem.data.card1K.blocks[3].trailer.keyB[2];
+//
+//   // 5) Blok erisimi:
+//   const MifareBlock& blk = card.getBlock(8);
+//   BYTE firstByte = blk.raw[0];
+//
+//   // 6) Key yönetimi:
+//   KEYBYTES myKey = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+//   card.registerKey(KeyType::A, myKey, KeyStructure::NonVolatile, 0x01, "DefA");
+//   KEYBYTES k = card.getKey(KeyType::A, 0x01);
+//   KEYBYTES cardKeyA = card.getCardKey(0, KeyType::A); // trailer'dan oku
+//
+//   // 7) Auth simulasyonu:
+//   card.authenticate(5, KeyType::A);
+//   bool ok = card.isAuthenticated(5);          // true
+//   card.deauthenticate(5);
+//   card.clearAuthentication();                 // tüm sektörler
+//
+//   // 8) Erisim kontrolü (trailer access bits'e göre):
+//   bool r = card.canRead(8, KeyType::A);       // data blok
+//   bool w = card.canWrite(8, KeyType::B);      // data blok
+//   bool dr = card.canReadDataBlocks(2, KeyType::A);  // sektör bazli
+//
+//   // 9) Bellegi geri al:
+//   BYTEV exported = card.exportMemory();        // 1024 byte kopyasi
 //
 // ════════════════════════════════════════════════════════════════════════════════
 
