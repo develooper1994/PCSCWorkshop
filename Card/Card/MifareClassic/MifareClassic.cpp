@@ -4,35 +4,47 @@
 #include "Reader.h"
 #include <Log/Log.h>
 #include <algorithm>
+#include <iomanip>
+#include <iostream>
 
-// ════════════════════════════════════════════════════════
-//  Construction
-// ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
+// Construction
+// ════════════════════════════════════════════════════════════════════════════════
+
 MifareCardCore::MifareCardCore(Reader& r, bool is4K)
 	: Card(r),
 	  is4KCard_(is4K),
 	  numberOfSectors_(is4K ? 40 : 16),
 	  sectorConfigs_(numberOfSectors_, SectorConfig{}) {
-	// Load default keys into MifareCardCore's key registry
-	// Keys will be loaded to reader on-demand when first authentication is needed
-	const std::array<BYTE, 6> defaultKey6 = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-	const BYTE keySlotA = 0x01;
-	const BYTE keySlotB = 0x02;
+	
+	// Initialize auth cache with default values
+	authCache_.resize(numberOfSectors_);
+	for (auto& auth : authCache_) {
+		auth.slot = 0xFF;  // Invalid/not-authorized sentinel
+	}
 
-	// Register keys - they will be loaded to reader lazily when needed
-	setKey(KeyType::A, defaultKey6, KeyStructure::NonVolatile, keySlotA);
-	setKey(KeyType::B, defaultKey6, KeyStructure::NonVolatile, keySlotB);
+	// Register default keys (FF...FF for both A and B)
+	const std::array<BYTE, 6> defaultKey = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+	setKey(KeyType::A, defaultKey, KeyStructure::NonVolatile, 0x01);
+	setKey(KeyType::B, defaultKey, KeyStructure::NonVolatile, 0x02);
 }
 
-// Inline implementations are in header file
-// See MifareClassic.h for: getCardType(), getSectorCount(), etc.
+// ════════════════════════════════════════════════════════════════════════════════
+// Card Base Class Implementation
+// ════════════════════════════════════════════════════════════════════════════════
 
+CardType MifareCardCore::getCardType() const noexcept {
+	return is4KCard_ ? CardType::MifareClassic4K : CardType::MifareClassic1K;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// getTopology(): Build detailed card layout for introspection
+// ────────────────────────────────────────────────────────────────────────────
 CardTopology MifareCardCore::getTopology() const {
 	CardTopology topology;
 	topology.cardType = getCardType();
 	topology.sectors.reserve(numberOfSectors_);
 
-	// Topology
 	for (size_t sector = 0; sector < numberOfSectors_; ++sector) {
 		CardSectorNode sectorNode;
 		sectorNode.index = sector;
@@ -41,7 +53,8 @@ CardTopology MifareCardCore::getTopology() const {
 		const int firstBlock = firstBlockOfSector(static_cast<int>(sector));
 		const int blockCount = blocksPerSector(static_cast<int>(sector));
 		sectorNode.blocks.reserve(static_cast<size_t>(blockCount));
-		// Sector
+
+		// Populate blocks
 		for (int i = 0; i < blockCount; ++i) {
 			const int absoluteBlock = firstBlock + i;
 			const bool isManufacturer = absoluteBlock == 0;
@@ -53,7 +66,7 @@ CardTopology MifareCardCore::getTopology() const {
 			blockNode.readable = true;
 			blockNode.writable = !isManufacturer;
 			blockNode.isMetadata = isManufacturer || isTrailer;
-			// Block
+
 			if (isManufacturer) {
 				blockNode.kind = CardBlockKind::Manufacturer;
 				blockNode.name = "Manufacturer";
@@ -74,25 +87,109 @@ CardTopology MifareCardCore::getTopology() const {
 				blockNode.name = "Data";
 				blockNode.fields = {{0, 16, true, true, "Payload"}};
 			}
+
 			sectorNode.blocks.push_back(blockNode);
 		}
+
 		topology.sectors.push_back(sectorNode);
 	}
+
 	return topology;
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Address-based read/write (inherited interface delegates to block operations)
+// ────────────────────────────────────────────────────────────────────────────
+
 BYTEV MifareCardCore::read(size_t address, size_t length) {
+	// Convert byte address to block index and delegate
 	return readLinear(static_cast<BYTE>(address / 16), length);
 }
 
 void MifareCardCore::write(size_t address, const BYTEV& data) {
+	// Convert byte address to block index and delegate
 	writeLinear(static_cast<BYTE>(address / 16), data);
 }
 
 void MifareCardCore::reset() {
 	authCache_.clear();
-	authCache_.resize(numberOfSectors_, KeyInfo{});
+	authCache_.resize(numberOfSectors_);
+	for (auto& auth : authCache_) {
+		auth.slot = 0xFF;
+	}
 }
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Card Properties
+// ════════════════════════════════════════════════════════════════════════════════
+
+size_t MifareCardCore::getSectorCount() const noexcept {
+	return numberOfSectors_;
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Key Management
+// ════════════════════════════════════════════════════════════════════════════════
+
+void MifareCardCore::setKey(KeyType kt, const std::array<BYTE, 6>& key,
+	KeyStructure ks, BYTE slot) {
+	
+	// Find existing key or create new
+	auto it = std::find_if(keys_.begin(), keys_.end(),
+		[kt](const KeyInfo& k) { return k.kt == kt; });
+
+	if (it != keys_.end()) {
+		// Update existing
+		it->key = key;
+		it->ks = ks;
+		it->slot = slot;
+	} else {
+		// Add new
+		KeyInfo ki;
+		ki.kt = kt;
+		ki.key = key;
+		ki.ks = ks;
+		ki.slot = slot;
+		keys_.push_back(ki);
+	}
+}
+
+void MifareCardCore::loadAllKeysToReader() {
+	for (const auto& ki : keys_) {
+		reader().loadKey(ki.key.data(), ki.ks, ki.slot);
+	}
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Sector Configuration Management
+// ════════════════════════════════════════════════════════════════════════════════
+
+void MifareCardCore::setSectorConfig(int sector, const SectorConfig& cfg) {
+	validateSectorNumber(sector);
+	sectorConfigs_[sector] = cfg;
+	invalidateAuthForSector(sector);
+}
+
+void MifareCardCore::setAllSectorsConfig(const SectorConfig& cfg) {
+	std::fill(sectorConfigs_.begin(), sectorConfigs_.end(), cfg);
+	for (size_t i = 0; i < numberOfSectors_; ++i) {
+		invalidateAuthForSector(static_cast<int>(i));
+	}
+}
+
+void MifareCardCore::setAllSectorsConfig(const std::vector<SectorConfig>& configs) {
+	if (configs.size() != numberOfSectors_) {
+		throw std::invalid_argument("configs size mismatch");
+	}
+	sectorConfigs_ = configs;
+	for (size_t i = 0; i < numberOfSectors_; ++i) {
+		invalidateAuthForSector(static_cast<int>(i));
+	}
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Layout Information
+// ════════════════════════════════════════════════════════════════════════════════
 
 int MifareCardCore::blockToSector(BYTE block) const {
 	return sectorFromBlock(block);
@@ -112,47 +209,11 @@ int MifareCardCore::blocksInSector(int sector) const {
 	return blocksPerSector(sector);
 }
 
-void MifareCardCore::setSectorConfig(int sector, const SectorConfig& cfg) {
-	validateSectorNumber(sector);
-	sectorConfigs_[sector] = cfg;
-	invalidateAuthForSector(sector);
-}
+// ════════════════════════════════════════════════════════════════════════════════
+// Authentication & Authorization
+// ════════════════════════════════════════════════════════════════════════════════
 
-void MifareCardCore::setAllSectorsConfig(const std::vector<SectorConfig>& configs) {
-	if (configs.size() != numberOfSectors_) {
-		throw std::invalid_argument("configs size mismatch");
-	}
-	sectorConfigs_ = configs;
-	for (size_t i = 0; i < numberOfSectors_; ++i) {
-		invalidateAuthForSector(static_cast<int>(i));
-	}
-}
-
-void MifareCardCore::setKey(KeyType kt, const std::array<BYTE, 6>& key,
-	KeyStructure ks, BYTE slot) {
-	auto it = std::find_if(keys_.begin(), keys_.end(),
-		[kt](const KeyInfo& k) { return k.kt == kt; });
-
-	if (it != keys_.end()) {
-		it->key = key;
-		it->ks = ks;
-		it->slot = slot;
-	} else {
-		KeyInfo ki;
-		ki.kt = kt;
-		ki.key = key;
-		ki.ks = ks;
-		ki.slot = slot;
-		keys_.push_back(ki);
-	}
-}
-
-void MifareCardCore::loadAllKeysToReader() {
-	for (const auto& ki : keys_) {
-		reader().loadKey(ki.key.data(), ki.ks, ki.slot);
-	}
-}
-
+// Check cache: is this sector already authenticated with this key?
 bool MifareCardCore::isSectorAuthorized(int sector, KeyType kt, BYTE slot) const noexcept {
 	if (sector < 0 || sector >= static_cast<int>(authCache_.size())) {
 		return false;
@@ -161,55 +222,54 @@ bool MifareCardCore::isSectorAuthorized(int sector, KeyType kt, BYTE slot) const
 	return cached.kt == kt && cached.slot == slot;
 }
 
+// Mark sector as authenticated with given key
 void MifareCardCore::setAuthCache(int sector, KeyType kt, BYTE slot) {
 	ensureAuthCacheSize(sector + 1);
 	authCache_[sector].kt = kt;
 	authCache_[sector].slot = slot;
 }
 
+// Invalidate auth for sector (forces re-auth next time)
+void MifareCardCore::invalidateAuthForSector(int sector) noexcept {
+	if (sector >= 0 && sector < static_cast<int>(authCache_.size())) {
+		authCache_[sector].slot = 0xFF;  // Sentinel: invalid
+	}
+}
+
+// Grow auth cache if needed
 void MifareCardCore::ensureAuthCacheSize(int sector) {
-	if (sector >= static_cast<int>(authCache_.size())) {
-		authCache_.resize(sector + 1, KeyInfo{});
+	if (sector > static_cast<int>(authCache_.size())) {
+		authCache_.resize(sector);
 		for (auto& ki : authCache_) {
 			ki.slot = 0xFF;
 		}
 	}
 }
 
-KeyType MifareCardCore::chooseKeyForOperation(int sector, bool isWrite) const {
-	const auto& cfg = sectorConfigs_[sector];
-	if (isWrite) {
-		return cfg.keyB.writable ? KeyType::B : KeyType::A;
-	} else {
-		return cfg.keyA.readable ? KeyType::A : KeyType::B;
-	}
-}
-
-const KeyInfo& MifareCardCore::findKeyOrThrow(KeyType kt) const {
-	auto it = std::find_if(keys_.begin(), keys_.end(),
-		[kt](const KeyInfo& k) { return k.kt == kt; });
-	if (it == keys_.end()) {
-		throw std::runtime_error("Key not found for KeyType");
-	}
-	return *it;
-}
-
+// Authenticate to a sector using specified key
 void MifareCardCore::ensureAuthorized(int sector, KeyType kt, BYTE keySlot) {
+	// Return immediately if already authenticated with same key
 	if (isSectorAuthorized(sector, kt, keySlot)) {
 		return;
 	}
+
+	// Need to authenticate
 	BYTE block = trailerBlockOf(sector);
 	reader().setKeyType(kt);
 	reader().setKeyNumber(keySlot);
 	reader().setAuthRequested(true);
 	reader().performAuth(block);
+	
+	// Cache the auth
 	setAuthCache(sector, kt, keySlot);
 }
 
+// Try any registered key for this sector
 KeyType MifareCardCore::tryAnyAuthForSector(int sector, BYTE& outSlot) {
 	const auto& keyA = findKeyOrThrow(KeyType::A);
 	const auto& keyB = findKeyOrThrow(KeyType::B);
 
+	// Try cached auth first
 	if (isSectorAuthorized(sector, KeyType::A, keyA.slot)) {
 		outSlot = keyA.slot;
 		return KeyType::A;
@@ -219,12 +279,14 @@ KeyType MifareCardCore::tryAnyAuthForSector(int sector, BYTE& outSlot) {
 		return KeyType::B;
 	}
 
+	// Try to authenticate with KeyA
 	try {
 		ensureAuthorized(sector, KeyType::A, keyA.slot);
 		outSlot = keyA.slot;
 		return KeyType::A;
 	} catch (...) {}
 
+	// Try to authenticate with KeyB
 	try {
 		ensureAuthorized(sector, KeyType::B, keyB.slot);
 		outSlot = keyB.slot;
@@ -234,13 +296,18 @@ KeyType MifareCardCore::tryAnyAuthForSector(int sector, BYTE& outSlot) {
 	}
 }
 
+// ════════════════════════════════════════════════════════════════════════════════
+// Single-Block Operations
+// ════════════════════════════════════════════════════════════════════════════════
+
 BYTEV MifareCardCore::read(BYTE block) {
 	validateBlockNumber(block);
 	if (isTrailerBlock(block)) {
 		checkTrailerBlock(block);
 	}
+
 	int sector = sectorFromBlock(block);
-	KeyType kt = chooseKeyForOperation(sector, false);
+	KeyType kt = chooseKeyForOperation(sector, false);  // isWrite=false
 	const KeyInfo& ki = findKeyOrThrow(kt);
 	return readWithKey(block, kt, ki.slot);
 }
@@ -253,10 +320,15 @@ void MifareCardCore::write(BYTE block, const BYTEV& data) {
 	if (isManufacturerBlock(block)) {
 		checkManufacturerBlock(block);
 	}
+
 	int sector = sectorFromBlock(block);
-	KeyType kt = chooseKeyForOperation(sector, true);
+	KeyType kt = chooseKeyForOperation(sector, true);  // isWrite=true
 	const KeyInfo& ki = findKeyOrThrow(kt);
 	writeWithKey(block, data, kt, ki.slot);
+}
+
+void MifareCardCore::write(BYTE block, const std::string& text) {
+	write(block, BYTEV(text.begin(), text.end()));
 }
 
 BYTEV MifareCardCore::readWithKey(BYTE block, KeyType keyType, BYTE keySlot) {
@@ -265,13 +337,19 @@ BYTEV MifareCardCore::readWithKey(BYTE block, KeyType keyType, BYTE keySlot) {
 	return reader().readPage(block);
 }
 
-void MifareCardCore::writeWithKey(BYTE block, const BYTEV& data, KeyType keyType, BYTE keySlot) {
+void MifareCardCore::writeWithKey(BYTE block, const BYTEV& data, 
+								   KeyType keyType, BYTE keySlot) {
 	if (data.size() != 16) {
-		throw std::invalid_argument("Block data must be 16 bytes");
+		throw std::invalid_argument("Block data must be exactly 16 bytes");
 	}
 	int sector = sectorFromBlock(block);
 	ensureAuthorized(sector, keyType, keySlot);
 	reader().writePage(block, data.data());
+}
+
+void MifareCardCore::writeWithKey(BYTE block, const std::string& text, 
+								   KeyType keyType, BYTE keySlot) {
+	writeWithKey(block, BYTEV(text.begin(), text.end()), keyType, keySlot);
 }
 
 BLOCK MifareCardCore::readBlock(BYTE block) {
@@ -285,6 +363,10 @@ void MifareCardCore::writeBlock(BYTE block, const BYTE data[16]) {
 	BYTEV v(data, data + 16);
 	write(block, v);
 }
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Multi-Block Linear Operations
+// ════════════════════════════════════════════════════════════════════════════════
 
 BYTEV MifareCardCore::readLinear(BYTE startBlock, size_t length) {
 	BYTEV result;
@@ -315,6 +397,10 @@ void MifareCardCore::writeLinear(BYTE startBlock, const BYTEV& data) {
 	}
 }
 
+// ════════════════════════════════════════════════════════════════════════════════
+// Trailer Block Operations (Sector Security Configuration)
+// ════════════════════════════════════════════════════════════════════════════════
+
 BLOCK MifareCardCore::readTrailer(int sector) {
 	validateSectorNumber(sector);
 	BYTE trailerBlock = trailerBlockOf(sector);
@@ -323,6 +409,7 @@ BLOCK MifareCardCore::readTrailer(int sector) {
 
 std::vector<BLOCK> MifareCardCore::readAllTrailers() {
 	std::vector<BLOCK> trailers;
+	trailers.reserve(numberOfSectors_);
 	for (size_t i = 0; i < numberOfSectors_; ++i) {
 		trailers.push_back(readTrailer(static_cast<int>(i)));
 	}
@@ -330,12 +417,13 @@ std::vector<BLOCK> MifareCardCore::readAllTrailers() {
 }
 
 void MifareCardCore::printAllTrailers() {
-	std::cout << "Sector Trailers:\n";
+	std::cout << "Sector Trailers (KeyA | AccessBytes | KeyB):\n";
 	for (size_t i = 0; i < numberOfSectors_; ++i) {
 		BLOCK trailer = readTrailer(static_cast<int>(i));
-		std::cout << "Sector " << i << ": ";
+		std::cout << "Sector " << std::setw(2) << i << ": ";
 		for (size_t j = 0; j < 16; ++j) {
-			std::cout << std::hex << static_cast<int>(trailer[j]) << " ";
+			std::cout << std::hex << std::setw(2) << std::setfill('0')
+					  << static_cast<int>(trailer[j]) << " ";
 		}
 		std::cout << std::dec << "\n";
 	}
@@ -343,64 +431,73 @@ void MifareCardCore::printAllTrailers() {
 
 void MifareCardCore::changeTrailer(int sector, const BYTE trailer16[16]) {
 	validateSectorNumber(sector);
-	if (!SectorConfig::validateAccessBits(trailer16 + 6))
-		throw std::runtime_error("changeTrailer: invalid access bits");
+	
+	// Validate access bytes
+	if (!SectorConfig::validateAccessBits(trailer16 + 6)) {
+		throw std::runtime_error("changeTrailer: invalid access bits in trailer");
+	}
 
+	// Authenticate and write
 	const KeyInfo& ki = findKeyOrThrow(KeyType::B);
 	ensureAuthorized(sector, KeyType::B, ki.slot);
-
 	reader().writePage(trailerBlockOf(sector), trailer16);
+	
+	// Invalidate auth cache
 	invalidateAuthForSector(sector);
 }
 
+// Simple apply: use any key we have
 void MifareCardCore::applySectorConfigToCard(int sector) {
 	validateSectorNumber(sector);
 	
 	const auto& cfg = sectorConfigs_[sector];
 	
-	// If keys are provided in SectorKeyConfig, use them; otherwise fallback to registered keys
+	// Determine key bytes to write
 	const BYTE* keyAData = nullptr;
 	const BYTE* keyBData = nullptr;
 	
+	// Use config keys if provided, else fallback to registered keys
 	if (cfg.keyA.key[0] != 0 || cfg.keyA.key[1] != 0 || cfg.keyA.key[2] != 0) {
-		// keyA is set in config
 		keyAData = cfg.keyA.key.data();
 	} else {
-		// Fallback to registered keys
 		requireBothKeys();
-		const KeyInfo& ka = findKeyOrThrow(KeyType::A);
-		keyAData = ka.key.data();
+		keyAData = findKeyOrThrow(KeyType::A).key.data();
 	}
 	
 	if (cfg.keyB.key[0] != 0 || cfg.keyB.key[1] != 0 || cfg.keyB.key[2] != 0) {
-		// keyB is set in config
 		keyBData = cfg.keyB.key.data();
 	} else {
-		// Fallback to registered keys
 		requireBothKeys();
-		const KeyInfo& kb = findKeyOrThrow(KeyType::B);
-		keyBData = kb.key.data();
+		keyBData = findKeyOrThrow(KeyType::B).key.data();
 	}
 
+	// Generate access bytes
 	ACCESSBYTES access = SectorConfig::makeSectorAccessBits(cfg);
-	if (!SectorConfig::validateAccessBits(access.data()))
+	if (!SectorConfig::validateAccessBits(access.data())) {
 		throw std::runtime_error("Generated access bits are invalid");
+	}
 
+	// Build trailer
 	BLOCK trailer = SectorConfig::buildTrailer(keyAData, access.data(), keyBData);
 
-	BYTE usedSlot = 0xFF;
-	tryAnyAuthForSector(sector, usedSlot);
+	// Authenticate with any key
+	BYTE authSlot = 0xFF;
+	tryAnyAuthForSector(sector, authSlot);
 
+	// Write trailer
 	reader().writePage(trailerBlockOf(sector), trailer.data());
 	invalidateAuthForSector(sector);
 }
 
-void MifareCardCore::applySectorConfigStrict(int sector, KeyType authKeyType, bool enableRollback) {
+// Strict apply: validate everything, rollback on failure
+void MifareCardCore::applySectorConfigStrict(int sector, 
+											  KeyType authKeyType, 
+											  bool enableRollback) {
 	validateSectorNumber(sector);
 	
 	const auto& cfg = sectorConfigs_[sector];
 	
-	// If keys are provided in SectorKeyConfig, use them; otherwise fallback to registered keys
+	// Determine key bytes
 	const BYTE* keyAData = nullptr;
 	const BYTE* keyBData = nullptr;
 	
@@ -408,34 +505,39 @@ void MifareCardCore::applySectorConfigStrict(int sector, KeyType authKeyType, bo
 		keyAData = cfg.keyA.key.data();
 	} else {
 		requireBothKeys();
-		const KeyInfo& ka = findKeyOrThrow(KeyType::A);
-		keyAData = ka.key.data();
+		keyAData = findKeyOrThrow(KeyType::A).key.data();
 	}
 	
 	if (cfg.keyB.key[0] != 0 || cfg.keyB.key[1] != 0 || cfg.keyB.key[2] != 0) {
 		keyBData = cfg.keyB.key.data();
 	} else {
 		requireBothKeys();
-		const KeyInfo& kb = findKeyOrThrow(KeyType::B);
-		keyBData = kb.key.data();
+		keyBData = findKeyOrThrow(KeyType::B).key.data();
 	}
 
 	const KeyInfo& authKey = findKeyOrThrow(authKeyType);
 
+	// Generate access bytes
 	auto accessBytes = SectorConfig::makeSectorAccessBits(cfg);
-	if (!SectorConfig::validateAccessBits(accessBytes.data()))
+	if (!SectorConfig::validateAccessBits(accessBytes.data())) {
 		throw std::runtime_error("Generated access bits invalid");
+	}
 
 	BYTE trailerBlock = trailerBlockOf(sector);
 
+	// Save old trailer for rollback
 	BLOCK oldTrailer{};
-	if (enableRollback)
+	if (enableRollback) {
 		oldTrailer = readTrailer(sector);
+	}
 
+	// Build new trailer
 	BLOCK newTrailer = SectorConfig::buildTrailer(keyAData, accessBytes.data(), keyBData);
 
+	// Authenticate with specified key
 	ensureAuthorized(sector, authKeyType, authKey.slot);
 
+	// Try to write, rollback on failure
 	try {
 		reader().writePage(trailerBlock, newTrailer.data());
 	} catch (...) {
@@ -444,31 +546,51 @@ void MifareCardCore::applySectorConfigStrict(int sector, KeyType authKeyType, bo
 				ensureAuthorized(sector, authKeyType, authKey.slot);
 				reader().writePage(trailerBlock, oldTrailer.data());
 			} catch (...) {
-				std::cerr << "Rollback failed. trailerBlock: "
-						  << static_cast<int>(trailerBlock) << std::endl;
+				std::cerr << "Rollback failed for sector " << sector << "\n";
 			}
 		}
 		throw;
 	}
+
 	invalidateAuthForSector(sector);
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Batch Configuration Operations
+// ════════════════════════════════════════════════════════════════════════════════
+
+void MifareCardCore::applyAllSectorsConfig() {
+	batchApply([this](int s) { applySectorConfigToCard(s); });
 }
 
 void MifareCardCore::applyAllSectorsConfig(const std::vector<SectorConfig>& configs) {
 	setAllSectorsConfig(configs);
-	batchApply([this](int s) { applySectorConfigToCard(s); });
+	applyAllSectorsConfig();
 }
 
-void MifareCardCore::applyAllSectorsConfigStrict(const std::vector<SectorConfig>& configs, KeyType authKeyType, bool enableRollback) {
-	setAllSectorsConfig(configs);
+void MifareCardCore::applyAllSectorsConfigStrict(KeyType authKeyType, 
+												  bool enableRollback) {
 	batchApply([this, authKeyType, enableRollback](int s) {
 		applySectorConfigStrict(s, authKeyType, enableRollback);
 	});
 }
 
+void MifareCardCore::applyAllSectorsConfigStrict(const std::vector<SectorConfig>& configs,
+												  KeyType authKeyType,
+												  bool enableRollback) {
+	setAllSectorsConfig(configs);
+	applyAllSectorsConfigStrict(authKeyType, enableRollback);
+}
+
+// Load config from card (read trailers and parse)
 void MifareCardCore::loadSectorConfigFromCard(int sector) {
 	validateSectorNumber(sector);
 	BLOCK trailer = readTrailer(sector);
 	sectorConfigs_[sector] = SectorConfig::parseAccessBitsToConfig(trailer.data() + 6);
+}
+
+void MifareCardCore::loadAllSectorConfigsFromCard() {
+	batchApply([this](int s) { loadSectorConfigFromCard(s); });
 }
 
 void MifareCardCore::loadSectorConfigsFromCard(const std::vector<int>& sectors) {
@@ -477,14 +599,42 @@ void MifareCardCore::loadSectorConfigsFromCard(const std::vector<int>& sectors) 
 	}
 }
 
-void MifareCardCore::validateBlockNumber(int block) const {
-	int maxBlock = is4KCard_ ? 255 : 63;
-	if (block < 0 || block > maxBlock) {
-		throw std::out_of_range("block out of range");
+// ════════════════════════════════════════════════════════════════════════════════
+// Helper Functions (Key Selection, Validation, etc.)
+// ════════════════════════════════════════════════════════════════════════════════
+
+KeyType MifareCardCore::chooseKeyForOperation(int sector, bool isWrite) const {
+	const auto& cfg = sectorConfigs_[sector];
+	if (isWrite) {
+		return cfg.keyB.writable ? KeyType::B : KeyType::A;
+	} else {
+		return cfg.keyA.readable ? KeyType::A : KeyType::B;
 	}
 }
 
-void MifareCardCore::throwIfErrors(const std::vector<std::string>& errors, const char* header) {
+const KeyInfo& MifareCardCore::findKeyOrThrow(KeyType kt) const {
+	auto it = std::find_if(keys_.begin(), keys_.end(),
+		[kt](const KeyInfo& k) { return k.kt == kt; });
+	if (it == keys_.end()) {
+		throw std::runtime_error("Key not found for KeyType");
+	}
+	return *it;
+}
+
+bool MifareCardCore::hasKey(KeyType kt) const noexcept {
+	return std::any_of(keys_.begin(), keys_.end(),
+		[kt](const KeyInfo& k) { return k.kt == kt; });
+}
+
+void MifareCardCore::requireBothKeys() const {
+	if (!hasKey(KeyType::A) || !hasKey(KeyType::B)) {
+		throw std::runtime_error(
+			"Both KeyType::A and KeyType::B must be set");
+	}
+}
+
+void MifareCardCore::throwIfErrors(const std::vector<std::string>& errors,
+									const char* header) {
 	if (errors.empty()) return;
 	std::string msg = header;
 	for (const auto& e : errors) msg += e + "\n";

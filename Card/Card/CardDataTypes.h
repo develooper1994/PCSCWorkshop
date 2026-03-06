@@ -13,19 +13,6 @@ using SECTOR = std::array<BLOCK, 4>;
 using MIFARECLASSIC1k = std::array<BLOCK, 16>;
 using MIFARECLASSIC4k = std::array<BLOCK, 40>;
 
-struct TrailerFields {
-	// 16 bytes: [keyA(6 bytes)|AccessBytes(4 bytes)|keyB(6 bytes)|]
-	KEYBYTES	keyA{};
-	ACCESSBYTES accessBytes{};
-	KEYBYTES	keyB{};
-};
-
-union TrailerData {
-	TrailerFields fields;
-	std::array<BYTE, 16> raw;
-
-	TrailerData() : raw{} {} // Default constructor initializes raw to zeros
-};
 
 enum class CardType {
 	Unknown,
@@ -54,6 +41,8 @@ enum class CardBlockKind {
 	Manufacturer,
 	Trailer
 };
+
+
 
 // represents a single key with its metadata; for KeyType::ACCESS, the key field is ignored
 struct KeyInfo {
