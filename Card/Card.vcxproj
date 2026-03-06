@@ -141,6 +141,7 @@
   <ItemGroup>
     <ClInclude Include="Card\Card.h" />
     <ClInclude Include="Card\CardDataTypes.h" />
+    <ClInclude Include="Card\CardInterface.h" />
     <ClInclude Include="Card\CardModel\AccessBits.h" />
     <ClInclude Include="Card\CardModel\BlockDefinition.h" />
     <ClInclude Include="Card\CardModel\CardDataTypes.h" />
@@ -160,6 +161,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Card\Card.cpp" />
+    <ClCompile Include="Card\CardInterface.cpp" />
     <ClCompile Include="Card\CardModel\AccessBits.cpp" />
     <ClCompile Include="Card\CardModel\CardTopology.cpp" />
     <ClCompile Include="Card\CardProtocol\AccessControl.cpp" />

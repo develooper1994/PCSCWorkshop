@@ -81,6 +81,9 @@
     <ClInclude Include="Card\CardProtocol\AuthenticationState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Card\CardInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Card\Card.cpp">
@@ -120,6 +123,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Card\CardProtocol\AuthenticationState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Card\CardInterface.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
