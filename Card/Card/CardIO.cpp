@@ -1,4 +1,5 @@
 #include "CardIO.h"
+#include "CardModel/CardMemoryLayout.h"
 #include "CardModel/TrailerConfig.h"
 #include <cstring>
 #include <stdexcept>

@@ -1,12 +1,17 @@
 #ifndef CARDINTERFACE_H
 #define CARDINTERFACE_H
 
-#include "CardModel/CardMemoryLayout.h"
-#include "CardModel/CardTopology.h"
-#include "CardProtocol/AccessControl.h"
-#include "CardProtocol/KeyManagement.h"
-#include "CardProtocol/AuthenticationState.h"
+#include "CardModel/CardDataTypes.h"
 #include <memory>
+#include <vector>
+
+// Forward declares (definitions in CardInterface.cpp)
+struct CardMemoryLayout;
+class CardLayoutTopology;
+class AccessControl;
+class KeyManagement;
+class AuthenticationState;
+struct MifareBlock;
 
 // ════════════════════════════════════════════════════════════════════════════════
 // CardInterface — Mifare Classic Kart Modeli (In-Memory)
@@ -81,6 +86,9 @@ public:
 
     // Create interface for 1K (is4K=false) or 4K (is4K=true)
     explicit CardInterface(bool is4K = false);
+
+    // Destructor (defined in cpp — required for unique_ptr forward declares)
+    ~CardInterface();
 
     // ────────────────────────────────────────────────────────────────────────────
     // Memory Management

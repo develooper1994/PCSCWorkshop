@@ -5,6 +5,7 @@
 #include "CardUtils.h"
 #include "Readers.h"
 #include "CardIO.h"
+#include "CardModel/CardMemoryLayout.h"
 #include "CardModel/TrailerConfig.h"
 #include <iostream>
 #include <iomanip>

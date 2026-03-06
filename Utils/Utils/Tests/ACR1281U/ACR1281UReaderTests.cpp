@@ -6,6 +6,7 @@
 #include "Log/Log.h"
 #include "Ciphers.h"
 #include "CardIO.h"
+#include "CardModel/CardMemoryLayout.h"
 #include "CardModel/TrailerConfig.h"
 #include <iostream>
 #include <vector>

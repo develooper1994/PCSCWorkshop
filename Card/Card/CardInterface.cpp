@@ -1,10 +1,17 @@
 #include "CardInterface.h"
+#include "CardModel/CardMemoryLayout.h"
+#include "CardModel/CardTopology.h"
+#include "CardProtocol/AccessControl.h"
+#include "CardProtocol/KeyManagement.h"
+#include "CardProtocol/AuthenticationState.h"
 #include <iostream>
 #include <iomanip>
 
 // ════════════════════════════════════════════════════════════════════════════════
-// Construction
+// Construction / Destruction
 // ════════════════════════════════════════════════════════════════════════════════
+
+CardInterface::~CardInterface() = default;
 
 CardInterface::CardInterface(bool is4K) : is4K_(is4K) {
     memory_ = std::make_unique<CardMemoryLayout>(is4K);
