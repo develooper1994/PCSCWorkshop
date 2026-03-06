@@ -129,10 +129,10 @@ int main(int argc, char* argv[]) {
             result = runCipherTests();
             break;
         }
-        case CARD_SYSTEM_ONLY:
+        case CARD_SYSTEM_ONLY: {
             result = runCardSystemTestsOnly();
             break;
-            
+        }
         case REAL_CARD_READER:
             cout << "========== Real Card Reader Test ==========\n\n";
             result = testRealCardReader();
