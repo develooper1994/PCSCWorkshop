@@ -60,6 +60,9 @@
     <ClInclude Include="Card\CardModel\BlockDefinition.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Card\CardModel\CardTopology.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Card\Card.cpp">
@@ -84,6 +87,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Card\MifareClassic\SimulatedReader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Card\CardModel\CardTopology.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
