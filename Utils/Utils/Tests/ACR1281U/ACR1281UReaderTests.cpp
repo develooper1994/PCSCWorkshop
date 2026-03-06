@@ -41,8 +41,8 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
 		card.printAllTrailers();
 
 		// 5) ensure default sector config: KeyA read-only, KeyB read+write
-		MifareCardCore::SectorKeyConfig defaultCfg(true, false, true, true);
-		std::vector<MifareCardCore::SectorKeyConfig> sectorConfigs(16, defaultCfg);
+		SectorConfig defaultCfg(true, false, true, true);
+		std::vector<SectorConfig> sectorConfigs(16, defaultCfg);
 		sectorConfigs[0].keyB.writable = false; // Sector 0: KeyA read-only, KeyB read-only
 		card.applyAllSectorsConfigStrict(sectorConfigs);
 

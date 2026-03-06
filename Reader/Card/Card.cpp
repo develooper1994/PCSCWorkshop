@@ -30,6 +30,16 @@ CardTopology Card::getTopology() const {
 	return topology;
 }
 
+const char* Card::describeCardType(CardType type) noexcept {
+	switch (type) {
+	case CardType::MifareClassic1K: return "Mifare Classic 1K";
+	case CardType::MifareClassic4K: return "Mifare Classic 4K";
+	case CardType::MifareUltralight: return "Mifare Ultralight";
+	case CardType::MifareDesfire: return "Mifare DESFire";
+	default: return "Unknown";
+	}
+}
+
 void Card::authenticate(const BYTE* key, size_t keyLen) {
 	// Default implementation does nothing
 	// Derived classes override with card-specific authentication

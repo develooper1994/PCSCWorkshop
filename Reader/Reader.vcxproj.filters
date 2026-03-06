@@ -36,6 +36,9 @@
     <Filter Include="Reader\ACR1281U\Header">
       <UniqueIdentifier>{d0b38a18-645c-46ba-8a60-28d3e6d0d803}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Card\Topology">
+      <UniqueIdentifier>{9b77b757-3649-4c22-ba77-22a97660c447}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Reader\Readers.h">
@@ -56,6 +59,15 @@
     <ClInclude Include="Card\Desfire\Desfire.h">
       <Filter>Card\Desfire</Filter>
     </ClInclude>
+    <ClInclude Include="Card\Topology\Topology.h">
+      <Filter>Card\Topology</Filter>
+    </ClInclude>
+    <ClInclude Include="Card\Topology\SectorConfig.h">
+      <Filter>Card\Topology</Filter>
+    </ClInclude>
+    <ClInclude Include="Card\CardDataTypes.h">
+      <Filter>Card</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Reader\ACR1281U\ACR1281UReader.cpp">
@@ -67,11 +79,17 @@
     <ClCompile Include="Card\Card.cpp">
       <Filter>Card</Filter>
     </ClCompile>
+    <ClCompile Include="Card\Desfire\Desfire.cpp">
+      <Filter>Card\Desfire</Filter>
+    </ClCompile>
     <ClCompile Include="Card\MifareClassic\MifareClassic.cpp">
       <Filter>Card\MifareClassic</Filter>
     </ClCompile>
-    <ClCompile Include="Card\Desfire\Desfire.cpp">
-      <Filter>Card\Desfire</Filter>
+    <ClCompile Include="Card\Topology\Topology.cpp">
+      <Filter>Card\Topology</Filter>
+    </ClCompile>
+    <ClCompile Include="Card\Topology\SectorConfig.cpp">
+      <Filter>Card\Topology</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

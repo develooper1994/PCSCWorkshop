@@ -114,8 +114,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Card\Card.h" />
+    <ClInclude Include="Card\CardDataTypes.h" />
     <ClInclude Include="Card\Desfire\Desfire.h" />
     <ClInclude Include="Card\MifareClassic\MifareClassic.h" />
+    <ClInclude Include="Card\Topology\SectorConfig.h" />
+    <ClInclude Include="Card\Topology\Topology.h" />
     <ClInclude Include="Reader\Reader.h" />
     <ClInclude Include="Reader\Readers.h" />
     <ClInclude Include="Reader\ACR1281U\ACR1281UReader.h" />
@@ -124,6 +127,8 @@
     <ClCompile Include="Card\Card.cpp" />
     <ClCompile Include="Card\Desfire\Desfire.cpp" />
     <ClCompile Include="Card\MifareClassic\MifareClassic.cpp" />
+    <ClCompile Include="Card\Topology\SectorConfig.cpp" />
+    <ClCompile Include="Card\Topology\Topology.cpp" />
     <ClCompile Include="Reader\Reader.cpp" />
     <ClCompile Include="Reader\ACR1281U\ACR1281UReader.cpp" />
   </ItemGroup>

@@ -1,79 +1,12 @@
 #ifndef CARD_H
 #define CARD_H
 
+#include "Topology/Topology.h"
 #include "../Reader.h"
+#include "Topology/SectorConfig.h"
 #include <string>
 #include <vector>
-
-enum class CardBlockKind {
-	Unknown,
-	Data,
-	Manufacturer,
-	Trailer
-};
-
-struct CardBlockField {
-	size_t offset = 0;
-	size_t sizeBytes = 0;
-	bool readable = true;
-	bool writable = true;
-	std::string name;
-};
-
-struct CardBlockNode {
-	size_t index = 0;
-	size_t sizeBytes = 0;
-	bool readable = true;
-	bool writable = true;
-	bool isMetadata = false;
-	CardBlockKind kind = CardBlockKind::Unknown;
-	std::string name;
-	std::vector<CardBlockField> fields;
-};
-
-struct CardSectorNode {
-	size_t index = 0;
-	std::string name;
-	std::vector<CardBlockNode> blocks;
-};
-
-struct CardApplicationNode {
-	size_t index = 0;
-	std::string name;
-	std::vector<CardSectorNode> sectors;
-};
-
-struct CardTopology {
-	std::string cardType;
-	std::vector<CardSectorNode> sectors;
-	std::vector<CardApplicationNode> applications;
-
-	bool hasApplications() const noexcept { return !applications.empty(); }
-
-	size_t totalBytes() const noexcept {
-		size_t total = 0;
-		for (const auto& sector : sectors)
-			for (const auto& block : sector.blocks)
-				total += block.sizeBytes;
-		for (const auto& app : applications)
-			for (const auto& sector : app.sectors)
-				for (const auto& block : sector.blocks)
-					total += block.sizeBytes;
-		return total;
-	}
-
-	size_t writableBytes() const noexcept {
-		size_t total = 0;
-		for (const auto& sector : sectors)
-			for (const auto& block : sector.blocks)
-				if (block.writable) total += block.sizeBytes;
-		for (const auto& app : applications)
-			for (const auto& sector : app.sectors)
-				for (const auto& block : sector.blocks)
-					if (block.writable) total += block.sizeBytes;
-		return total;
-	}
-};
+#include <memory>  // unique_ptr için
 
 // ============================================================
 // Card — Abstract base class for all card types
@@ -82,8 +15,7 @@ struct CardTopology {
 // Derived classes (MifareClassic, DESFire, etc.) implement
 // card-specific operations.
 // ============================================================
-class Card
-{
+class Card {
 public:
 	// ── Virtual destructor for proper cleanup ──
 	virtual ~Card() noexcept = default;
@@ -100,8 +32,8 @@ public:
 	//  Pure virtual interface (must be implemented by derived classes)
 	// ════════════════════════════════════════════════════════
 
-	// Get card type identifier (e.g., "Mifare Classic 1K", "DESFire EV2")
-	virtual std::string getCardType() const = 0;
+	// Get card type identifier
+	virtual CardType getCardType() const noexcept = 0;
 
 	// Get total memory capacity in bytes
 	virtual size_t getMemorySize() const noexcept = 0;
@@ -121,6 +53,9 @@ public:
 
 	// Describe logical topology (blocks/sectors/applications)
 	virtual CardTopology getTopology() const;
+
+	// Human-readable card type text
+	static const char* describeCardType(CardType type) noexcept;
 
 	// Authenticate to card (default implementation delegates to reader)
 	virtual void authenticate(const BYTE* key, size_t keyLen);

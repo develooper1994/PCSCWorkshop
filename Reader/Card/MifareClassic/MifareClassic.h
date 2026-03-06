@@ -3,6 +3,7 @@
 
 #include "Utils.h"
 #include "../Card.h"
+#include "../Topology/SectorConfig.h"
 #include <cstdint>
 #include <cstring>
 #include <vector>
@@ -35,41 +36,8 @@ public:
     // ── type aliases ──
     using KeyType      = ::KeyType;
     using KeyStructure = ::KeyStructure;
-    using BLOCK        = std::array<BYTE, 16>;
-    using ACCESSBYTES  = std::array<BYTE, 4>;
-
-    // ── sector permission descriptor (host-side only) ──
-    struct SectorKeyConfig {
-        // Key information (includes readable/writable flags)
-        KeyInfo keyA;
-        KeyInfo keyB;
-        
-        // Default constructor
-        SectorKeyConfig() noexcept = default;
-        
-        // Constructor with permission flags (for backward compatibility)
-        // Creates default KeyInfo objects with specified permissions
-        SectorKeyConfig(bool aR, bool aW, bool bR, bool bW) noexcept;
-        
-        // Constructor with KeyInfo
-        SectorKeyConfig(const KeyInfo& kA, const KeyInfo& kB) noexcept;
-
-        // ════════════════════════════════════════════════════════
-        //  Access-bits codec (static helpers)
-        // ════════════════════════════════════════════════════════
-        static SectorKeyConfig parseAccessBitsToConfig(const BYTE ab[4]) noexcept;
-        static bool validateAccessBits(const BYTE a[4]) noexcept;
-        static ACCESSBYTES makeSectorAccessBits(const SectorKeyConfig& dataCfg) noexcept;
-        static BLOCK buildTrailer(const BYTE keyA[6],
-                                  const BYTE access[4],
-                                  const BYTE keyB[6]) noexcept;
-
-        static void extractAccessBits(const BYTE ab[4],
-            BYTE c1[4], BYTE c2[4], BYTE c3[4]) noexcept;
-        static SectorKeyConfig configFromC1C2C3(BYTE c1, BYTE c2, BYTE c3) noexcept;
-        static void mapDataBlock(const SectorKeyConfig& cfg,
-            BYTE& c1, BYTE& c2, BYTE& c3);
-    };
+    using BLOCK        = ::BLOCK;
+    using ACCESSBYTES  = ::ACCESSBYTES;
 
     // ════════════════════════════════════════════════════════
     //  Construction
@@ -79,7 +47,7 @@ public:
     // ════════════════════════════════════════════════════════
     //  Card interface implementation (override from Card base class)
     // ════════════════════════════════════════════════════════
-    std::string getCardType() const override;
+    CardType getCardType() const noexcept override;
     size_t getMemorySize() const noexcept override;
     BYTEV read(size_t address, size_t length) override;
     void write(size_t address, const BYTEV& data) override;
@@ -105,9 +73,9 @@ public:
     // ════════════════════════════════════════════════════════
     //  Sector config (host-side permission model)
     // ════════════════════════════════════════════════════════
-    void setSectorConfig(int sector, const SectorKeyConfig& cfg);
-    void setAllSectorsConfig(const SectorKeyConfig& cfg);
-    void setAllSectorsConfig(const std::vector<SectorKeyConfig>& configs);
+    void setSectorConfig(int sector, const SectorConfig& cfg);
+    void setAllSectorsConfig(const SectorConfig& cfg);
+    void setAllSectorsConfig(const std::vector<SectorConfig>& configs);
 
     // ════════════════════════════════════════════════════════
     //  Layout helpers (public)
@@ -170,11 +138,11 @@ public:
     //  Batch apply / load config helpers
     // ════════════════════════════════════════════════════════
     void applyAllSectorsConfig();
-    void applyAllSectorsConfig(const std::vector<SectorKeyConfig>& configs);
+    void applyAllSectorsConfig(const std::vector<SectorConfig>& configs);
     void applyAllSectorsConfigStrict(KeyType authKeyType = KeyType::B,
                                      bool enableRollback = true);
     void applyAllSectorsConfigStrict(
-            const std::vector<SectorKeyConfig>& configs,
+            const std::vector<SectorConfig>& configs,
             KeyType authKeyType = KeyType::B,
             bool enableRollback = true);
     void loadSectorConfigFromCard(int sector);
@@ -186,7 +154,7 @@ private:
     const size_t  numberOfSectors_;
 
     std::vector<KeyInfo>          keys_;
-    std::vector<SectorKeyConfig>  sectorConfigs_;
+    std::vector<SectorConfig>  sectorConfigs_;
     std::vector<KeyInfo> authCache_;
 
     // ── auth cache helpers ──
@@ -270,13 +238,13 @@ inline void MifareCardCore::checkManufacturerBlock(BYTE block) const {
 }
 
 // Additional small methods inlined
-inline std::string MifareCardCore::getCardType() const {
-    return is4KCard_ ? "Mifare Classic 4K" : "Mifare Classic 1K";
+inline CardType MifareCardCore::getCardType() const noexcept {
+    return is4KCard_ ? CardType::MifareClassic4K : CardType::MifareClassic1K;
 }
 
 inline size_t MifareCardCore::getSectorCount() const noexcept { return numberOfSectors_; }
 
-inline void MifareCardCore::setAllSectorsConfig(const SectorKeyConfig& cfg) {
+inline void MifareCardCore::setAllSectorsConfig(const SectorConfig& cfg) {
     std::fill(sectorConfigs_.begin(), sectorConfigs_.end(), cfg);
 }
 

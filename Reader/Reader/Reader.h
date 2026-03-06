@@ -4,34 +4,11 @@
 #include "CardConnection.h"
 #include "Cipher.h"
 #include "StatusWordHandler.h"
+#include "../Card/Topology/Topology.h"
 #include <string>
 #include <memory>
 #include <functional>
 #include <array>
-
-enum class KeyStructure : BYTE {
-	Volatile,
-	NonVolatile
-};
-
-// [keyA(6 Byte)|AccessBytes(4 Byte)|keyB(6 Byte)|]
-enum class KeyType {
-	A, 		// keyA
-	B, 		// keyB
-	ACCESS, // AccessBytes
-	AB, 	// [keyA(6 Byte)|-|keyB(6 Byte)|]
-	ALL, 	// [keyA(6 Byte)|AccessBytes(4 Byte)|keyB(6 Byte)|]
-};
-
-struct KeyInfo {
-	std::array<BYTE, 6> key{};
-	bool readable = true;
-	bool writable = true;
-	KeyType kt = KeyType::A;
-	KeyStructure ks = KeyStructure::NonVolatile;
-	BYTE slot = 0x00;
-	std::string name;
-};
 
 struct ReadPolicy {
 	static void handle(BYTE sw1, BYTE sw2) {

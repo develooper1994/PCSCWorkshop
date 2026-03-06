@@ -125,6 +125,7 @@
     <ClInclude Include="Utils\StatusWordHandler.h" />
     <ClInclude Include="Utils\Tests\ACR1281U\ACR1281UReaderTestHelpers.h" />
     <ClInclude Include="Utils\Tests\ACR1281U\ACR1281UReaderTests.h" />
+    <ClInclude Include="Utils\Types.h" />
     <ClInclude Include="Utils\Utils.h" />
   </ItemGroup>
   <ItemGroup>

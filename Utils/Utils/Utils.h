@@ -7,5 +7,6 @@
 #include "CardUtils.h"
 // Exceptions
 #include "Exceptions/GenericExceptions.h"
+#include "Types.h"
 
 #endif // PCSC_WORKSHOP1_UTILS_H
