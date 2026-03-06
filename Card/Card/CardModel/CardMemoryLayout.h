@@ -1,7 +1,7 @@
 #ifndef CARDMEMORYLAYOUT_H
 #define CARDMEMORYLAYOUT_H
 
-#include "CardDataTypes.h"
+#include "../CardDataTypes.h"
 #include "BlockDefinition.h"
 #include "PageDefinition.h"
 #include <array>

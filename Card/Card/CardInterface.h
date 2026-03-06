@@ -1,7 +1,7 @@
 #ifndef CARDINTERFACE_H
 #define CARDINTERFACE_H
 
-#include "CardModel/CardDataTypes.h"
+#include "CardDataTypes.h"
 #include <memory>
 #include <vector>
 

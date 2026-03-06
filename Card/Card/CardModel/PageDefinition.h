@@ -1,7 +1,7 @@
 #ifndef PAGEDEFINITION_H
 #define PAGEDEFINITION_H
 
-#include "CardDataTypes.h"
+#include "../CardDataTypes.h"
 #include <cstring>
 
 // ════════════════════════════════════════════════════════════════════════════════

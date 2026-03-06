@@ -50,9 +50,6 @@
     <ClInclude Include="Utils\CardConnection.h">
       <Filter>PCSC</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\CardUtils_new.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\Log\Log.h">
       <Filter>Log</Filter>
     </ClInclude>

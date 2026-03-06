@@ -1,7 +1,7 @@
 #ifndef CARDTOPOLOGY_H
 #define CARDTOPOLOGY_H
 
-#include "CardDataTypes.h"
+#include "../CardDataTypes.h"
 #include <stdexcept>
 
 // ════════════════════════════════════════════════════════════════════════════════

@@ -1,7 +1,7 @@
 #ifndef TRAILERCONFIG_H
 #define TRAILERCONFIG_H
 
-#include "CardDataTypes.h"
+#include "../CardDataTypes.h"
 #include "BlockDefinition.h"
 #include <array>
 #include <cstring>

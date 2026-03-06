@@ -143,9 +143,9 @@
     <ClInclude Include="Card\CardInterface.h" />
     <ClInclude Include="Card\CardIO.h" />
     <ClInclude Include="Card\CardModel\BlockDefinition.h" />
-    <ClInclude Include="Card\CardModel\CardDataTypes.h" />
     <ClInclude Include="Card\CardModel\CardMemoryLayout.h" />
     <ClInclude Include="Card\CardModel\CardTopology.h" />
+    <ClInclude Include="Card\CardModel\DesfireMemoryLayout.h" />
     <ClInclude Include="Card\CardModel\PageDefinition.h" />
     <ClInclude Include="Card\CardModel\TrailerConfig.h" />
     <ClInclude Include="Card\CardProtocol\AccessControl.h" />

@@ -1,7 +1,7 @@
 #ifndef ACCESSCONTROL_H
 #define ACCESSCONTROL_H
 
-#include "../CardModel/CardDataTypes.h"
+#include "../CardDataTypes.h"
 #include <array>
 #include <string>
 

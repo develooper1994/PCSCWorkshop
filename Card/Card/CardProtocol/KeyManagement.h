@@ -1,7 +1,7 @@
 #ifndef KEYMANAGEMENT_H
 #define KEYMANAGEMENT_H
 
-#include "../CardModel/CardDataTypes.h"
+#include "../CardDataTypes.h"
 #include <map>
 #include <vector>
 #include <stdexcept>

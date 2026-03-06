@@ -1,7 +1,7 @@
 #ifndef AUTHENTICATIONSTATE_H
 #define AUTHENTICATIONSTATE_H
 
-#include "../CardModel/CardDataTypes.h"
+#include "../CardDataTypes.h"
 #include <map>
 #include <chrono>
 #include <optional>

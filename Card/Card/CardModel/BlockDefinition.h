@@ -1,7 +1,7 @@
 #ifndef BLOCKDEFINITION_H
 #define BLOCKDEFINITION_H
 
-#include "CardDataTypes.h"
+#include "../CardDataTypes.h"
 #include <cstring>
 #include <stdexcept>
 
