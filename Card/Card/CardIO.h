@@ -2,9 +2,15 @@
 #define CARDIO_H
 
 #include "CardInterface.h"
-#include "CardModel/TrailerConfig.h"
 #include "Reader.h"
 #include <vector>
+
+// Forward declares (TrailerConfig.h types — only used in method signatures)
+struct TrailerConfig;
+struct SectorAccessConfig;
+struct DataBlockPermission;
+struct TrailerPermission;
+enum class SectorMode;
 
 // ════════════════════════════════════════════════════════════════════════════════
 // CardIO — Gerçek PCSC Kart I/O

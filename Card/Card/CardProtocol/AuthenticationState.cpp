@@ -1,4 +1,5 @@
 #include "AuthenticationState.h"
+#include "../CardModel/CardMemoryLayout.h"
 #include <iostream>
 #include <algorithm>
 

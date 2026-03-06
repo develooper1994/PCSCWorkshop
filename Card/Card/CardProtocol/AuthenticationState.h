@@ -2,10 +2,12 @@
 #define AUTHENTICATIONSTATE_H
 
 #include "../CardModel/CardDataTypes.h"
-#include "../CardModel/CardMemoryLayout.h"
 #include <map>
 #include <chrono>
 #include <optional>
+
+// Forward declare
+struct CardMemoryLayout;
 
 // ════════════════════════════════════════════════════════════════════════════════
 // AuthenticationState - Track Authentication Sessions and Cache

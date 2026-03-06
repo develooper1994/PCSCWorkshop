@@ -1,4 +1,5 @@
 #include "AccessControl.h"
+#include "../CardModel/CardMemoryLayout.h"
 #include "../CardModel/TrailerConfig.h"
 #include <sstream>
 #include <iomanip>

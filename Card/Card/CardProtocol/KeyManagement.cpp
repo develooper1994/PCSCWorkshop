@@ -1,4 +1,5 @@
 #include "KeyManagement.h"
+#include "../CardModel/CardMemoryLayout.h"
 #include <iostream>
 #include <iomanip>
 #include <algorithm>

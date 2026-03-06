@@ -2,10 +2,12 @@
 #define ACCESSCONTROL_H
 
 #include "../CardModel/CardDataTypes.h"
-#include "../CardModel/CardMemoryLayout.h"
-#include "../CardModel/TrailerConfig.h"
 #include <array>
 #include <string>
+
+// Forward declares
+struct CardMemoryLayout;
+struct MifareBlock;
 
 // ════════════════════════════════════════════════════════════════════════════════
 // AccessControl - Permission Matrix for Mifare Classic

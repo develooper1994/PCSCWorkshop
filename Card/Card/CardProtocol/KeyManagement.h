@@ -2,10 +2,13 @@
 #define KEYMANAGEMENT_H
 
 #include "../CardModel/CardDataTypes.h"
-#include "../CardModel/CardMemoryLayout.h"
 #include <map>
 #include <vector>
 #include <stdexcept>
+
+// Forward declares
+struct CardMemoryLayout;
+struct MifareBlock;
 
 // ════════════════════════════════════════════════════════════════════════════════
 // KeyManagement - Key Storage and Query System
