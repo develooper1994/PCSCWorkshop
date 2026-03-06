@@ -6,9 +6,28 @@
 //  SectorKeyConfig
 // ════════════════════════════════════════════════════════
 MifareCardCore::SectorKeyConfig::SectorKeyConfig(bool aR, bool aW,
-												  bool bR, bool bW) noexcept
-	: keyA_canRead(aR), keyA_canWrite(aW),
-	  keyB_canRead(bR), keyB_canWrite(bW) {}
+												  bool bR, bool bW) noexcept {
+	// Initialize KeyInfo with permissions
+	keyA.kt = KeyType::A;
+	keyA.readable = aR;
+	keyA.writable = aW;
+	keyA.ks = KeyStructure::NonVolatile;
+	keyA.slot = 0x01;
+	// Default key (FF FF FF FF FF FF)
+	std::array<BYTE, 6> defaultKeyA = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+	keyA.key = defaultKeyA;
+	
+	keyB.kt = KeyType::B;
+	keyB.readable = bR;
+	keyB.writable = bW;
+	keyB.ks = KeyStructure::NonVolatile;
+	keyB.slot = 0x02;
+	// Default key (FF FF FF FF FF FF)
+	keyB.key = defaultKeyA;
+}
+
+MifareCardCore::SectorKeyConfig::SectorKeyConfig(const KeyInfo& kA, const KeyInfo& kB) noexcept
+	: keyA(kA), keyB(kB) {}
 
 // ════════════════════════════════════════════════════════
 //  Construction
@@ -520,15 +539,38 @@ void MifareCardCore::changeTrailer(int sector, const BYTE trailer16[16]) {
 
 void MifareCardCore::applySectorConfigToCard(int sector) {
 	validateSectorNumber(sector);
-	requireBothKeys();
+	
+	const auto& cfg = sectorConfigs_[sector];
+	
+	// If keys are provided in SectorKeyConfig, use them; otherwise fallback to registered keys
+	const BYTE* keyAData = nullptr;
+	const BYTE* keyBData = nullptr;
+	
+	if (cfg.keyA.key[0] != 0 || cfg.keyA.key[1] != 0 || cfg.keyA.key[2] != 0) {
+		// keyA is set in config
+		keyAData = cfg.keyA.key.data();
+	} else {
+		// Fallback to registered keys
+		requireBothKeys();
+		const KeyInfo& ka = findKeyOrThrow(KeyType::A);
+		keyAData = ka.key.data();
+	}
+	
+	if (cfg.keyB.key[0] != 0 || cfg.keyB.key[1] != 0 || cfg.keyB.key[2] != 0) {
+		// keyB is set in config
+		keyBData = cfg.keyB.key.data();
+	} else {
+		// Fallback to registered keys
+		requireBothKeys();
+		const KeyInfo& kb = findKeyOrThrow(KeyType::B);
+		keyBData = kb.key.data();
+	}
 
-	ACCESSBYTES access = SectorKeyConfig::makeSectorAccessBits(sectorConfigs_[sector]);
+	ACCESSBYTES access = SectorKeyConfig::makeSectorAccessBits(cfg);
 	if (!SectorKeyConfig::validateAccessBits(access.data()))
 		throw std::runtime_error("Generated access bits are invalid");
 
-	const KeyInfo& ka = findKeyOrThrow(KeyType::A);
-	const KeyInfo& kb = findKeyOrThrow(KeyType::B);
-	BLOCK trailer = SectorKeyConfig::buildTrailer(ka.key.data(), access.data(), kb.key.data());
+	BLOCK trailer = SectorKeyConfig::buildTrailer(keyAData, access.data(), keyBData);
 
 	BYTE usedSlot = 0xFF;
 	tryAnyAuthForSector(sector, usedSlot);
@@ -539,10 +581,32 @@ void MifareCardCore::applySectorConfigToCard(int sector) {
 
 void MifareCardCore::applySectorConfigStrict(int sector, KeyType authKeyType, bool enableRollback) {
 	validateSectorNumber(sector);
-	requireBothKeys();
+	
+	const auto& cfg = sectorConfigs_[sector];
+	
+	// If keys are provided in SectorKeyConfig, use them; otherwise fallback to registered keys
+	const BYTE* keyAData = nullptr;
+	const BYTE* keyBData = nullptr;
+	
+	if (cfg.keyA.key[0] != 0 || cfg.keyA.key[1] != 0 || cfg.keyA.key[2] != 0) {
+		keyAData = cfg.keyA.key.data();
+	} else {
+		requireBothKeys();
+		const KeyInfo& ka = findKeyOrThrow(KeyType::A);
+		keyAData = ka.key.data();
+	}
+	
+	if (cfg.keyB.key[0] != 0 || cfg.keyB.key[1] != 0 || cfg.keyB.key[2] != 0) {
+		keyBData = cfg.keyB.key.data();
+	} else {
+		requireBothKeys();
+		const KeyInfo& kb = findKeyOrThrow(KeyType::B);
+		keyBData = kb.key.data();
+	}
+
 	const KeyInfo& authKey = findKeyOrThrow(authKeyType);
 
-	auto accessBytes = SectorKeyConfig::makeSectorAccessBits(sectorConfigs_[sector]);
+	auto accessBytes = SectorKeyConfig::makeSectorAccessBits(cfg);
 	if (!SectorKeyConfig::validateAccessBits(accessBytes.data()))
 		throw std::runtime_error("Generated access bits invalid");
 
@@ -552,9 +616,7 @@ void MifareCardCore::applySectorConfigStrict(int sector, KeyType authKeyType, bo
 	if (enableRollback)
 		oldTrailer = readTrailer(sector);
 
-	const KeyInfo& ka = findKeyOrThrow(KeyType::A);
-	const KeyInfo& kb = findKeyOrThrow(KeyType::B);
-	BLOCK newTrailer = SectorKeyConfig::buildTrailer(ka.key.data(), accessBytes.data(), kb.key.data());
+	BLOCK newTrailer = SectorKeyConfig::buildTrailer(keyAData, accessBytes.data(), keyBData);
 
 	ensureAuthorized(sector, authKeyType, authKey.slot);
 
@@ -644,12 +706,12 @@ KeyType MifareCardCore::chooseKeyForOperation(int sector, bool isWrite) const {
 	validateSectorNumber(sector);
 	const SectorKeyConfig& cfg = sectorConfigs_[sector];
 	if (isWrite) {
-		if (cfg.keyB_canWrite) return KeyType::B;
-		if (cfg.keyA_canWrite) return KeyType::A;
+		if (cfg.keyB.writable) return KeyType::B;
+		if (cfg.keyA.writable) return KeyType::A;
 		throw std::runtime_error("no key allowed to write in this sector");
 	}
-	if (cfg.keyA_canRead) return KeyType::A;
-	if (cfg.keyB_canRead) return KeyType::B;
+	if (cfg.keyA.readable) return KeyType::A;
+	if (cfg.keyB.readable) return KeyType::B;
 	throw std::runtime_error("no key allowed to read in this sector");
 }
 
@@ -713,24 +775,70 @@ void MifareCardCore::SectorKeyConfig::extractAccessBits(const BYTE ab[4],
 
 MifareCardCore::SectorKeyConfig MifareCardCore::SectorKeyConfig::configFromC1C2C3(BYTE c1, BYTE c2, BYTE c3) noexcept {
 	SectorKeyConfig cfg;
-	if      (c1==0 && c2==0 && c3==0) { cfg = {true,  true,  true,  true};  }
-	else if (c1==0 && c2==1 && c3==0) { cfg = {true,  false, true,  true};  }
-	else if (c1==1 && c2==0 && c3==0) { cfg = {true,  true,  true,  false}; }
-	else if (c1==1 && c2==1 && c3==0) { cfg = {true,  false, true,  false}; }
-	else if (c1==0 && c2==0 && c3==1) { cfg = {false, false, true,  true};  }
-	else if (c1==0 && c2==1 && c3==1) { cfg = {false, false, false, true};  }
-	else if (c1==1 && c2==0 && c3==1) { cfg = {false, false, true,  true};  }
-	else if (c1==1 && c2==1 && c3==1) { cfg = {false, false, false, false}; }
-	else                               { cfg = {true,  false, true,  true};  }
+	
+	// Set KeyType for keys
+	cfg.keyA.kt = KeyType::A;
+	cfg.keyA.ks = KeyStructure::NonVolatile;
+	cfg.keyA.slot = 0x01;
+	cfg.keyA.key = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }; // default key
+	
+	cfg.keyB.kt = KeyType::B;
+	cfg.keyB.ks = KeyStructure::NonVolatile;
+	cfg.keyB.slot = 0x02;
+	cfg.keyB.key = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }; // default key
+	
+	// Map access bits to permissions
+	if      (c1==0 && c2==0 && c3==0) { 
+		cfg.keyA.readable = true;  cfg.keyA.writable = true;
+		cfg.keyB.readable = true;  cfg.keyB.writable = true;
+	}
+	else if (c1==0 && c2==1 && c3==0) { 
+		cfg.keyA.readable = true;  cfg.keyA.writable = false;
+		cfg.keyB.readable = true;  cfg.keyB.writable = true;
+	}
+	else if (c1==1 && c2==0 && c3==0) { 
+		cfg.keyA.readable = true;  cfg.keyA.writable = true;
+		cfg.keyB.readable = true;  cfg.keyB.writable = false;
+	}
+	else if (c1==1 && c2==1 && c3==0) { 
+		cfg.keyA.readable = true;  cfg.keyA.writable = false;
+		cfg.keyB.readable = true;  cfg.keyB.writable = false;
+	}
+	else if (c1==0 && c2==0 && c3==1) { 
+		cfg.keyA.readable = false; cfg.keyA.writable = false;
+		cfg.keyB.readable = true;  cfg.keyB.writable = true;
+	}
+	else if (c1==0 && c2==1 && c3==1) { 
+		cfg.keyA.readable = false; cfg.keyA.writable = false;
+		cfg.keyB.readable = false; cfg.keyB.writable = true;
+	}
+	else if (c1==1 && c2==0 && c3==1) { 
+		cfg.keyA.readable = false; cfg.keyA.writable = false;
+		cfg.keyB.readable = true;  cfg.keyB.writable = true;
+	}
+	else if (c1==1 && c2==1 && c3==1) { 
+		cfg.keyA.readable = false; cfg.keyA.writable = false;
+		cfg.keyB.readable = false; cfg.keyB.writable = false;
+	}
+	else { 
+		// Default: safe configuration
+		cfg.keyA.readable = true;  cfg.keyA.writable = false;
+		cfg.keyB.readable = true;  cfg.keyB.writable = true;
+	}
 	return cfg;
 }
 
 void MifareCardCore::SectorKeyConfig::mapDataBlock(const SectorKeyConfig& cfg,
 								  BYTE& c1, BYTE& c2, BYTE& c3) {
-	if ( cfg.keyA_canRead && !cfg.keyA_canWrite &&  cfg.keyB_canRead &&  cfg.keyB_canWrite) { c1=0; c2=1; c3=0; return; }
-	else if ( cfg.keyA_canRead &&  cfg.keyA_canWrite &&  cfg.keyB_canRead &&  cfg.keyB_canWrite) { c1=0; c2=0; c3=0; return; }
-	else if ( cfg.keyA_canRead &&  cfg.keyA_canWrite &&  cfg.keyB_canRead && !cfg.keyB_canWrite) { c1=1; c2=0; c3=0; return; }
-	else if ( cfg.keyA_canRead && !cfg.keyA_canWrite &&  cfg.keyB_canRead && !cfg.keyB_canWrite) { c1=1; c2=1; c3=0; return; }
+	const bool keyA_canRead  = cfg.keyA.readable;
+	const bool keyA_canWrite = cfg.keyA.writable;
+	const bool keyB_canRead  = cfg.keyB.readable;
+	const bool keyB_canWrite = cfg.keyB.writable;
+	
+	if ( keyA_canRead && !keyA_canWrite &&  keyB_canRead &&  keyB_canWrite) { c1=0; c2=1; c3=0; return; }
+	else if ( keyA_canRead &&  keyA_canWrite &&  keyB_canRead &&  keyB_canWrite) { c1=0; c2=0; c3=0; return; }
+	else if ( keyA_canRead &&  keyA_canWrite &&  keyB_canRead && !keyB_canWrite) { c1=1; c2=0; c3=0; return; }
+	else if ( keyA_canRead && !keyA_canWrite &&  keyB_canRead && !keyB_canWrite) { c1=1; c2=1; c3=0; return; }
 	else throw std::runtime_error("Unsupported access combination");
 }
 

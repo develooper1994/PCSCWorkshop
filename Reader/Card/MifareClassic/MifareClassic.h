@@ -40,12 +40,19 @@ public:
 
     // ── sector permission descriptor (host-side only) ──
     struct SectorKeyConfig {
-        bool keyA_canRead  = true;
-        bool keyA_canWrite = false;
-        bool keyB_canRead  = true;
-        bool keyB_canWrite = true;
-        SectorKeyConfig(bool aR = true, bool aW = false,
-                        bool bR = true, bool bW = true) noexcept;
+        // Key information (includes readable/writable flags)
+        KeyInfo keyA;
+        KeyInfo keyB;
+        
+        // Default constructor
+        SectorKeyConfig() noexcept = default;
+        
+        // Constructor with permission flags (for backward compatibility)
+        // Creates default KeyInfo objects with specified permissions
+        SectorKeyConfig(bool aR, bool aW, bool bR, bool bW) noexcept;
+        
+        // Constructor with KeyInfo
+        SectorKeyConfig(const KeyInfo& kA, const KeyInfo& kB) noexcept;
 
         // ════════════════════════════════════════════════════════
         //  Access-bits codec (static helpers)

@@ -25,9 +25,12 @@ enum class KeyType {
 
 struct KeyInfo {
 	std::array<BYTE, 6> key{};
+	bool readable = true;
+	bool writable = true;
 	KeyType kt = KeyType::A;
 	KeyStructure ks = KeyStructure::NonVolatile;
 	BYTE slot = 0x00;
+	std::string name;
 };
 
 struct ReadPolicy {
