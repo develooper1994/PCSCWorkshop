@@ -8,6 +8,10 @@
 // ════════════════════════════════════════════════════════════════════════════════
 // Minimal Type Definitions - Pure Data, Zero Logic
 // ════════════════════════════════════════════════════════════════════════════════
+// 
+// Current: Mifare Classic 1K/4K only
+// Future: DESFire, Ultralight (separate CardDataTypes if needed)
+//
 
 // Fundamental types
 using BYTE = std::uint8_t;
@@ -21,7 +25,7 @@ using BLOCK = std::array<BYTE, 16>;        // Block = 16 bytes
 using ACCESSBYTES = std::array<BYTE, 4>;   // Access bits = 4 bytes (C1 C2 C3 GPB)
 
 // ════════════════════════════════════════════════════════════════════════════════
-// Enumerations
+// Mifare Classic Enumerations
 // ════════════════════════════════════════════════════════════════════════════════
 
 enum class CardType {
