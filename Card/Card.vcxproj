@@ -141,6 +141,8 @@
   <ItemGroup>
     <ClInclude Include="Card\Card.h" />
     <ClInclude Include="Card\CardDataTypes.h" />
+    <ClInclude Include="Card\CardModel\BlockDefinition.h" />
+    <ClInclude Include="Card\CardModel\CardDataTypes.h" />
     <ClInclude Include="Card\Desfire\Desfire.h" />
     <ClInclude Include="Card\MifareClassic\MifareCardSimulator.h" />
     <ClInclude Include="Card\MifareClassic\MifareClassic.h" />

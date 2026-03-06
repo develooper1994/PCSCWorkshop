@@ -54,6 +54,12 @@
     <ClInclude Include="Card\MifareClassic\SimulatedReader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Card\CardModel\CardDataTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Card\CardModel\BlockDefinition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Card\Card.cpp">
