@@ -133,16 +133,17 @@ int main(int argc, char* argv[]) {
             result = runCardSystemTestsOnly();
             break;
         }
-        case REAL_CARD_READER:
+        case REAL_CARD_READER: {
             cout << "========== Real Card Reader Test ==========\n\n";
             result = testRealCardReader();
             break;
-            
+        }
         case INTERACTIVE:
-        default:
+        default: {
             cout << "Invalid mode. Using all tests.\n";
             result = runAllTests();
             break;
+        }
     }
     
     return result;
