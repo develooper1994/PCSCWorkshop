@@ -25,7 +25,7 @@ using BLOCK = std::array<BYTE, 16>;        // Block = 16 bytes
 using ACCESSBYTES = std::array<BYTE, 4>;   // Access bits = 4 bytes (C1 C2 C3 GPB)
 
 // ════════════════════════════════════════════════════════════════════════════════
-// Mifare Classic Enumerations
+// Enumerations
 // ════════════════════════════════════════════════════════════════════════════════
 
 enum class CardType {

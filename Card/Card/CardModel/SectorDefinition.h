@@ -5,6 +5,38 @@
 #include <array>
 
 // ════════════════════════════════════════════════════════════════════════════════
+// SectorData - Zero-Copy Union for Sector Layout
+// ════════════════════════════════════════════════════════════════════════════════
+//
+// Different sectors have different layouts:
+// - Normal sectors (1K all, 4K 0-31): 4 blocks each
+// - Extended sectors (4K 32-39): 16 blocks each
+//
+// Union represents both efficiently.
+//
+// ════════════════════════════════════════════════════════════════════════════════
+
+struct SectorData {
+    union {
+        struct {
+            // Normal sector: 4 blocks
+            static constexpr int BLOCK_COUNT = 4;
+            static constexpr int DATA_BLOCKS = 3;    // Blocks 0-2
+            static constexpr int TRAILER_BLOCK = 3;  // Block 3
+            static constexpr size_t MEMORY_SIZE = 64;  // 4 × 16
+        } normal;
+        
+        struct {
+            // Extended sector (4K only): 16 blocks
+            static constexpr int BLOCK_COUNT = 16;
+            static constexpr int DATA_BLOCKS = 15;   // Blocks 0-14
+            static constexpr int TRAILER_BLOCK = 15; // Block 15
+            static constexpr size_t MEMORY_SIZE = 256;  // 16 × 16
+        } extended;
+    } layout;
+};
+
+// ════════════════════════════════════════════════════════════════════════════════
 // SectorDefinition - What is a Sector
 // ════════════════════════════════════════════════════════════════════════════════
 //
@@ -29,6 +61,7 @@ struct SectorInfo {
     int firstBlock;         // Block number of first block
     int lastBlock;          // Block number of last (trailer) block
     bool isExtended;        // true for 4K extended sectors (32-39)
+    SectorData data;        // Union with layout info
 
     // Constructor
     SectorInfo() = default;

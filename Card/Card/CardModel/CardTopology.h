@@ -5,6 +5,51 @@
 #include <stdexcept>
 
 // ════════════════════════════════════════════════════════════════════════════════
+// CardTopologyData - Zero-Copy Union for Card Layout
+// ════════════════════════════════════════════════════════════════════════════════
+//
+// Memory-efficient union representation of card layout.
+// Single discriminant (is4K) determines which layout is active.
+//
+// 1K Layout:
+// - Blocks: 64 (0-63)
+// - Sectors: 16 (0-15)
+// - Each sector: 4 blocks
+//
+// 4K Layout:
+// - Blocks: 256 (0-255)
+// - Sectors: 40 (0-39)
+// - Sectors 0-31: 4 blocks each
+// - Sectors 32-39: 16 blocks each
+//
+// ════════════════════════════════════════════════════════════════════════════════
+
+struct CardTopologyData {
+    union {
+        struct {
+            // 1K Card: 16 sectors × 4 blocks = 64 blocks = 1024 bytes
+            static constexpr int TOTAL_BLOCKS = 64;
+            static constexpr int TOTAL_SECTORS = 16;
+            static constexpr int BLOCKS_PER_SECTOR = 4;
+            static constexpr size_t TOTAL_MEMORY = 1024;
+        } card1K;
+        
+        struct {
+            // 4K Card: 32×4 + 8×16 = 128 + 128 = 256 blocks = 4096 bytes
+            // Sectors 0-31: 4 blocks each (128 blocks)
+            // Sectors 32-39: 16 blocks each (128 blocks)
+            static constexpr int TOTAL_BLOCKS = 256;
+            static constexpr int TOTAL_SECTORS = 40;
+            static constexpr int NORMAL_SECTORS = 32;      // Sectors 0-31
+            static constexpr int EXTENDED_SECTORS = 8;     // Sectors 32-39
+            static constexpr int NORMAL_BLOCKS = 128;      // 32 × 4
+            static constexpr int EXTENDED_BLOCKS = 128;    // 8 × 16
+            static constexpr size_t TOTAL_MEMORY = 4096;
+        } card4K;
+    } layout;
+};
+
+// ════════════════════════════════════════════════════════════════════════════════
 // CardTopology - Pure Card Layout Information (No Logic)
 // ════════════════════════════════════════════════════════════════════════════════
 //
@@ -20,18 +65,8 @@
 // - Key management
 // - Reading/writing data
 //
-// Mifare Classic Layout:
-// ┌─ 1K Card (16 sectors) ──────────────────────┐
-// │ Sectors 0-15: 4 blocks each = 64 blocks     │
-// │ Block size: 16 bytes each = 1024 bytes      │
-// └──────────────────────────────────────────────┘
-//
-// ┌─ 4K Card (40 sectors) ──────────────────────┐
-// │ Sectors 0-31: 4 blocks each = 128 blocks    │
-// │ Sectors 32-39: 16 blocks each = 128 blocks  │
-// │ Total: 256 blocks = 4096 bytes              │
-// └──────────────────────────────────────────────┘
-//
+// Uses CardTopologyData union for efficient layout representation.
+// 
 // ════════════════════════════════════════════════════════════════════════════════
 
 class CardTopology {
@@ -119,6 +154,7 @@ public:
 
 private:
     bool is4K_;
+    CardTopologyData data_;
 
     // ────────────────────────────────────────────────────────────────────────────
     // Internal Helpers
