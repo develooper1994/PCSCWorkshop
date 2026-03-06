@@ -90,7 +90,7 @@ public:
     const AuthSession* getSession(int sector) const;
 
     // Get authenticated key type (if authenticated)
-    std::optional<KeyType> getAuthenticatedKey(int sector) const;
+    const KeyType* getAuthenticatedKey(int sector) const;
 
     // ────────────────────────────────────────────────────────────────────────────
     // Batch Queries

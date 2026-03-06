@@ -68,10 +68,10 @@ const AuthSession* AuthenticationState::getSession(int sector) const {
     return &it->second;
 }
 
-std::optional<KeyType> AuthenticationState::getAuthenticatedKey(int sector) const {
+const KeyType* AuthenticationState::getAuthenticatedKey(int sector) const {
     auto session = getSession(sector);
-    if (session == nullptr) return std::nullopt;
-    return session->keyUsed;
+    if (session == nullptr) return nullptr;
+    return &session->keyUsed;
 }
 
 // ════════════════════════════════════════════════════════════════════════════════

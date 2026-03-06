@@ -150,16 +150,16 @@ struct CardMemoryLayout {
     union {
         Card1KMemoryLayout card1K;
         Card4KMemoryLayout card4K;
-    } data;
+    } data = {};
 
-    bool is4K;
+    bool is4K = false;
 
     // Constructors
-    CardMemoryLayout() : data{}, is4K(false) {
+    CardMemoryLayout() {
         std::memset(data.card1K.raw, 0, 1024);
     }
 
-    explicit CardMemoryLayout(bool is4KCard) : data{}, is4K(is4KCard) {
+    explicit CardMemoryLayout(bool is4KCard) : is4K(is4KCard) {
         if (is4K) {
             std::memset(data.card4K.raw, 0, 4096);
         } else {
