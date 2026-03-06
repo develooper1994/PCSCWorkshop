@@ -10,6 +10,23 @@
 #include <functional>
 #include <array>
 
+// Reader types enumeration
+enum class ReaderType {
+	Unknown,
+	OmniKey,
+	ACR1281U
+};
+
+// Convert ReaderType enum to descriptive string
+inline std::string describe(ReaderType type) {
+	switch (type) {
+		case ReaderType::ACR1281U: return "ACR1281U";
+		case ReaderType::OmniKey: return "OmniKey";
+		case ReaderType::Unknown:
+		default: return "Unknown";
+	}
+}
+
 struct ReadPolicy {
 	static void handle(BYTE sw1, BYTE sw2) {
 		StatusWord sw(sw1, sw2);
@@ -194,6 +211,9 @@ public:
 
 	bool keyLoaded() const noexcept;
 	void setKeyLoaded(bool loaded) noexcept;
+	
+	// Get reader type
+	virtual ReaderType getReaderType() const noexcept = 0;
 	
 	// Derived classes access CardConnection through this
 	CardConnection& cardConnection() noexcept;

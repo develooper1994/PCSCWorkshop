@@ -52,7 +52,6 @@ public:
     BYTEV read(size_t address, size_t length) override;
     void write(size_t address, const BYTEV& data) override;
     void reset() override;
-    BYTEV getUID() const override;
     CardTopology getTopology() const override;
 
     // ════════════════════════════════════════════════════════
@@ -153,9 +152,9 @@ private:
     const bool is4KCard_;
     const size_t  numberOfSectors_;
 
-    std::vector<KeyInfo>          keys_;
-    std::vector<SectorConfig>  sectorConfigs_;
-    std::vector<KeyInfo> authCache_;
+    std::vector<KeyInfo>        keys_;
+    std::vector<SectorConfig>   sectorConfigs_;
+    std::vector<KeyInfo>        authCache_;
 
     // ── auth cache helpers ──
     bool isSectorAuthorized(int sector, KeyType kt, BYTE slot) const noexcept;
@@ -200,6 +199,18 @@ void MifareCardCore::batchApply(Fn fn) {
         }
     }
     throwIfErrors(errors, "Batch operation failed on some sectors:\n");
+}
+
+inline size_t MifareCardCore::getMemorySize() const noexcept {
+    // 0. and 3. blocks of each sector are metadata (manufacturer or trailer), the rest are data
+    // each block is 16 bytes
+    // each sector has 4 blocks (for sectors 0-31) or 16 blocks (for sectors 32-39 on 4K cards)
+    // each sector has trailer
+    // 1. sector = 2 * 16 bytes (excluding trailer and manufacturer block)
+    // rest of them = (numberOfSectors_ - 1) * 3 * 16 bytes (excluding trailers)
+    constexpr auto firstSectorDataBlocks = 2 * 16;
+    const auto otherSectorsDataBlocks = 3 * 16 * (numberOfSectors_ - 1);
+    return otherSectorsDataBlocks + firstSectorDataBlocks;
 }
 
 // Inline implementations for small layout helpers (defined inline for performance and header-only access)

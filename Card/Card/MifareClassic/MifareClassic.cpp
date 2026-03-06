@@ -1,9 +1,9 @@
 #include "MifareClassic.h"
 #include "../Topology/SectorConfig.h"
 #include "Utils.h"
+#include "Reader.h"
 #include <Log/Log.h>
 #include <algorithm>
-#include "Reader.h"
 
 // ════════════════════════════════════════════════════════
 //  Construction
@@ -26,10 +26,6 @@ MifareCardCore::MifareCardCore(Reader& r, bool is4K)
 
 // Inline implementations are in header file
 // See MifareClassic.h for: getCardType(), getSectorCount(), etc.
-
-size_t MifareCardCore::getMemorySize() const noexcept {
-	return is4KCard_ ? 4096 : 1024;
-}
 
 CardTopology MifareCardCore::getTopology() const {
 	CardTopology topology;
@@ -96,13 +92,6 @@ void MifareCardCore::write(size_t address, const BYTEV& data) {
 void MifareCardCore::reset() {
 	authCache_.clear();
 	authCache_.resize(numberOfSectors_, KeyInfo{});
-}
-
-BYTEV MifareCardCore::getUID() const {
-	// Note: getUID() is const but read() is non-const, so we can't call it directly
-	// This would require making read() const or using const_cast
-	// For now, return empty (implementation-dependent on const requirement)
-	return BYTEV();
 }
 
 int MifareCardCore::blockToSector(BYTE block) const {

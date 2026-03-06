@@ -5,7 +5,6 @@
 #include "PcscUtils.h"
 #include "CardUtils.h"
 #include "Log/Log.h"
-
 #include "Ciphers.h"
 #include <iostream>
 #include <vector>
