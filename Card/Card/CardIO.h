@@ -4,6 +4,7 @@
 #include "CardInterface.h"
 #include "Reader.h"
 #include <vector>
+#include <map>
 
 // Forward declares (TrailerConfig.h types — only used in method signatures)
 struct TrailerConfig;
@@ -113,10 +114,17 @@ public:
                        BYTE slot         = 0x01,
                        KeyType kt        = KeyType::A);
 
-    // İki key ayarla (A ve B)
+    // İki key ayarla (A ve B) — Mifare Classic
     void setKeys(const KEYBYTES& keyA, BYTE slotA,
                  const KEYBYTES& keyB, BYTE slotB,
                  KeyStructure ks = KeyStructure::NonVolatile);
+
+    // Tek key ekle / güncelle (aynı KeyType varsa değiştirir, yoksa ekler)
+    // DESFire multi-key senaryoları için kullanılabilir
+    void addKey(const KeyInfo& ki);
+
+    // Tüm kayıtlı key'leri temizle ve varsayılana dön
+    void clearKeys();
 
     // ────────────────────────────────────────────────────────────────────────────
     // Kart Okuma
@@ -201,16 +209,44 @@ private:
     Reader&        reader_;
     CardInterface  card_;
 
-    // Default key bilgisi
-    KEYBYTES       defaultKey_  = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
-    KeyStructure   defaultKS_   = KeyStructure::NonVolatile;
-    BYTE           defaultSlot_ = 0x01;
-    KeyType        defaultKT_   = KeyType::A;
+    // ── Key Storage ─────────────────────────────────────────────────────────
+    //
+    //  keys_: Kayıtlı tüm key'ler (en az 1 tane — constructor garanti eder).
+    //
+    //    Mifare Classic  → 1 key (setDefaultKey) veya 2 key (setKeys)
+    //    DESFire         → 1–14 key (addKey ile eklenir)
+    //
+    //  Tek key varsa (keys_.size() == 1) tüm işlemler o key ile yapılır.
+    //  Birden fazla key varsa access bits'e göre otomatik seçim yapılır.
+    //
+    std::vector<KeyInfo> keys_;
 
+    // ── Auth / LoadKey Cache ────────────────────────────────────────────────
+    //
+    //  slotContents_: Reader belleğindeki slot → yüklü key bytes eşlemesi.
+    //    Aynı slot/key zaten yüklü ise loadKey tekrarlanmaz.
+    //    Farklı slot'lardaki key'ler aynı anda loaded kalabilir.
+    //
+    //  lastAuthSector_ / lastAuthKT_: Son başarılı auth bilgisi.
+    //    Aynı sektör + aynı amaç için yeniden auth atlanır.
+    //    Farklı amaç (Read→Write) ise permission kontrolü yapılır,
+    //    mevcut key yeterliyse auth atlanır, yetersizse yeniden auth yapılır.
+    //
     int            lastAuthSector_ = -1;
+    KeyType        lastAuthKT_     = KeyType::A;
+    std::map<BYTE, KEYBYTES> slotContents_;
 
-    // Auth gerekirse yap
-    void ensureAuth(int sector);
+    // ── Private Helpers ─────────────────────────────────────────────────────
+    void ensureAuth(int sector, AuthPurpose purpose = AuthPurpose::Read);
+    void doAuth(int sector, const KeyInfo& ki);
+    void ensureKeyLoaded(const KeyInfo& ki);
+    void invalidateAuth();
+    const KeyInfo& chooseKey(int sector, AuthPurpose purpose) const;
+    const KeyInfo& findKey(KeyType kt) const;
+    bool isMultiKey() const;
+
+    // Classic → sector access bits, DESFire → KeyInfo::permission
+    bool canKeyPerform(const KeyInfo& ki, int sector, AuthPurpose purpose) const;
 };
 
 #endif // CARDIO_H

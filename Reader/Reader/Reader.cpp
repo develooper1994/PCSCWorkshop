@@ -139,7 +139,7 @@ void Reader::getKey(KeyType kt, BYTE out[16]) const noexcept {
 		std::memcpy(out, pImpl->key, 6); // Return Key A for BOTH
 		std::memcpy(out, pImpl->key + 10, 6);
 		break;
-	case KeyType::ALL:
+	case KeyType::MifareClassic_Trailer:
 		std::memcpy(out, pImpl->key, 16);
 		break;
 	default:
@@ -162,7 +162,7 @@ void Reader::setKey(KeyType kt, const BYTE* key) noexcept {
 		std::memcpy(pImpl->key, key, 6); // Set Key A for BOTH
 		std::memcpy(pImpl->key + 10, key, 6);
 		break;
-	case KeyType::ALL:
+	case KeyType::MifareClassic_Trailer:
 		std::memcpy(pImpl->key, key, 16);
 		break;
 	default:

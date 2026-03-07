@@ -12,6 +12,7 @@ CardIO::CardIO(Reader& reader, CardType ct)
     : reader_(reader), card_(ct)
 {
     reader_.setAuthRequested(false);
+    keys_.push_back(KeyInfo{});
 }
 
 CardIO::CardIO(Reader& reader, bool is4K)
@@ -27,51 +28,173 @@ CardIO::CardIO(Reader& reader, bool is4K)
 void CardIO::setDefaultKey(const KEYBYTES& key, KeyStructure ks,
                            BYTE slot, KeyType kt)
 {
-    defaultKey_  = key;
-    defaultKS_   = ks;
-    defaultSlot_ = slot;
-    defaultKT_   = kt;
+    keys_.clear();
+    keys_.push_back({ key, kt, ks, slot, "DefaultKey" });
+    slotContents_.clear();
 }
 
 void CardIO::setKeys(const KEYBYTES& keyA, BYTE slotA,
                      const KEYBYTES& keyB, BYTE slotB,
                      KeyStructure ks)
 {
-    // İlk key default olsun
-    setDefaultKey(keyA, ks, slotA, KeyType::A);
+    keys_.clear();
+    keys_.push_back({ keyA, KeyType::A, ks, slotA, "KeyA" });
+    keys_.push_back({ keyB, KeyType::B, ks, slotB, "KeyB" });
+    slotContents_.clear();
 
-    // İkisini de CardInterface'e kaydet
     card_.registerKey(KeyType::A, keyA, ks, slotA, "KeyA");
     card_.registerKey(KeyType::B, keyB, ks, slotB, "KeyB");
+}
+
+void CardIO::addKey(const KeyInfo& ki)
+{
+    for (auto& existing : keys_) {
+        if (existing.kt == ki.kt && existing.slot == ki.slot) {
+            existing = ki;
+            slotContents_.erase(ki.slot);
+            return;
+        }
+    }
+    keys_.push_back(ki);
+}
+
+void CardIO::clearKeys()
+{
+    keys_.clear();
+    keys_.push_back(KeyInfo{});
+    invalidateAuth();
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
 // Auth
 // ════════════════════════════════════════════════════════════════════════════════
 
-void CardIO::ensureAuth(int sector)
+void CardIO::ensureAuth(int sector, AuthPurpose purpose)
 {
-    if (card_.isUltralight()) return;       // Ultralight'ta auth yok
-    if (sector == lastAuthSector_) return;
+    if (card_.isUltralight()) return;
 
+    if (sector == lastAuthSector_) {
+        if (!isMultiKey()) return;
+        const KeyInfo& lastKey = findKey(lastAuthKT_);
+        if (canKeyPerform(lastKey, sector, purpose)) return;
+    }
+
+    const KeyInfo& chosen = chooseKey(sector, purpose);
+
+    try {
+        doAuth(sector, chosen);
+        return;
+    }
+    catch (...) {
+        if (isMultiKey()) {
+            for (const auto& ki : keys_) {
+                if (&ki == &chosen) continue;
+                try {
+                    doAuth(sector, ki);
+                    return;
+                }
+                catch (...) { continue; }
+            }
+        }
+        invalidateAuth();
+        throw;
+    }
+}
+
+void CardIO::doAuth(int sector, const KeyInfo& ki)
+{
     int trailer = card_.getTrailerBlockOfSector(sector);
-    reader_.loadKey(defaultKey_.data(), defaultKS_, defaultSlot_);
-    reader_.auth(static_cast<BYTE>(trailer), defaultKT_, defaultSlot_);
+    ensureKeyLoaded(ki);
+    reader_.auth(static_cast<BYTE>(trailer), ki.kt, ki.slot);
     lastAuthSector_ = sector;
+    lastAuthKT_     = ki.kt;
+}
+
+void CardIO::ensureKeyLoaded(const KeyInfo& ki)
+{
+    auto it = slotContents_.find(ki.slot);
+    if (it != slotContents_.end() && it->second == ki.key) return;
+
+    reader_.loadKey(ki.key.data(), ki.ks, ki.slot);
+    slotContents_[ki.slot] = ki.key;
+}
+
+void CardIO::invalidateAuth()
+{
+    lastAuthSector_ = -1;
+    lastAuthKT_     = KeyType::A;
+    slotContents_.clear();
+}
+
+const KeyInfo& CardIO::chooseKey(int sector, AuthPurpose purpose) const
+{
+    if (keys_.size() == 1) return keys_[0];
+
+    const KeyInfo* best = nullptr;
+    int bestScore = 0;
+
+    for (const auto& ki : keys_) {
+        bool canR = canKeyPerform(ki, sector, AuthPurpose::Read);
+        bool canW = canKeyPerform(ki, sector, AuthPurpose::Write);
+
+        bool usable = (purpose == AuthPurpose::Read) ? canR : canW;
+        if (!usable) continue;
+
+        // Least privilege: sadece gereken yetkiye sahip key tercih edilir.
+        //   score 2 → sadece gereken yetki (read-only veya write-only)
+        //   score 1 → read+write (gereğinden fazla yetki)
+        int score = (canR && canW) ? 1 : 2;
+
+        if (score > bestScore) {
+            best = &ki;
+            bestScore = score;
+        }
+    }
+
+    return best ? *best : keys_.front();
+}
+
+const KeyInfo& CardIO::findKey(KeyType kt) const
+{
+    for (const auto& ki : keys_) {
+        if (ki.kt == kt) return ki;
+    }
+    return keys_.front();
+}
+
+bool CardIO::isMultiKey() const
+{
+    return keys_.size() > 1;
+}
+
+bool CardIO::canKeyPerform(const KeyInfo& ki, int sector, AuthPurpose purpose) const
+{
+    // Mifare Classic: permission sektörün access bits'inden gelir
+    if (card_.isClassic()) {
+        return (purpose == AuthPurpose::Read)
+            ? card_.canReadDataBlocks(sector, ki.kt)
+            : card_.canWriteDataBlocks(sector, ki.kt);
+    }
+
+    // DESFire / diğer: permission key'in kendisinde tanımlı
+    return (purpose == AuthPurpose::Read) ? ki.canRead() : ki.canWrite();
 }
 
 void CardIO::authenticate(int sector)
 {
-    lastAuthSector_ = -1;          // zorla yeniden auth
+    invalidateAuth();
     ensureAuth(sector);
 }
 
 void CardIO::authenticate(int sector, KeyType kt, BYTE slot)
 {
+    const KeyInfo& ki = findKey(kt);
     int trailer = card_.getTrailerBlockOfSector(sector);
-    reader_.loadKey(defaultKey_.data(), defaultKS_, slot);
+    reader_.loadKey(ki.key.data(), ki.ks, slot);
     reader_.auth(static_cast<BYTE>(trailer), kt, slot);
     lastAuthSector_ = sector;
+    lastAuthKT_     = kt;
+    slotContents_.clear();
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -92,7 +215,7 @@ int CardIO::readCard()
         // Auth
         try { ensureAuth(s); }
         catch (...) {
-            lastAuthSector_ = -1;
+            invalidateAuth();
             continue;                       // sektör bozuk, atla
         }
 
@@ -119,7 +242,7 @@ int CardIO::readCard()
 bool CardIO::readSector(int sector)
 {
     try { ensureAuth(sector); }
-    catch (...) { lastAuthSector_ = -1; return false; }
+    catch (...) { invalidateAuth(); return false; }
 
     int first = card_.getFirstBlockOfSector(sector);
     int last  = card_.getLastBlockOfSector(sector);
@@ -168,7 +291,7 @@ void CardIO::writeBlock(int block, const BYTE data[16])
         throw std::runtime_error("Trailer blogu dogrudan yazilamaz");
 
     int sector = card_.getSectorForBlock(block);
-    ensureAuth(sector);
+    ensureAuth(sector, AuthPurpose::Write);
 
     if (card_.isUltralight()) {
         // Ultralight WRITE komutu: sayfa başına 4 byte
@@ -222,7 +345,7 @@ void CardIO::writeTrailer(int sector, const TrailerConfig& config)
         throw std::invalid_argument("Geçersiz access bits — kart kilitlenebilir!");
 
     int trailerBlock = card_.getTrailerBlockOfSector(sector);
-    ensureAuth(sector);
+    ensureAuth(sector, AuthPurpose::Write);
 
     MifareBlock blk = config.toBlock();
     reader_.writePage(static_cast<BYTE>(trailerBlock), blk.raw);
