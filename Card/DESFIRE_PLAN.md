@@ -173,11 +173,11 @@ Commit: `feat: DESFire Faz 4`
 - [x] 14/14 test geçti (Management APDU + Secure Messaging dahil)
 - [ ] Session timeout/caching (opsiyonel, istenirse eklenebilir)
 
-## Faz 5 — Stabilizasyon ⏳ BEKLEMEDE
+## Faz 5 — Stabilizasyon ⏳ BEKLEMEDE (gerçek kart bekleniyor)
 
 - [ ] Gerçek DESFire kart ile integration test
 - [ ] Regression + performans kontrolleri
-- [ ] Dokümantasyon ve kullanım örnekleri
+- [x] Dokümantasyon ve kullanım örnekleri (DESFIRE_USAGE.md)
 
 ---
 

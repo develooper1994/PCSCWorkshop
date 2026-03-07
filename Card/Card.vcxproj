@@ -182,6 +182,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="DESFIRE_PLAN.md" />
+    <None Include="DESFIRE_USAGE.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
