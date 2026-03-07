@@ -582,9 +582,9 @@ void CardIO::writeFileData(BYTE fileNo, uint32_t offset, const BYTEV& data) {
     DesfireCommands::checkResponse(resp, "WriteData");
 }
 
-BYTEV CardIO::readRecords(BYTE fileNo, uint32_t fromRecord, uint32_t toRecord) {
+BYTEV CardIO::readRecords(BYTE fileNo, uint32_t offset, uint32_t count) {
     requireDesfire(card_, "readRecords");
-    BYTEV cmd = DesfireCommands::readRecords(fileNo, fromRecord, toRecord);
+    BYTEV cmd = DesfireCommands::readRecords(fileNo, offset, count);
     return DesfireCommands::transceive(makeTransmitFn(), cmd);
 }
 

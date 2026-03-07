@@ -1834,6 +1834,129 @@ bool testDesfire3K3DES() {
 
 
 // ════════════════════════════════════════════════════════════════════════════════
+// TEST: DESFire Record File Operations
+// ════════════════════════════════════════════════════════════════════════════════
+
+bool testDesfireRecordFiles() {
+    int line = 0;
+    try {
+#define RF_CHECK(cond) do { line = __LINE__; if (!(cond)) { cout << "    FAIL at line " << line << ": " #cond "\n"; return false; } } while(0)
+
+        // ── 1. ReadRecords APDU ─────────────────────────────────────────────
+
+        BYTEV rrCmd = DesfireCommands::readRecords(0x02, 0, 10);
+        RF_CHECK(rrCmd[0] == 0x90);
+        RF_CHECK(rrCmd[1] == 0xBB);  // INS
+        RF_CHECK(rrCmd[5] == 0x02);  // fileNo
+        // offset = 0 LE24
+        RF_CHECK(rrCmd[6] == 0x00);
+        RF_CHECK(rrCmd[7] == 0x00);
+        RF_CHECK(rrCmd[8] == 0x00);
+        // count = 10 LE24
+        RF_CHECK(rrCmd[9] == 10);
+        RF_CHECK(rrCmd[10] == 0);
+        RF_CHECK(rrCmd[11] == 0);
+
+        // ── 2. ReadRecords — multi-byte indices ─────────────────────────────
+
+        BYTEV rrCmd2 = DesfireCommands::readRecords(0x01, 256, 65535);
+        RF_CHECK(rrCmd2[5] == 0x01);
+        // 256 LE24 = {0x00, 0x01, 0x00}
+        RF_CHECK(rrCmd2[6] == 0x00);
+        RF_CHECK(rrCmd2[7] == 0x01);
+        RF_CHECK(rrCmd2[8] == 0x00);
+        // 65535 LE24 = {0xFF, 0xFF, 0x00}
+        RF_CHECK(rrCmd2[9] == 0xFF);
+        RF_CHECK(rrCmd2[10] == 0xFF);
+        RF_CHECK(rrCmd2[11] == 0x00);
+
+        // ── 3. ReadRecords — count=0 (read all) ────────────────────────────
+
+        BYTEV rrAll = DesfireCommands::readRecords(0x03, 0, 0);
+        RF_CHECK(rrAll[1] == 0xBB);
+        RF_CHECK(rrAll[9] == 0);
+
+        // ── 4. AppendRecord APDU ────────────────────────────────────────────
+
+        BYTEV payload = {0x11, 0x22, 0x33, 0x44, 0x55};
+        BYTEV arCmd = DesfireCommands::appendRecord(0x02, payload);
+        RF_CHECK(arCmd[0] == 0x90);
+        RF_CHECK(arCmd[1] == 0x3B);  // INS
+        RF_CHECK(arCmd[5] == 0x02);  // fileNo
+        // offset = 0 (always)
+        RF_CHECK(arCmd[6] == 0x00);
+        RF_CHECK(arCmd[7] == 0x00);
+        RF_CHECK(arCmd[8] == 0x00);
+        // length = 5 LE24
+        RF_CHECK(arCmd[9] == 5);
+        RF_CHECK(arCmd[10] == 0);
+        RF_CHECK(arCmd[11] == 0);
+        // record data
+        RF_CHECK(arCmd[12] == 0x11);
+        RF_CHECK(arCmd[13] == 0x22);
+        RF_CHECK(arCmd[16] == 0x55);
+
+        // ── 5. AppendRecord — empty payload ─────────────────────────────────
+
+        BYTEV arEmpty = DesfireCommands::appendRecord(0x03, {});
+        RF_CHECK(arEmpty[1] == 0x3B);
+        RF_CHECK(arEmpty[5] == 0x03);
+        // length = 0
+        RF_CHECK(arEmpty[9] == 0);
+        RF_CHECK(arEmpty[10] == 0);
+        RF_CHECK(arEmpty[11] == 0);
+
+        // ── 6. AppendRecord — large payload (1024 bytes) ────────────────────
+
+        BYTEV large(1024, 0xBB);
+        BYTEV arLarge = DesfireCommands::appendRecord(0x04, large);
+        RF_CHECK(arLarge[1] == 0x3B);
+        // 1024 = 0x000400 LE24 = {0x00, 0x04, 0x00}
+        RF_CHECK(arLarge[9] == 0x00);
+        RF_CHECK(arLarge[10] == 0x04);
+        RF_CHECK(arLarge[11] == 0x00);
+        RF_CHECK(arLarge[12] == 0xBB);
+
+        // ── 7. Simulated multi-frame read ───────────────────────────────────
+
+        int frame = 0;
+        auto simTransmit = [&](const BYTEV& apdu) -> BYTEV {
+            frame++;
+            if (frame == 1) {
+                // First frame: 2 records of 8 bytes each + more
+                BYTEV resp(16, 0xAA);
+                resp.push_back(0x91); resp.push_back(0xAF);
+                return resp;
+            } else {
+                // Second frame: 1 record of 8 bytes + OK
+                BYTEV resp(8, 0xBB);
+                resp.push_back(0x91); resp.push_back(0x00);
+                return resp;
+            }
+        };
+
+        BYTEV readCmd = DesfireCommands::readRecords(0x02, 0, 3);
+        BYTEV allData = DesfireCommands::transceive(simTransmit, readCmd);
+        RF_CHECK(frame == 2);
+        RF_CHECK(allData.size() == 24);   // 16 + 8
+        RF_CHECK(allData[0] == 0xAA);
+        RF_CHECK(allData[16] == 0xBB);
+
+#undef RF_CHECK
+        return true;
+    }
+    catch (const exception& e) {
+        cout << "    Exception at line " << line << ": " << e.what() << "\n";
+        return false;
+    }
+    catch (...) {
+        cout << "    Unknown exception at line " << line << "\n";
+        return false;
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════════
 // MAIN TEST RUNNER
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -1859,6 +1982,7 @@ int runCardSystemTests() {
     recordTest("DESFire Management", testDesfireManagement());
     recordTest("DESFire Integration", testDesfireIntegration());
     recordTest("DESFire 3K3DES", testDesfire3K3DES());
+    recordTest("DESFire Record Files", testDesfireRecordFiles());
     
     // Summary
     cout << "\n=== Test Summary ===\n";

@@ -92,6 +92,25 @@ io.createLinearRecordFile(2, DesfireCommMode::Full, ar,
 io.deleteFile(2);
 ```
 
+### Record File İşlemleri
+
+```cpp
+// Linear Record File oluştur (32-byte record, max 100 kayıt)
+io.createLinearRecordFile(2, DesfireCommMode::Full, ar,
+    /*recordSize=*/32, /*maxRecords=*/100);
+
+// Kayıt ekle
+BYTEV record = { 0x01, 0x02, 0x03 /* ... 32 byte */ };
+io.appendRecord(/*fileNo=*/2, record);
+io.commitTransaction();  // record file yazmaları commit gerektirir
+
+// Kayıt oku (offset=0, count=0 → tümünü oku)
+BYTEV allRecords = io.readRecords(/*fileNo=*/2, /*offset=*/0, /*count=*/0);
+
+// Belirli kayıtları oku (3. kayıttan başla, 5 kayıt)
+BYTEV someRecords = io.readRecords(2, /*offset=*/3, /*count=*/5);
+```
+
 ---
 
 ## 3. Value İşlemleri (Transaction)

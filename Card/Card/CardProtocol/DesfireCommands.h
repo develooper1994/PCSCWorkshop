@@ -157,11 +157,13 @@ public:
     // ── Record File Operations ──────────────────────────────────────────────
 
     // ReadRecords: INS=0xBB
-    //   data = fileNo(1) + fromRecord(3 LE) + toRecord(3 LE)
-    static BYTEV readRecords(BYTE fileNo, uint32_t fromRecord, uint32_t toRecord);
+    //   data = fileNo(1) + offset(3 LE) + count(3 LE)
+    //   offset: starting record number (0-based)
+    //   count:  number of records to read (0 = all from offset)
+    static BYTEV readRecords(BYTE fileNo, uint32_t offset, uint32_t count);
 
     // AppendRecord: INS=0x3B
-    //   data = fileNo(1) + length(3 LE) + recordData
+    //   data = fileNo(1) + offset(3 LE, must be 0) + length(3 LE) + recordData
     static BYTEV appendRecord(BYTE fileNo, const BYTEV& recordData);
 
     // ── Response Parsing ────────────────────────────────────────────────────

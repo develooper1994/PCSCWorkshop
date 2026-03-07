@@ -133,7 +133,8 @@ Bu bilgi, `DesfireMemoryLayout.totalMemory` alanına yazılır ve
 - [x] Management APDU + Secure Messaging (11 section)
 - [x] Integration test: session timeout, full auth lifecycle, command coverage, regression
 - [x] 3K3DES: cipher round-trip, simulated 3-pass auth, session key derivation
-- [x] Regression: **16/16 PASS** (10 Classic/UL + 6 DESFire)
+- [x] Record Files: ReadRecords/AppendRecord APDU + multi-frame simulated read
+- [x] Regression: **17/17 PASS** (10 Classic/UL + 7 DESFire)
 
 ---
 
@@ -186,7 +187,8 @@ Commit: `feat: DESFire Faz 5`
 - [x] Session timeout/caching (`<chrono>` tabanlı, `setTimeoutMs()`, `isValid()/isExpired()`)
 - [x] Integration test: simulated full lifecycle (auth→timeout→expire, AccessRights round-trip,
       full command INS coverage, Secure Messaging end-to-end, Classic regression)
-- [x] Regression: **16/16 PASS** (10 Classic/UL + 6 DESFire)
+- [x] 3K3DES full support + Record File komutları + testleri
+- [x] Regression: **17/17 PASS** (10 Classic/UL + 7 DESFire)
 - [x] Dokümantasyon
 - [ ] Gerçek DESFire EV1/EV2 kart ile donanım doğrulaması (kart hazır olduğunda)
 

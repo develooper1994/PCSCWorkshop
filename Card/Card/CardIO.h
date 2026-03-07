@@ -271,7 +271,7 @@ public:
     void deleteFile(BYTE fileNo);
 
     // Record File Operations
-    BYTEV readRecords(BYTE fileNo, uint32_t fromRecord, uint32_t toRecord);
+    BYTEV readRecords(BYTE fileNo, uint32_t offset, uint32_t count);
     void appendRecord(BYTE fileNo, const BYTEV& recordData);
 
     // Transaction

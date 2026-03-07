@@ -255,22 +255,24 @@ BYTEV DesfireCommands::formatPICC() {
 // Record File Operations
 // ════════════════════════════════════════════════════════════════════════════════
 
-BYTEV DesfireCommands::readRecords(BYTE fileNo, uint32_t fromRecord, uint32_t toRecord) {
+BYTEV DesfireCommands::readRecords(BYTE fileNo, uint32_t offset, uint32_t count) {
     BYTEV data;
     data.push_back(fileNo);
-    BYTE fr[3], tr[3];
-    writeLE24(fr, fromRecord);
-    writeLE24(tr, toRecord);
-    data.insert(data.end(), fr, fr + 3);
-    data.insert(data.end(), tr, tr + 3);
+    BYTE off[3], cnt[3];
+    writeLE24(off, offset);
+    writeLE24(cnt, count);
+    data.insert(data.end(), off, off + 3);
+    data.insert(data.end(), cnt, cnt + 3);
     return wrapCommand(0xBB, data);
 }
 
 BYTEV DesfireCommands::appendRecord(BYTE fileNo, const BYTEV& recordData) {
     BYTEV data;
     data.push_back(fileNo);
+    BYTE off[3] = {0, 0, 0};  // offset must be 0
+    data.insert(data.end(), off, off + 3);
     BYTE len[3];
-    writeLE24(len, recordData.size());
+    writeLE24(len, static_cast<uint32_t>(recordData.size()));
     data.insert(data.end(), len, len + 3);
     data.insert(data.end(), recordData.begin(), recordData.end());
     return wrapCommand(0x3B, data);
