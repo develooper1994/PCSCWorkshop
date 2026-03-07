@@ -1681,6 +1681,159 @@ bool testDesfireIntegration() {
 
 
 // ════════════════════════════════════════════════════════════════════════════════
+// TEST: 3K3DES — cipher, auth, session key
+// ════════════════════════════════════════════════════════════════════════════════
+
+bool testDesfire3K3DES() {
+    int line = 0;
+    try {
+#define D3_CHECK(cond) do { line = __LINE__; if (!(cond)) { cout << "    FAIL at line " << line << ": " #cond "\n"; return false; } } while(0)
+
+        // ── 1. CngBlockCipher 3K3DES round-trip ─────────────────────────────
+
+        BYTEV key24(24, 0x00);
+        key24[0] = 0x11; key24[8] = 0x22; key24[16] = 0x33;
+        BYTEV iv8(8, 0x00);
+        BYTEV plain8(8, 0x42);
+
+        BYTEV enc = CngBlockCipher::encrypt3K3DES(key24, iv8, plain8);
+        D3_CHECK(enc.size() == 8);
+        D3_CHECK(enc != plain8);
+
+        BYTEV dec = CngBlockCipher::decrypt3K3DES(key24, iv8, enc);
+        D3_CHECK(dec == plain8);
+
+        // Multi-block
+        BYTEV plain16(16, 0x55);
+        BYTEV enc16 = CngBlockCipher::encrypt3K3DES(key24, iv8, plain16);
+        D3_CHECK(enc16.size() == 16);
+        BYTEV dec16 = CngBlockCipher::decrypt3K3DES(key24, iv8, enc16);
+        D3_CHECK(dec16 == plain16);
+
+        // Wrong key size should throw
+        bool threw = false;
+        try { CngBlockCipher::encrypt3K3DES(BYTEV(16, 0), iv8, plain8); }
+        catch (const std::invalid_argument&) { threw = true; }
+        D3_CHECK(threw);
+
+        // ── 2. DesfireCrypto sizes ──────────────────────────────────────────
+
+        D3_CHECK(DesfireCrypto::keySize(DesfireKeyType::ThreeDES) == 24);
+        D3_CHECK(DesfireCrypto::nonceSize(DesfireKeyType::ThreeDES) == 16);
+        D3_CHECK(DesfireCrypto::blockSize(DesfireKeyType::ThreeDES) == 8);  // DES cipher block = 8
+
+        // ── 3. Session key derivation — 3K3DES ─────────────────────────────
+
+        BYTEV rndA16(16, 0xAA);
+        for (size_t i = 0; i < 16; i++) rndA16[i] = static_cast<BYTE>(i + 0x10);
+
+        BYTEV rndB16(16, 0xBB);
+        for (size_t i = 0; i < 16; i++) rndB16[i] = static_cast<BYTE>(i + 0x30);
+
+        BYTEV sk = DesfireCrypto::deriveSessionKey(rndA16, rndB16, DesfireKeyType::ThreeDES);
+        D3_CHECK(sk.size() == 24);
+
+        // SK = RndA[0..3] || RndB[0..3] || RndA[6..9] || RndB[6..9] || RndA[12..15] || RndB[12..15]
+        D3_CHECK(sk[0] == rndA16[0]);
+        D3_CHECK(sk[3] == rndA16[3]);
+        D3_CHECK(sk[4] == rndB16[0]);
+        D3_CHECK(sk[7] == rndB16[3]);
+        D3_CHECK(sk[8] == rndA16[6]);
+        D3_CHECK(sk[11] == rndA16[9]);
+        D3_CHECK(sk[12] == rndB16[6]);
+        D3_CHECK(sk[15] == rndB16[9]);
+        D3_CHECK(sk[16] == rndA16[12]);
+        D3_CHECK(sk[19] == rndA16[15]);
+        D3_CHECK(sk[20] == rndB16[12]);
+        D3_CHECK(sk[23] == rndB16[15]);
+
+        // ── 4. Simulated 3K3DES 3-pass auth ────────────────────────────────
+
+        // 3K3DES: nonce=16 bytes, block=8 bytes (DES block), key=24 bytes
+        // But DESFire 3K3DES auth uses 16-byte nonces with 8-byte DES blocks
+        // So encRndB = 16 bytes (2 DES blocks)
+
+        BYTEV simKey(24, 0x00);
+        simKey[0] = 0xAB; simKey[8] = 0xCD; simKey[16] = 0xEF;
+
+        BYTEV simRndB = {
+            0x20,0x21,0x22,0x23, 0x24,0x25,0x26,0x27,
+            0x28,0x29,0x2A,0x2B, 0x2C,0x2D,0x2E,0x2F
+        };
+
+        // blockSize for 3K3DES = 16 (uses two 8-byte DES blocks chained)
+        // But CNG operates on 8-byte blocks. Nonce is 16 bytes.
+        // Auth uses zero IV (8-byte for DES)
+        BYTEV zeroIV8(8, 0);
+        BYTEV encSimRndB = CngBlockCipher::encrypt3K3DES(simKey, zeroIV8, simRndB);
+        D3_CHECK(encSimRndB.size() == 16);
+
+        int step = 0;
+        BYTEV capturedRndA;
+
+        auto transmit = [&](const BYTEV& apdu) -> BYTEV {
+            step++;
+            if (step == 1) {
+                BYTEV resp;
+                resp.insert(resp.end(), encSimRndB.begin(), encSimRndB.end());
+                resp.push_back(0x91); resp.push_back(0xAF);
+                return resp;
+            } else {
+                // 3K3DES: blockSize from DesfireCrypto = 16, but DES physical = 8
+                // Extract payload, decrypt, verify
+                size_t payLen = apdu[4];
+                BYTEV payload(apdu.begin() + 5, apdu.begin() + 5 + payLen);
+
+                // IV for step 2: last 8 bytes of encRndB
+                BYTEV cardIV(encSimRndB.end() - 8, encSimRndB.end());
+                BYTEV dec = CngBlockCipher::decrypt3K3DES(simKey, cardIV, payload);
+                capturedRndA.assign(dec.begin(), dec.begin() + 16);
+
+                BYTEV rndArot = DesfireCrypto::rotateLeft(capturedRndA);
+                BYTEV cardIV2(payload.end() - 8, payload.end());
+                BYTEV encRndArot = CngBlockCipher::encrypt3K3DES(simKey, cardIV2, rndArot);
+
+                BYTEV resp;
+                resp.insert(resp.end(), encRndArot.begin(), encRndArot.end());
+                resp.push_back(0x91); resp.push_back(0x00);
+                return resp;
+            }
+        };
+
+        DesfireAuth auth;
+        DesfireSession session;
+        auth.authenticate(session, simKey, 0, DesfireKeyType::ThreeDES, transmit);
+
+        D3_CHECK(session.authenticated);
+        D3_CHECK(session.sessionKey.size() == 24);
+
+        // Verify session key derivation
+        BYTEV expectedSK = DesfireCrypto::deriveSessionKey(capturedRndA, simRndB,
+                                                            DesfireKeyType::ThreeDES);
+        D3_CHECK(session.sessionKey == expectedSK);
+
+        // ── 5. CreateApplication with 3K3DES flag ──────────────────────────
+
+        BYTEV caCmd = DesfireCommands::createApplication(
+            DesfireAID::fromUint(0x010203), 0x0F, 3, DesfireKeyType::ThreeDES);
+        D3_CHECK((caCmd[9] & 0x40) == 0x40);  // 3K3DES flag
+        D3_CHECK((caCmd[9] & 0x0F) == 3);     // maxKeys
+
+#undef D3_CHECK
+        return true;
+    }
+    catch (const exception& e) {
+        cout << "    Exception at line " << line << ": " << e.what() << "\n";
+        return false;
+    }
+    catch (...) {
+        cout << "    Unknown exception at line " << line << "\n";
+        return false;
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════════
 // MAIN TEST RUNNER
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -1705,6 +1858,7 @@ int runCardSystemTests() {
     recordTest("DESFire Commands", testDesfireCommands());
     recordTest("DESFire Management", testDesfireManagement());
     recordTest("DESFire Integration", testDesfireIntegration());
+    recordTest("DESFire 3K3DES", testDesfire3K3DES());
     
     // Summary
     cout << "\n=== Test Summary ===\n";

@@ -97,6 +97,8 @@ void DesfireAuth::authenticate(DesfireSession& session,
     BYTEV rndB;
     if (keyType == DesfireKeyType::AES128)
         rndB = CngBlockCipher::decryptAES(key, zeroIV, encRndB);
+    else if (keyType == DesfireKeyType::ThreeDES)
+        rndB = CngBlockCipher::decrypt3K3DES(key, zeroIV, encRndB);
     else
         rndB = CngBlockCipher::decrypt2K3DES(key, zeroIV, encRndB);
 

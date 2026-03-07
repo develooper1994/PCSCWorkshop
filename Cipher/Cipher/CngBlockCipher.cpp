@@ -152,6 +152,32 @@ BYTEV CngBlockCipher::decrypt2K3DES(const BYTEV& key, const BYTEV& iv, const BYT
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
+// 3K3DES (24-byte key, native)
+// ════════════════════════════════════════════════════════════════════════════════
+
+BYTEV CngBlockCipher::encrypt3K3DES(const BYTEV& key, const BYTEV& iv,
+                                     const BYTE* data, size_t len) {
+    if (key.size() != 24)
+        throw std::invalid_argument("3K3DES key must be 24 bytes");
+    return rawCBC(BCRYPT_3DES_ALGORITHM, key, iv, data, len, DES_BLOCK, true);
+}
+
+BYTEV CngBlockCipher::decrypt3K3DES(const BYTEV& key, const BYTEV& iv,
+                                     const BYTE* data, size_t len) {
+    if (key.size() != 24)
+        throw std::invalid_argument("3K3DES key must be 24 bytes");
+    return rawCBC(BCRYPT_3DES_ALGORITHM, key, iv, data, len, DES_BLOCK, false);
+}
+
+BYTEV CngBlockCipher::encrypt3K3DES(const BYTEV& key, const BYTEV& iv, const BYTEV& data) {
+    return encrypt3K3DES(key, iv, data.data(), data.size());
+}
+
+BYTEV CngBlockCipher::decrypt3K3DES(const BYTEV& key, const BYTEV& iv, const BYTEV& data) {
+    return decrypt3K3DES(key, iv, data.data(), data.size());
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
 // CMAC (OMAC1) — AES-128
 // ════════════════════════════════════════════════════════════════════════════════
 //

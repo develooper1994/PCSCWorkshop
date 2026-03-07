@@ -101,10 +101,10 @@ Bu bilgi, `DesfireMemoryLayout.totalMemory` alanına yazılır ve
 
 ## 4) Key Yönetimi ✅ (temel)
 
-- [x] DesfireKeyType enum (DES, 2K3DES, AES-128)
+- [x] DesfireKeyType enum (DES, 2K3DES, 3K3DES, AES-128)
 - [x] KeySettings bitfield (allowChangeMasterKey, freeDirectoryList, vb.)
 - [x] Key version metadata (DesfireKeyConfig.keyVersion)
-- [ ] 3K3DES (gerektiğinde)
+- [x] 3K3DES: CngBlockCipher encrypt/decrypt, auth, session key derivation
 - [x] ChangeKey APDU (Faz 4)
 
 ## 5) I/O Katmanı ✅ (temel)
@@ -128,11 +128,12 @@ Bu bilgi, `DesfireMemoryLayout.totalMemory` alanına yazılır ve
 - [x] DesfireMemoryLayout model testi (10 section, DF_CHECK makro)
 - [x] DesfireAuth simulated 3-pass (9 section, DA_CHECK makro)
 - [x] CngBlockCipher AES/3DES round-trip + CMAC smoke
-- [x] Session key derivation (AES + 2K3DES)
+- [x] Session key derivation (AES + 2K3DES + 3K3DES)
 - [x] APDU construction + response parsing
 - [x] Management APDU + Secure Messaging (11 section)
 - [x] Integration test: session timeout, full auth lifecycle, command coverage, regression
-- [x] Regression: **15/15 PASS** (10 Classic/UL + 5 DESFire)
+- [x] 3K3DES: cipher round-trip, simulated 3-pass auth, session key derivation
+- [x] Regression: **16/16 PASS** (10 Classic/UL + 6 DESFire)
 
 ---
 
@@ -185,8 +186,8 @@ Commit: `feat: DESFire Faz 5`
 - [x] Session timeout/caching (`<chrono>` tabanlı, `setTimeoutMs()`, `isValid()/isExpired()`)
 - [x] Integration test: simulated full lifecycle (auth→timeout→expire, AccessRights round-trip,
       full command INS coverage, Secure Messaging end-to-end, Classic regression)
-- [x] Regression: **15/15 PASS** (10 Classic/UL + 5 DESFire)
-- [x] Dokümantasyon ve kullanım örnekleri (DESFIRE_USAGE.md)
+- [x] Regression: **16/16 PASS** (10 Classic/UL + 6 DESFire)
+- [x] Dokümantasyon
 - [ ] Gerçek DESFire EV1/EV2 kart ile donanım doğrulaması (kart hazır olduğunda)
 
 ---

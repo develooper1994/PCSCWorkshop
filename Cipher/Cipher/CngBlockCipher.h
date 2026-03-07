@@ -51,6 +51,17 @@ public:
     static BYTEV encrypt2K3DES(const BYTEV& key, const BYTEV& iv, const BYTEV& data);
     static BYTEV decrypt2K3DES(const BYTEV& key, const BYTEV& iv, const BYTEV& data);
 
+    // ── 3K3DES CBC (no padding) ─────────────────────────────────────────────
+    //   key: 24 bytes (3K3DES), iv: 8 bytes, data: N*8 bytes
+
+    static BYTEV encrypt3K3DES(const BYTEV& key, const BYTEV& iv,
+                               const BYTE* data, size_t len);
+    static BYTEV decrypt3K3DES(const BYTEV& key, const BYTEV& iv,
+                               const BYTE* data, size_t len);
+
+    static BYTEV encrypt3K3DES(const BYTEV& key, const BYTEV& iv, const BYTEV& data);
+    static BYTEV decrypt3K3DES(const BYTEV& key, const BYTEV& iv, const BYTEV& data);
+
     // ── AES CMAC (OMAC1) ────────────────────────────────────────────────────
     //   key: 16 bytes, data: arbitrary length
     //   Returns 16-byte MAC
