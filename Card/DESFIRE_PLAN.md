@@ -125,7 +125,7 @@ Bu bilgi, `DesfireMemoryLayout.totalMemory` alanına yazılır ve
 - [x] CngBlockCipher AES/3DES round-trip + CMAC smoke
 - [x] Session key derivation (AES + 2K3DES)
 - [x] APDU construction + response parsing
-- [x] Regression: **12/12 PASS** (10 Classic/UL + 2 DESFire)
+- [x] Regression: **13/13 PASS** (10 Classic/UL + 3 DESFire)
 - [ ] Integration testler (gerçek kart — Faz 5)
 
 ---
@@ -147,7 +147,7 @@ Commit: `feat: DESFire Faz 2`
 - DesfireCrypto (Card projesi): nonce, rotate, session key derivation
 - DesfireAuth (Card projesi): 3-pass mutual auth state machine
 - DesfireSession (Card projesi): session state (key, IV, counter)
-- 12/12 test geçti (simulated 3-pass auth dahil)
+- 13/13 test geçti (simulated 3-pass auth dahil)
 
 ## Faz 3 — Veri Erişim Modeli ✅ TAMAMLANDI
 
@@ -156,7 +156,7 @@ Commit: `feat: DESFire Faz 3`
 - DesfireCommands (Card projesi): APDU construction + response parsing + multi-frame
 - CardIO DESFire API: selectApplication, authenticateDesfire, readFileData, writeFileData
 - CardIO: discoverCard, getApplicationIDs, getFileIDs, getFileSettings, getFreeMemory
-- 12/12 test geçti
+- 13/13 test geçti
 
 ## Faz 4 — Gelişmiş DESFire Özellikleri ⏳ BEKLEMEDE
 
