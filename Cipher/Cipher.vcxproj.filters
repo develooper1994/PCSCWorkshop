@@ -89,4 +89,7 @@
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="CRYPTO_MIGRATION_PLAN.md" />
+  </ItemGroup>
 </Project>

@@ -119,6 +119,7 @@
     <ClInclude Include="Utils\Exceptions\GenericExceptions.h" />
     <ClInclude Include="Utils\Log\Log.h" />
     <ClInclude Include="Utils\PcscUtils.h" />
+    <ClInclude Include="Utils\PCSC_new.h" />
     <ClInclude Include="Utils\Platform.h" />
     <ClInclude Include="Utils\Result.h" />
     <ClInclude Include="Utils\StatusWordHandler.h" />

@@ -56,6 +56,9 @@
     <ClInclude Include="Utils\Platform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Utils\PCSC_new.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Utils\Utils.cpp">

@@ -23,6 +23,11 @@ Projede kullanılan kütüphaneler:
 | winscard (PC/SC) | Windows: `winscard.lib` / Linux: `libpcsclite` | Akıllı kart iletişimi |
 | bcrypt (CNG) | Sadece Windows | AES, 3DES, CMAC şifreleme |
 
+> **⚠️ Planlanan değişiklik:** `bcrypt (CNG)` → `OpenSSL (libcrypto)` migration planlandı.
+> Detaylar: `Cipher/CRYPTO_MIGRATION_PLAN.md`
+> Branch: `feature/cipher-openssl-migration`
+> Bu migration sonrasında bcrypt satırı kaldırılıp yerine OpenSSL eklenecek.
+
 - Yeni kütüphane eklenirse bu listeyi güncelle.
 - Kütüphane kaldırılırsa listeden çıkar ve ilgili CMake/vcxproj bağımlılığını temizle.
 
@@ -30,6 +35,7 @@ Projede kullanılan kütüphaneler:
 ```
 Utils (static lib)     — Platform.h, PCSC, PcscUtils, Log, Result, StatusWord
 Cipher (static lib)    — XorCipher, CaesarCipher, CngAES, CngBlockCipher (Win)
+                         ⚠️ OpenSSL migration planlandı → crypto:: facade (Cipher/CRYPTO_MIGRATION_PLAN.md)
 Reader (static lib)    — Reader (base), ACR1281UReader, PcscCommands
 Card (static lib)      — CardIO, CardInterface, DesfireCommands, DesfireAuth
 Workshop1 (exe)        — Ana uygulama
@@ -57,6 +63,7 @@ Bağımlılık yönü: `Utils ← Cipher ← Reader ← Card ← Workshop1/Tests
 - Değişiklik yapınca `run_build` ile doğrula.
 - CMake build'i de etkileniyorsa her iki sistemi de güncelle.
 - Düzenli ve temiz çalış: yarım iş bırakma, bir değişikliğin tüm etkilerini (include, link, test) takip et.
+- **İndeks kullan:** `.project-index.md` ilk kontrol noktası — proje mimarisi, dependencies, key files hızlı referans. Her major değişiklikten sonra ve taramalarında uyumsuzluk olursa güncelle.
 
 ## Git & Repo Yönetimi
 
