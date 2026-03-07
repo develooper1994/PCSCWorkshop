@@ -149,6 +149,7 @@
     <ClInclude Include="Cipher\CngAES.h" />
     <ClInclude Include="Cipher\CngAESGcm.h" />
     <ClInclude Include="Cipher\CngAESGcmUtil.h" />
+    <ClInclude Include="Cipher\CngBlockCipher.h" />
     <ClInclude Include="Cipher\ICipherAAD.h" />
     <ClInclude Include="Cipher\XorCipher.h" />
   </ItemGroup>
@@ -159,6 +160,7 @@
     <ClCompile Include="Cipher\Cng3DES.cpp" />
     <ClCompile Include="Cipher\CngAES.cpp" />
     <ClCompile Include="Cipher\CngAESGcm.cpp" />
+    <ClCompile Include="Cipher\CngBlockCipher.cpp" />
     <ClCompile Include="Cipher\XorCipher.cpp" />
   </ItemGroup>
   <ItemGroup>

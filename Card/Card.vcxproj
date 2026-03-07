@@ -150,6 +150,9 @@
     <ClInclude Include="Card\CardModel\TrailerConfig.h" />
     <ClInclude Include="Card\CardProtocol\AccessControl.h" />
     <ClInclude Include="Card\CardProtocol\AuthenticationState.h" />
+    <ClInclude Include="Card\CardProtocol\DesfireAuth.h" />
+    <ClInclude Include="Card\CardProtocol\DesfireCrypto.h" />
+    <ClInclude Include="Card\CardProtocol\DesfireSession.h" />
     <ClInclude Include="Card\CardProtocol\KeyManagement.h" />
   </ItemGroup>
   <ItemGroup>
@@ -158,6 +161,8 @@
     <ClCompile Include="Card\CardModel\CardTopology.cpp" />
     <ClCompile Include="Card\CardProtocol\AccessControl.cpp" />
     <ClCompile Include="Card\CardProtocol\AuthenticationState.cpp" />
+    <ClCompile Include="Card\CardProtocol\DesfireAuth.cpp" />
+    <ClCompile Include="Card\CardProtocol\DesfireCrypto.cpp" />
     <ClCompile Include="Card\CardProtocol\KeyManagement.cpp" />
   </ItemGroup>
   <ItemGroup>

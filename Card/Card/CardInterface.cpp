@@ -263,7 +263,7 @@ KEYBYTES CardInterface::getUID() const {
         }
         return uid;
     }
-    if (isUltralight()) {
+    else if (isUltralight()) {
         const auto& pg0 = memory_->data.ultralight.detailed.serial0;
         uid[0] = pg0.serial0.sn0;
         uid[1] = pg0.serial0.sn1;

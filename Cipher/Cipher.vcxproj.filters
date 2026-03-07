@@ -56,6 +56,9 @@
     <ClInclude Include="Ciphers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Cipher\CngBlockCipher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Cipher\AffineCipher.cpp">
@@ -78,6 +81,9 @@
     </ClCompile>
     <ClCompile Include="Cipher\XorCipher.cpp">
       <Filter>Cipher\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\CngBlockCipher.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

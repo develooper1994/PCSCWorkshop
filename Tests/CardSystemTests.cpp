@@ -9,7 +9,11 @@
 #include "../Card/Card/CardProtocol/AccessControl.h"
 #include "../Card/Card/CardProtocol/KeyManagement.h"
 #include "../Card/Card/CardProtocol/AuthenticationState.h"
+#include "../Card/Card/CardProtocol/DesfireCrypto.h"
+#include "../Card/Card/CardProtocol/DesfireAuth.h"
+#include "../Card/Card/CardProtocol/DesfireSession.h"
 #include "../Card/Card/CardInterface.h"
+#include "../Cipher/Cipher/CngBlockCipher.h"
 #include <iostream>
 #include <cstring>
 
@@ -735,6 +739,234 @@ bool testDesfireMemoryLayout() {
 
 
 // ════════════════════════════════════════════════════════════════════════════════
+// TEST: DESFire Crypto + Auth (simulated 3-pass)
+// ════════════════════════════════════════════════════════════════════════════════
+
+bool testDesfireAuth() {
+    int line = 0;
+    try {
+#define DA_CHECK(cond) do { line = __LINE__; if (!(cond)) { cout << "    FAIL at line " << line << ": " #cond "\n"; return false; } } while(0)
+
+        // ── 1. CngBlockCipher AES round-trip (no padding) ───────────────────
+
+        BYTEV aesKey(16, 0x00);
+        BYTEV aesIV(16, 0x00);
+        BYTEV plain(16, 0x42);
+
+        BYTEV enc = CngBlockCipher::encryptAES(aesKey, aesIV, plain);
+        DA_CHECK(enc.size() == 16);
+
+        BYTEV dec = CngBlockCipher::decryptAES(aesKey, aesIV, enc);
+        DA_CHECK(dec == plain);
+
+        // Multi-block
+        BYTEV plain32(32, 0xAB);
+        BYTEV enc32 = CngBlockCipher::encryptAES(aesKey, aesIV, plain32);
+        DA_CHECK(enc32.size() == 32);
+        BYTEV dec32 = CngBlockCipher::decryptAES(aesKey, aesIV, enc32);
+        DA_CHECK(dec32 == plain32);
+
+        // ── 2. CngBlockCipher 2K3DES round-trip ─────────────────────────────
+
+        BYTEV desKey(16, 0x00);
+        BYTEV desIV(8, 0x00);
+        BYTEV plainDES(8, 0x55);
+
+        BYTEV encDES = CngBlockCipher::encrypt2K3DES(desKey, desIV, plainDES);
+        DA_CHECK(encDES.size() == 8);
+        BYTEV decDES = CngBlockCipher::decrypt2K3DES(desKey, desIV, encDES);
+        DA_CHECK(decDES == plainDES);
+
+        // ── 3. Rotate ───────────────────────────────────────────────────────
+
+        BYTEV data = {0x01, 0x02, 0x03, 0x04};
+        BYTEV rotL = DesfireCrypto::rotateLeft(data);
+        DA_CHECK(rotL.size() == 4);
+        DA_CHECK(rotL[0] == 0x02);
+        DA_CHECK(rotL[1] == 0x03);
+        DA_CHECK(rotL[2] == 0x04);
+        DA_CHECK(rotL[3] == 0x01);
+
+        BYTEV rotR = DesfireCrypto::rotateRight(rotL);
+        DA_CHECK(rotR == data);
+
+        // ── 4. Session key derivation (AES) ─────────────────────────────────
+
+        BYTEV rndA = {
+            0xA0,0xA1,0xA2,0xA3, 0xA4,0xA5,0xA6,0xA7,
+            0xA8,0xA9,0xAA,0xAB, 0xAC,0xAD,0xAE,0xAF
+        };
+        BYTEV rndB = {
+            0xB0,0xB1,0xB2,0xB3, 0xB4,0xB5,0xB6,0xB7,
+            0xB8,0xB9,0xBA,0xBB, 0xBC,0xBD,0xBE,0xBF
+        };
+
+        BYTEV sk = DesfireCrypto::deriveSessionKey(rndA, rndB, DesfireKeyType::AES128);
+        DA_CHECK(sk.size() == 16);
+        // SK = A0A1A2A3 || B0B1B2B3 || ACADAEAF || BCBDBEBF
+        DA_CHECK(sk[0]  == 0xA0); DA_CHECK(sk[3]  == 0xA3);
+        DA_CHECK(sk[4]  == 0xB0); DA_CHECK(sk[7]  == 0xB3);
+        DA_CHECK(sk[8]  == 0xAC); DA_CHECK(sk[11] == 0xAF);
+        DA_CHECK(sk[12] == 0xBC); DA_CHECK(sk[15] == 0xBF);
+
+        // ── 5. Session key derivation (2K3DES) ─────────────────────────────
+
+        BYTEV rndA8 = {0xA0,0xA1,0xA2,0xA3, 0xA4,0xA5,0xA6,0xA7};
+        BYTEV rndB8 = {0xB0,0xB1,0xB2,0xB3, 0xB4,0xB5,0xB6,0xB7};
+
+        BYTEV skDES = DesfireCrypto::deriveSessionKey(rndA8, rndB8, DesfireKeyType::TwoDES);
+        DA_CHECK(skDES.size() == 16);
+        // SK = A0A1A2A3 || B0B1B2B3 || A4A5A6A7 || B4B5B6B7
+        DA_CHECK(skDES[0]  == 0xA0); DA_CHECK(skDES[3]  == 0xA3);
+        DA_CHECK(skDES[4]  == 0xB0); DA_CHECK(skDES[7]  == 0xB3);
+        DA_CHECK(skDES[8]  == 0xA4); DA_CHECK(skDES[11] == 0xA7);
+        DA_CHECK(skDES[12] == 0xB4); DA_CHECK(skDES[15] == 0xB7);
+
+        // ── 6. APDU construction ────────────────────────────────────────────
+
+        BYTEV authCmd = DesfireAuth::buildAuthCmd(0x00, DesfireKeyType::AES128);
+        DA_CHECK(authCmd.size() == 7);
+        DA_CHECK(authCmd[0] == 0x90);  // CLA
+        DA_CHECK(authCmd[1] == 0xAA);  // INS = AUTH_AES
+        DA_CHECK(authCmd[5] == 0x00);  // keyNo
+
+        BYTEV authCmdDES = DesfireAuth::buildAuthCmd(0x02, DesfireKeyType::TwoDES);
+        DA_CHECK(authCmdDES[1] == 0x1A);  // INS = AUTH_ISO
+        DA_CHECK(authCmdDES[5] == 0x02);  // keyNo
+
+        BYTEV payload16(32, 0xCC);
+        BYTEV frame = DesfireAuth::buildAdditionalFrame(payload16);
+        DA_CHECK(frame[0] == 0x90);
+        DA_CHECK(frame[1] == 0xAF);
+        DA_CHECK(frame[4] == 32);   // Lc
+        DA_CHECK(frame.size() == 6 + 32);
+
+        // ── 7. Simulated 3-pass auth (AES) ──────────────────────────────────
+        //
+        // Simulate card side: use known key, card generates RndB,
+        // processes host payload, returns encrypted rotated RndA.
+        //
+
+        BYTEV simKey(16, 0x00);  // factory default key
+
+        // Card's RndB (fixed for test)
+        BYTEV simRndB = {
+            0x10,0x11,0x12,0x13, 0x14,0x15,0x16,0x17,
+            0x18,0x19,0x1A,0x1B, 0x1C,0x1D,0x1E,0x1F
+        };
+
+        // Card encrypts RndB and sends it
+        BYTEV zeroIV16(16, 0);
+        BYTEV encSimRndB = CngBlockCipher::encryptAES(simKey, zeroIV16, simRndB);
+
+        // Simulated transmit: tracks which step we're on
+        int simStep = 0;
+        BYTEV capturedPayload;
+        BYTEV simRndAcaptured;
+
+        auto simTransmit = [&](const BYTEV& apdu) -> BYTEV {
+            simStep++;
+            if (simStep == 1) {
+                // Auth command → return ek(RndB) + SW 91AF
+                BYTEV resp;
+                resp.insert(resp.end(), encSimRndB.begin(), encSimRndB.end());
+                resp.push_back(0x91);
+                resp.push_back(0xAF);
+                return resp;
+            }
+            else if (simStep == 2) {
+                // Additional frame → extract payload, simulate card verify
+
+                // Extract encrypted payload from APDU
+                // APDU: 90 AF 00 00 Lc [payload] 00
+                size_t payloadLen = apdu[4];
+                capturedPayload.assign(apdu.begin() + 5, apdu.begin() + 5 + payloadLen);
+
+                // Card decrypts with IV = last block of encRndB
+                size_t bs = 16;
+                BYTEV cardIV(encSimRndB.end() - bs, encSimRndB.end());
+                BYTEV decPayload = CngBlockCipher::decryptAES(simKey, cardIV, capturedPayload);
+
+                // decPayload = RndA || rotL(RndB)
+                simRndAcaptured.assign(decPayload.begin(), decPayload.begin() + 16);
+                BYTEV gotRndBrot(decPayload.begin() + 16, decPayload.end());
+
+                // Verify rotated RndB
+                BYTEV expectedRndBrot = DesfireCrypto::rotateLeft(simRndB);
+                if (gotRndBrot != expectedRndBrot)
+                    throw std::runtime_error("Simulated card: RndB rotation mismatch");
+
+                // Card encrypts rotL(RndA) and sends it
+                BYTEV rndArot = DesfireCrypto::rotateLeft(simRndAcaptured);
+                BYTEV cardIV2(capturedPayload.end() - bs, capturedPayload.end());
+                BYTEV encRndArot = CngBlockCipher::encryptAES(simKey, cardIV2, rndArot);
+
+                BYTEV resp;
+                resp.insert(resp.end(), encRndArot.begin(), encRndArot.end());
+                resp.push_back(0x91);
+                resp.push_back(0x00);
+                return resp;
+            }
+            throw std::runtime_error("Unexpected transmit call");
+        };
+
+        DesfireAuth auth;
+        DesfireSession session;
+        auth.authenticate(session, simKey, 0, DesfireKeyType::AES128, simTransmit);
+
+        DA_CHECK(session.authenticated);
+        DA_CHECK(session.authKeyNo == 0);
+        DA_CHECK(session.sessionKey.size() == 16);
+        DA_CHECK(session.iv.size() == 16);
+        DA_CHECK(session.cmdCounter == 0);
+
+        // Verify session key derivation matches
+        BYTEV expectedSK = DesfireCrypto::deriveSessionKey(simRndAcaptured, simRndB,
+                                                            DesfireKeyType::AES128);
+        DA_CHECK(session.sessionKey == expectedSK);
+
+        // ── 8. CMAC smoke test ──────────────────────────────────────────────
+
+        BYTEV cmacKey(16, 0x00);
+        BYTEV cmacData = {0x01, 0x02, 0x03, 0x04};
+        BYTEV mac = CngBlockCipher::cmacAES(cmacKey, cmacData);
+        DA_CHECK(mac.size() == 16);
+
+        // Empty data CMAC
+        BYTEV macEmpty = CngBlockCipher::cmacAES(cmacKey, BYTEV{});
+        DA_CHECK(macEmpty.size() == 16);
+
+        // Same input → same MAC
+        BYTEV mac2 = CngBlockCipher::cmacAES(cmacKey, cmacData);
+        DA_CHECK(mac == mac2);
+
+        // Different input → different MAC
+        BYTEV cmacData2 = {0x05, 0x06, 0x07, 0x08};
+        BYTEV mac3 = CngBlockCipher::cmacAES(cmacKey, cmacData2);
+        DA_CHECK(mac3 != mac);
+
+        // ── 9. DesfireSession reset ─────────────────────────────────────────
+
+        session.reset();
+        DA_CHECK(!session.authenticated);
+        DA_CHECK(session.sessionKey.empty());
+        DA_CHECK(session.iv.empty());
+
+#undef DA_CHECK
+        return true;
+    }
+    catch (const exception& e) {
+        cout << "    Exception at line " << line << ": " << e.what() << "\n";
+        return false;
+    }
+    catch (...) {
+        cout << "    Unknown exception at line " << line << "\n";
+        return false;
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════════
 // MAIN TEST RUNNER
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -755,6 +987,7 @@ int runCardSystemTests() {
     recordTest("Trailer Config", testTrailerConfig());
     recordTest("Card Simulation", testCardSimulation());
     recordTest("DESFire Memory Layout", testDesfireMemoryLayout());
+    recordTest("DESFire Auth", testDesfireAuth());
     
     // Summary
     cout << "\n=== Test Summary ===\n";
