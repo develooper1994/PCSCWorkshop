@@ -51,7 +51,7 @@ void runPerPageTest(ACR1281UReader& acr, const ICipher& cipher, const std::strin
             auto raw = acr.readPage(pageIdx);
             if (!raw.empty()) allRaw.insert(allRaw.end(), raw.begin(), raw.end());
 
-            auto dec = acr.readPageDecrypted(pageIdx, cipher);
+            auto dec = cipher.decrypt(raw);
             readBack.insert(readBack.end(), dec.begin(), dec.end());
         }
 

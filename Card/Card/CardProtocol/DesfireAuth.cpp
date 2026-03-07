@@ -1,6 +1,7 @@
 #include "DesfireAuth.h"
 #include "DesfireCrypto.h"
 #include "CngBlockCipher.h"
+#include "Result.h"
 #include <stdexcept>
 #include <sstream>
 
@@ -31,22 +32,21 @@ BYTEV DesfireAuth::buildAdditionalFrame(const BYTEV& payload) {
 // Response Parsing
 // ════════════════════════════════════════════════════════════════════════════════
 
-static void checkSW(const BYTEV& resp, BYTE expectedSW2, const char* context) {
-    if (resp.size() < 2) {
-        std::ostringstream ss;
-        ss << context << ": response too short (" << resp.size() << " bytes)";
-        throw std::runtime_error(ss.str());
-    }
-
+static PcscError evaluateSW(const BYTEV& resp, BYTE expectedSW2) {
+    if (resp.size() < 2)
+        return {ErrorCode::ResponseTooShort};
     BYTE sw1 = resp[resp.size() - 2];
     BYTE sw2 = resp[resp.size() - 1];
+    if (sw1 == DesfireAuth::SW1_OK && sw2 == expectedSW2)
+        return {};
+    StatusWord sw(sw1, sw2);
+    if (sw2 == DesfireAuth::SW2_AE) return {ErrorCode::DesfireAuthMismatch, sw};
+    if (sw2 == DesfireAuth::SW2_PERM) return {ErrorCode::DesfirePermissionDenied, sw};
+    return {ErrorCode::DesfireError, sw};
+}
 
-    if (sw1 != DesfireAuth::SW1_OK || sw2 != expectedSW2) {
-        std::ostringstream ss;
-        ss << context << ": unexpected SW 0x"
-           << std::hex << (int)sw1 << std::hex << (int)sw2;
-        throw std::runtime_error(ss.str());
-    }
+static void checkSW(const BYTEV& resp, BYTE expectedSW2, const char* context) {
+    evaluateSW(resp, expectedSW2).throwIfError();
 }
 
 BYTEV DesfireAuth::extractEncRndB(const BYTEV& response, DesfireKeyType keyType) {
@@ -136,4 +136,61 @@ void DesfireAuth::authenticate(DesfireSession& session,
     session.iv = BYTEV(bs, 0);  // IV reset after auth
     session.cmdCounter = 0;
     session.touchAuthTime();     // timeout timer başlat
+}
+
+Result<void> DesfireAuth::tryAuthenticate(DesfireSession& session,
+                                          const BYTEV& key, BYTE keyNo,
+                                          DesfireKeyType keyType,
+                                          const TryTransmitFn& transmit) {
+    session.reset();
+    session.keyType = keyType;
+
+    // Step 1
+    auto r1 = transmit(buildAuthCmd(keyNo, keyType));
+    if (!r1) { session.reset(); return {r1.error}; }
+    auto e1 = evaluateSW(r1.value, SW2_AF);
+    if (!e1.ok()) { session.reset(); return {e1}; }
+
+    size_t dataLen1 = r1.value.size() - 2;
+    size_t expected = DesfireCrypto::nonceSize(keyType);
+    if (dataLen1 != expected) { session.reset(); return {{ErrorCode::InvalidData}}; }
+    BYTEV encRndB(r1.value.begin(), r1.value.begin() + dataLen1);
+
+    // Step 2
+    size_t bs = DesfireCrypto::blockSize(keyType);
+    BYTEV zeroIV(bs, 0);
+    BYTEV rndB;
+    if (keyType == DesfireKeyType::AES128)
+        rndB = CngBlockCipher::decryptAES(key, zeroIV, encRndB);
+    else if (keyType == DesfireKeyType::ThreeDES)
+        rndB = CngBlockCipher::decrypt3K3DES(key, zeroIV, encRndB);
+    else
+        rndB = CngBlockCipher::decrypt2K3DES(key, zeroIV, encRndB);
+
+    BYTEV rndA = DesfireCrypto::generateRndA(keyType);
+    BYTEV iv2(encRndB.end() - bs, encRndB.end());
+    BYTEV payload = DesfireCrypto::buildAuthPayload(rndA, rndB, key, keyType, iv2);
+
+    // Step 3
+    auto r2 = transmit(buildAdditionalFrame(payload));
+    if (!r2) { session.reset(); return {r2.error}; }
+    auto e2 = evaluateSW(r2.value, SW2_OK);
+    if (!e2.ok()) { session.reset(); return {e2}; }
+
+    size_t dataLen2 = r2.value.size() - 2;
+    if (dataLen2 != expected) { session.reset(); return {{ErrorCode::InvalidData}}; }
+    BYTEV encRndArot(r2.value.begin(), r2.value.begin() + dataLen2);
+
+    BYTEV iv3(payload.end() - bs, payload.end());
+    bool ok = DesfireCrypto::verifyAuthResponse(encRndArot, rndA, key, keyType, iv3);
+    if (!ok) { session.reset(); return {{ErrorCode::DesfireAuthMismatch}}; }
+
+    session.authenticated = true;
+    session.authKeyNo = keyNo;
+    session.keyType = keyType;
+    session.sessionKey = DesfireCrypto::deriveSessionKey(rndA, rndB, keyType);
+    session.iv = BYTEV(bs, 0);
+    session.cmdCounter = 0;
+    session.touchAuthTime();
+    return {PcscError{}};
 }

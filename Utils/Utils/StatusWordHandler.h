@@ -164,55 +164,5 @@ inline StatusWordType categoryOf(const StatusWord& sw) noexcept {
 	return typeOf(sw);
 }
 
-
-// ============================================================
-// StatusWordChecker — Merkezi status word kontrolü
-// ============================================================
-class StatusWordChecker {
-public:
-	/// Basit başarı kontrolü - sadece success veya throw
-	static void checkSuccess(BYTE sw1, BYTE sw2, const std::string& operation) {
-		StatusWord sw(sw1, sw2);
-		if (!sw.isSuccess()) throw pcsc::ReaderError("CheckSuccess: " + operation + " failed");
-	}
-
-	/// Auth-aware kontrol - success veya auth sentinel kabul, diğerleri throw
-	static void checkSuccessOrAuthSentinel(BYTE sw1, BYTE sw2, const std::string& operation) {
-		StatusWord sw(sw1, sw2);
-		if (!(sw.isSuccess() || sw.isAuthSentinel())) throw pcsc::AuthFailedError("CheckAuth: " + operation + " failed");
-	}
-
-	/// Load key kontrolü - sadece success kabul
-	static void checkLoadKey(BYTE sw1, BYTE sw2) {
-		StatusWord sw(sw1, sw2);
-		if (!sw.isSuccess()) throw pcsc::LoadKeyFailedError("LoadKey failed with SW=" + sw.toHexFormatted());
-	}
-
-	/// Auth kontrolü - success veya auth sentinel kabul
-	static void checkAuth(BYTE sw1, BYTE sw2) {
-		StatusWord sw(sw1, sw2);
-		if (!(sw.isSuccess() || sw.isAuthSentinel())) throw pcsc::AuthFailedError("Auth failed with SW=" + sw.toHexFormatted());
-	}
-
-	/// Read kontrolü - success veya auth sentinel kabul
-	static void checkRead(BYTE sw1, BYTE sw2) {
-		StatusWord sw(sw1, sw2);
-		if (!(sw.isSuccess() || sw.isAuthSentinel())) throw pcsc::ReaderReadError("Read failed with SW=" + sw.toHexFormatted());
-	}
-
-	/// Write kontrolü - success veya auth sentinel kabul
-	static void checkWrite(BYTE sw1, BYTE sw2) {
-		StatusWord sw(sw1, sw2);
-		if (!(sw.isSuccess() || sw.isAuthSentinel())) throw pcsc::ReaderWriteError("Write failed with SW=" + sw.toHexFormatted());
-	}
-
-	/// Generic kontrol - custom exception type
-	template<typename ExceptionType>
-	static void check(BYTE sw1, BYTE sw2, const std::string& operation, bool allowAuthSentinel = false) {
-		StatusWord sw(sw1, sw2);
-		if (!(sw.isSuccess() || (allowAuthSentinel && sw.isAuthSentinel()))) throw ExceptionType("Check failed for " + operation + " with SW=" + sw.toHexFormatted());
-	}
-};
-
 #endif // PCSC_WORKSHOP1_STATUS_WORD_HANDLER_H
 

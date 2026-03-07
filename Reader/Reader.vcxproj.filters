@@ -38,13 +38,19 @@
     <ClInclude Include="Reader\Reader.h">
       <Filter>Reader\Header</Filter>
     </ClInclude>
+    <ClInclude Include="Reader\PcscCommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Reader\ACR1281U\ACR1281UReader.cpp">
       <Filter>Reader\ACR1281U\Source</Filter>
     </ClCompile>
     <ClCompile Include="Reader\Reader.cpp">
-      <Filter>Reader\Source</Filter>
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Reader\PcscCommands.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

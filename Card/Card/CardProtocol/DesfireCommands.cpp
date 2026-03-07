@@ -303,18 +303,22 @@ BYTEV DesfireCommands::extractData(const BYTEV& response) {
 }
 
 void DesfireCommands::checkResponse(const BYTEV& response, const char* context) {
-    if (response.size() < 2) {
-        std::ostringstream ss;
-        ss << context << ": response too short (" << response.size() << " bytes)";
-        throw std::runtime_error(ss.str());
-    }
+    evaluateResponse(response).throwIfError();
+}
+
+PcscError DesfireCommands::evaluateResponse(const BYTEV& response) {
+    if (response.size() < 2)
+        return {ErrorCode::ResponseTooShort};
     BYTE sw1 = response[response.size() - 2];
     BYTE sw2 = response[response.size() - 1];
-    if (sw1 == SW1 && (sw2 == OK || sw2 == MORE)) return;
-
-    std::ostringstream ss;
-    ss << context << ": DESFire error 0x" << std::hex << (int)sw1 << (int)sw2;
-    throw std::runtime_error(ss.str());
+    if (sw1 == SW1 && (sw2 == OK || sw2 == MORE))
+        return {};
+    StatusWord sw(sw1, sw2);
+    if (sw2 == AUTH_ERR) return {ErrorCode::DesfireAuthMismatch, sw};
+    if (sw2 == PERM_ERR) return {ErrorCode::DesfirePermissionDenied, sw};
+    if (sw2 == NO_APP)   return {ErrorCode::DesfireAppNotFound, sw};
+    if (sw2 == NO_FILE)  return {ErrorCode::DesfireFileNotFound, sw};
+    return {ErrorCode::DesfireError, sw};
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -335,6 +339,27 @@ BYTEV DesfireCommands::transceive(const TransmitFn& transmit, const BYTEV& cmd) 
     }
 
     return result;
+}
+
+Result<BYTEV> DesfireCommands::tryTransceive(const TryTransmitFn& transmit, const BYTEV& cmd) {
+    auto txResult = transmit(cmd);
+    if (!txResult) return {BYTEV{}, txResult.error};
+
+    auto err = evaluateResponse(txResult.value);
+    if (!err.ok()) return {BYTEV{}, err};
+
+    BYTEV result = extractData(txResult.value);
+
+    while (hasMore(txResult.value)) {
+        txResult = transmit(additionalFrame());
+        if (!txResult) return {BYTEV{}, txResult.error};
+        err = evaluateResponse(txResult.value);
+        if (!err.ok()) return {BYTEV{}, err};
+        BYTEV chunk = extractData(txResult.value);
+        result.insert(result.end(), chunk.begin(), chunk.end());
+    }
+
+    return {std::move(result), PcscError{}};
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -388,6 +413,50 @@ DesfireVersionInfo DesfireCommands::parseGetVersion(const TransmitFn& transmit) 
     }
 
     return vi;
+}
+
+Result<DesfireVersionInfo> DesfireCommands::tryParseGetVersion(const TryTransmitFn& transmit) {
+    DesfireVersionInfo vi;
+
+    // Part 1
+    auto r1 = transmit(getVersion());
+    if (!r1) return {vi, r1.error};
+    auto e1 = evaluateResponse(r1.value);
+    if (!e1.ok()) return {vi, e1};
+    BYTEV d1 = extractData(r1.value);
+    if (d1.size() >= 7) {
+        vi.hwVendorID = d1[0]; vi.hwType = d1[1]; vi.hwSubType = d1[2];
+        vi.hwMajorVer = d1[3]; vi.hwMinorVer = d1[4];
+        vi.hwStorageSize = d1[5]; vi.hwProtocol = d1[6];
+    }
+    if (!hasMore(r1.value)) return {vi, PcscError{}};
+
+    // Part 2
+    auto r2 = transmit(additionalFrame());
+    if (!r2) return {vi, r2.error};
+    auto e2 = evaluateResponse(r2.value);
+    if (!e2.ok()) return {vi, e2};
+    BYTEV d2 = extractData(r2.value);
+    if (d2.size() >= 7) {
+        vi.swVendorID = d2[0]; vi.swType = d2[1]; vi.swSubType = d2[2];
+        vi.swMajorVer = d2[3]; vi.swMinorVer = d2[4];
+        vi.swStorageSize = d2[5]; vi.swProtocol = d2[6];
+    }
+    if (!hasMore(r2.value)) return {vi, PcscError{}};
+
+    // Part 3
+    auto r3 = transmit(additionalFrame());
+    if (!r3) return {vi, r3.error};
+    auto e3 = evaluateResponse(r3.value);
+    if (!e3.ok()) return {vi, e3};
+    BYTEV d3 = extractData(r3.value);
+    if (d3.size() >= 14) {
+        std::memcpy(vi.uid, d3.data(), 7);
+        std::memcpy(vi.batchNo, d3.data() + 7, 5);
+        vi.productionWeek = d3[12];
+        vi.productionYear = d3[13];
+    }
+    return {vi, PcscError{}};
 }
 
 std::vector<DesfireAID> DesfireCommands::parseApplicationIDs(const BYTEV& data) {

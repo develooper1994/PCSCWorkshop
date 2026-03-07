@@ -1,6 +1,7 @@
 // Tests - Unified test runner for the PCSC Workshop project
 // Supports: Cipher tests, Card System tests, Real Card Reader tests
 
+#include "Log/Log.h"
 #include <iostream>
 #include <string>
 
@@ -106,6 +107,9 @@ int runCardSystemTestsOnly() {
 // ════════════════════════════════════════════════════════════════════════════════
 
 int main(int argc, char* argv[]) {
+    pcsc::Log::getInstance().setLogLevel(pcsc::LogLevel::Debug);
+    pcsc::Log::getInstance().enableAllLogTypes();
+    pcsc::Log::getInstance().enableAllCategories();
     TestMode mode = getTestMode(argc, argv);
     
     if (mode == INTERACTIVE) {

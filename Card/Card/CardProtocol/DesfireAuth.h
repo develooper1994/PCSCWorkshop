@@ -3,6 +3,7 @@
 
 #include "DesfireSession.h"
 #include "DesfireCrypto.h"
+#include "Result.h"
 #include <functional>
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -44,6 +45,7 @@ class DesfireAuth {
 public:
     // Transmit callback type: send APDU, receive response (with SW)
     using TransmitFn = std::function<BYTEV(const BYTEV&)>;
+    using TryTransmitFn = std::function<Result<BYTEV>(const BYTEV&)>;
 
     // ── Full 3-pass auth ────────────────────────────────────────────────────
 
@@ -58,6 +60,12 @@ public:
                       const BYTEV& key, BYTE keyNo,
                       DesfireKeyType keyType,
                       const TransmitFn& transmit);
+
+    // Exception-free variant
+    Result<void> tryAuthenticate(DesfireSession& session,
+                                 const BYTEV& key, BYTE keyNo,
+                                 DesfireKeyType keyType,
+                                 const TryTransmitFn& transmit);
 
     // ── Individual steps (test/debug) ───────────────────────────────────────
 

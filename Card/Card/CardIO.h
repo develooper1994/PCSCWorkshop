@@ -286,6 +286,44 @@ public:
     // Card-level
     void formatPICC();
 
+    // ────────────────────────────────────────────────────────────────────────────
+    // Exception-free alternatifler (Result<T> döner)
+    // ────────────────────────────────────────────────────────────────────────────
+
+    // Mifare Classic
+    Result<int>            tryReadCard();
+    Result<bool>           tryReadSector(int sector);
+    Result<BYTEV>          tryReadBlock(int block);
+    Result<void>           tryWriteBlock(int block, const BYTE data[16]);
+    Result<void>           tryAuthenticate(int sector);
+    Result<TrailerConfig>  tryReadTrailer(int sector);
+    Result<void>           tryWriteTrailer(int sector, const TrailerConfig& config);
+
+    // DESFire
+    Result<DesfireVersionInfo>        tryDiscoverCard();
+    Result<void>                      trySelectApplication(const DesfireAID& aid);
+    Result<void>                      tryAuthenticateDesfire(const BYTEV& key, BYTE keyNo, DesfireKeyType keyType);
+    Result<std::vector<DesfireAID>>   tryGetApplicationIDs();
+    Result<std::vector<BYTE>>         tryGetFileIDs();
+    Result<DesfireFileSettings>       tryGetFileSettings(BYTE fileNo);
+    Result<BYTEV>                     tryReadFileData(BYTE fileNo, uint32_t offset, uint32_t length);
+    Result<void>                      tryWriteFileData(BYTE fileNo, uint32_t offset, const BYTEV& data);
+    Result<size_t>                    tryGetFreeMemory();
+    Result<void>                      tryCreateApplication(const DesfireAID& aid, BYTE keySettings, BYTE maxKeys, DesfireKeyType keyType);
+    Result<void>                      tryDeleteApplication(const DesfireAID& aid);
+    Result<void>                      tryCreateStdDataFile(BYTE fileNo, DesfireCommMode comm, const DesfireAccessRights& access, uint32_t fileSize);
+    Result<void>                      tryCreateValueFile(BYTE fileNo, DesfireCommMode comm, const DesfireAccessRights& access, int32_t lower, int32_t upper, int32_t value, bool limitedCredit = false);
+    Result<void>                      tryCreateLinearRecordFile(BYTE fileNo, DesfireCommMode comm, const DesfireAccessRights& access, uint32_t recordSize, uint32_t maxRecords);
+    Result<void>                      tryDeleteFile(BYTE fileNo);
+    Result<BYTEV>                     tryReadRecords(BYTE fileNo, uint32_t offset, uint32_t count);
+    Result<void>                      tryAppendRecord(BYTE fileNo, const BYTEV& recordData);
+    Result<void>                      tryCreditValue(BYTE fileNo, int32_t value);
+    Result<void>                      tryDebitValue(BYTE fileNo, int32_t value);
+    Result<void>                      tryCommitTransaction();
+    Result<void>                      tryAbortTransaction();
+    Result<BYTE>                      tryGetKeyVersion(BYTE keyNo);
+    Result<void>                      tryFormatPICC();
+
 private:
     Reader&        reader_;
     CardInterface  card_;
@@ -326,6 +364,9 @@ private:
     const KeyInfo& findKey(KeyType kt) const;
     bool isMultiKey() const;
 
+    Result<void> tryEnsureAuth(int sector, AuthPurpose purpose = AuthPurpose::Read);
+    Result<void> tryDoAuth(int sector, const KeyInfo& ki);
+
     // Classic → sector access bits, DESFire → KeyInfo::permission
     bool canKeyPerform(const KeyInfo& ki, int sector, AuthPurpose purpose) const;
 
@@ -334,9 +375,15 @@ private:
 
     // Raw APDU transmit through Reader's CardConnection
     BYTEV desfireTransmit(const BYTEV& apdu);
+    Result<BYTEV> tryDesfireTransmit(const BYTEV& apdu);
 
     // TransmitFn factory (for DesfireAuth / DesfireCommands callbacks)
     std::function<BYTEV(const BYTEV&)> makeTransmitFn();
+    std::function<Result<BYTEV>(const BYTEV&)> makeTryTransmitFn();
+
+    // DESFire helpers — reduce boilerplate
+    Result<void>  desfireExec(const BYTEV& apdu);
+    Result<BYTEV> desfireQuery(const BYTEV& apdu);
 };
 
 #endif // CARDIO_H

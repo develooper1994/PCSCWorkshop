@@ -4,220 +4,133 @@
 #include "CardConnection.h"
 #include "StatusWordHandler.h"
 #include "CardDataTypes.h"
+#include "Result.h"
 #include <string>
 #include <memory>
-#include <functional>
-#include <array>
 
-// Forward declare (full definition in Cipher.h, included by Reader.cpp)
-class ICipher;
+// ════════════════════════════════════════════════════════════════════════════════
+// Reader — Alt seviye PC/SC APDU haberleşme soyutlaması
+// ════════════════════════════════════════════════════════════════════════════════
+//
+// Reader yalnızca PC/SC komutlarını iletir ve durum kodlarını kontrol eder.
+// Key yönetimi, auth politikası ve şifreleme üst katmana (CardIO) aittir.
+//
+// ─── Sorumluluklar ─────────────────────────────────────────────────────────
+//   ✓ readPage / writePage  — tek sayfa APDU
+//   ✓ readData / writeData  — çok sayfalı convenience
+//   ✓ loadKey / auth        — ham PC/SC auth komutları
+//   ✓ getLE / setLE         — blok boyutu yapılandırması
+//
+// ─── Üst katmana bırakılanlar ──────────────────────────────────────────────
+//   ✗ Hangi key ile auth yapılacağı (CardIO.ensureAuth)
+//   ✗ Key blob yönetimi [keyA|access|keyB] (CardIO.keys_)
+//   ✗ Otomatik auth retry (CardIO.doAuth)
+//   ✗ Şifreli okuma/yazma (uygulama katmanı)
+//
+// ─── Kullanım ──────────────────────────────────────────────────────────────
+//   ACR1281UReader reader(conn, 16);         // 16 byte blok
+//   reader.loadKey(key, KeyStructure::NonVolatile, 0x01);
+//   reader.auth(blockNo, KeyType::A, 0x01);
+//   auto data = reader.readPage(blockNo);
+//   reader.writePage(blockNo, payload);
+// ════════════════════════════════════════════════════════════════════════════════
 
-// Reader types enumeration
 enum class ReaderType {
 	Unknown,
 	OmniKey,
 	ACR1281U
 };
 
-// Convert ReaderType enum to descriptive string
 inline std::string describe(ReaderType type) {
 	switch (type) {
 		case ReaderType::ACR1281U: return "ACR1281U";
-		case ReaderType::OmniKey: return "OmniKey";
-		case ReaderType::Unknown:
+		case ReaderType::OmniKey:  return "OmniKey";
 		default: return "Unknown";
 	}
 }
 
-struct ReadPolicy {
-	static void handle(BYTE sw1, BYTE sw2) {
-		StatusWord sw(sw1, sw2);
-		throw pcsc::ReaderReadError(sw.getFullMessage("Read"));
-	}
-	static void handle(const StatusWord& sw) {
-		throw pcsc::ReaderReadError(sw.getFullMessage("Read"));
+// ── Yapılandırılmış APDU yanıtı ───────────────────────────────────────────
+struct ReaderResponse {
+	BYTEV data;        // SW byte'ları ayrılmış saf veri
+	StatusWord sw;
+
+	bool isSuccess()      const noexcept { return sw.isSuccess(); }
+	bool isAuthRequired() const noexcept { return sw.isAuthSentinel(); }
+
+	// Orijinal yanıtı yeniden oluştur: data + SW1 + SW2
+	BYTEV raw() const {
+		BYTEV r = data;
+		r.push_back(sw.sw1);
+		r.push_back(sw.sw2);
+		return r;
 	}
 };
 
-struct WritePolicy {
-	static void handle(BYTE sw1, BYTE sw2) {
-		StatusWord sw(sw1, sw2);
-		throw pcsc::ReaderWriteError(sw.getFullMessage("Write"));
-	}
-	static void handle(const StatusWord& sw) {
-		throw pcsc::ReaderWriteError(sw.getFullMessage("Write"));
-	}
-};
-
-// Reader abstraction: each reader model can implement its own read/write APDUs
 class Reader {
 public:
 	virtual ~Reader();
 
 	explicit Reader(CardConnection& c);
-	// New overload: construct Reader and initialize Impl fields
-	Reader(CardConnection& c, BYTE lc, bool authRequested, KeyType kt, KeyStructure ks, BYTE keyNumber, const BYTE key[6]);
-	Reader(CardConnection& c, BYTE lc, bool authRequested, KeyType kt, KeyStructure ks, BYTE keyNumber, const BYTE keyA[6], const BYTE keyB[6]);
-	// New overload: accept explicit 4-byte access bits between keyA and keyB
-	Reader(CardConnection& c, BYTE lc, bool authRequested, KeyType kt, KeyStructure ks, BYTE keyNumber, const BYTE keyA[6], const BYTE accessBits[4], const BYTE keyB[6]);
-	// Non-copyable, movable
+	Reader(CardConnection& c, BYTE blockSize);
+
 	Reader(const Reader&) = delete;
 	Reader& operator=(const Reader&) = delete;
 	Reader(Reader&&) noexcept;
 	Reader& operator=(Reader&&) noexcept;
 
-	// Core primitive that derived classes must implement
-	virtual void performAuth(BYTE page);
-	template<typename Policy>
-	BYTEV secureTransmit(BYTE page, const BYTEV& apdu)
-	{
-		cardConnection().checkConnected();
-		if (isAuthRequested()) performAuth(page);
+	// ── Generic APDU ─────────────────────────────────────────────────────
+	// Herhangi bir APDU gönder, yapılandırılmış yanıt al.
+	// OmniKey gibi farklı reader'lar bu metodu override edebilir.
+	virtual ReaderResponse transmit(const BYTEV& apdu);
 
-		auto resp = cardConnection().transmit(apdu);
-		cardConnection().checkResponseSize(resp);
-		auto sw = cardConnection().getStatusWords(resp);
-		
-		// setAuthRequested(!sw.isError());
-		if (sw.isAuthSentinel()) {
-			setAuthRequested(true);
-			throw pcsc::AuthFailedError("Auth failed");
-		} 
-		else if (!sw.isSuccess()) {
-			setAuthRequested(true);
-			Policy::handle(sw.sw1, sw.sw2);   // 👈 compile-time dispatch
-		}
-		// setAuthRequested(false);
-		return resp;
-	}
+	// ── Core I/O ──────────────────────────────────────────────────────────
+
 	virtual void writePage(BYTE page, const BYTE* data, const BYTEV* customApdu = nullptr);
-	virtual void clearPage(BYTE page);
 	virtual BYTEV readPage(BYTE page, const BYTEV* customApdu = nullptr);
+	virtual void clearPage(BYTE page);
 
-	// New overload: read a page requesting a specific length. Default implementation
-	// forwards to the single-argument virtual readPage; derived readers may override
-	// to implement reader-specific APDU behavior.
-	virtual BYTEV readPage(BYTE page, BYTE len);
-
-	// Encrypted write/read
-	void writePageEncrypted(BYTE page, const BYTE* data, const ICipher& cipher);
-	BYTEV readPageDecrypted(BYTE page, const ICipher& cipher);
-
-	// AAD-capable single-page encrypted write/read
-	void writePageEncryptedAAD(BYTE page, const BYTE* data, const ICipher& cipher, const BYTE* aad, size_t aad_len);
-	BYTEV readPageDecryptedAAD(BYTE page, const ICipher& cipher, const BYTE* aad, size_t aad_len);
-
-	// Convenience overloads for common container types
+	// Convenience: container overloads (validate + pad to block size)
 	void writePage(BYTE page, const BYTEV& data);
 	void writePage(BYTE page, const std::string& s);
 
-	void writePageEncrypted(BYTE page, const BYTEV& data, const ICipher& cipher);
-	void writePageEncrypted(BYTE page, const std::string& s, const ICipher& cipher);
+	// Convenience: explicit length (temporarily adjusts block size)
+	void writePage(BYTE page, const BYTE* data, BYTE len);
+	BYTEV readPage(BYTE page, BYTE len);
 
-	void writePageEncryptedAAD(BYTE page, const BYTEV& data, const ICipher& cipher, const BYTEV& aad);
-	void writePageEncryptedAAD(BYTE page, const std::string& s, const ICipher& cipher, const BYTEV& aad);
+	// ── Multi-page I/O ────────────────────────────────────────────────────
 
-	// convenience: write multi-page data
 	virtual void writeData(BYTE startPage, const BYTEV& data);
 	void writeData(BYTE startPage, const std::string& s);
-
-	// New overloads: allow caller to specify LE (bytes per page) for this operation
 	void writeData(BYTE startPage, const BYTEV& data, BYTE le);
-	 void writeData(BYTE startPage, const std::string& s, BYTE le);
-
+	void writeData(BYTE startPage, const std::string& s, BYTE le);
 	virtual BYTEV readData(BYTE startPage, size_t length);
-
-	// Multi-page encrypted write/read
-	void writeDataEncrypted(BYTE startPage, const BYTEV& data, const ICipher& cipher);
-	void writeDataEncrypted(BYTE startPage, const std::string& s, const ICipher& cipher);
-	BYTEV readDataDecrypted(BYTE startPage, size_t length, const ICipher& cipher);
-
-	void writeDataEncryptedAAD(BYTE startPage, const BYTEV& data, const ICipher& cipher, const BYTE* aad, size_t aad_len);
-	void writeDataEncryptedAAD(BYTE startPage, const std::string& s, const ICipher& cipher, const BYTE* aad, size_t aad_len);
-	BYTEV readDataDecryptedAAD(BYTE startPage, size_t length, const ICipher& cipher, const BYTE* aad, size_t aad_len);
-
-	// Read all pages until card returns error
 	BYTEV readAll(BYTE startPage = 0);
 
-	/* 
-	* Load key to card's volatile or non-volatile memory, then use it for authentication. The actual APDU structure and parameters depend on the reader model.
-	ACR1281U specific operations:
-	keyStructure(1 byte):
-	0x00 : Volatile memory (default)
-	0x20 : Non-volatile memory (EEPROM)
+	// ── PC/SC Auth Commands ───────────────────────────────────────────────
 
-	keyNumber(1 byte):
-	00h – 1Fh = Non-volatile memory for storing keys. The keys are
-	permanently stored in the reader and will not be erased even if the
-	reader is disconnected from the PC. It can store up to 32 keys inside
-	the reader non-volatile memory.
-	20h (Session Key) = Volatile memory for temporarily storing keys.
-	The keys will be erased when the reader is disconnected from the
-	PC. Only one volatile memory is provided. The volatile key can be
-	used as a session key for different sessions. Default value = FF FF
-	FF FF FF FFh.
-	*/
-	void loadKey(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber);
-	void loadKeyA(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber);
-	void loadKeyB(const BYTE* key, KeyStructure keyStructure, BYTE keyNumber);
-	void loadKey(const KeyInfo& info);
-	
-	/*
-	keyType(1 byte):
-	A -> 0x60, B -> 0x61
-	keyNumber(1 byte):
-	00h – 1Fh = Non-volatile memory for storing keys. The keys are
-	permanently stored in the reader and will not be erased even if the
-	reader is disconnected from the PC. It can store up to 32 keys inside
-	the reader non-volatile memory.
-	20h (Session Key) = Volatile memory for temporarily storing keys.
-	The keys will be erased when the reader is disconnected from the
-	PC. Only 1 volatile memory is provided. The volatile key can be
-	used as a session key for different sessions. Default value = FF FF FF FF
-	FF FFh.
-	*/
+	void loadKey(const BYTE* key, KeyStructure ks, BYTE keyNumber);
 	void auth(BYTE blockNumber, KeyType keyType, BYTE keyNumber);
-	
-	/* {0x01(versionnumber), 0x00, Block Number, Key Type, Key Number} */
-	template<typename TReader>
-	void authNew(BYTE blockNumber, KeyType keyType, BYTE keyNumber) {
-		// BYTE keyTypeValue = mapKeyKind(keyType);
-		BYTE keyTypeValue = KeyMapping<TReader>::map(keyType);
-		BYTE data5[5] = { 0x01, 0x00, blockNumber, keyTypeValue, keyNumber };
-		authNew(data5);
-	}
+	void authNew(BYTE blockNumber, KeyType keyType, BYTE keyNumber);
 	void authNew(const BYTE data[5]);
 
-	bool isAuthRequested() const noexcept;
-	void setAuthRequested(bool v) noexcept;
+	// ── Exception-free alternatifler (Result<T> döner) ────────────────────
+
+	Result<ReaderResponse> tryTransmit(const BYTEV& apdu);
+	Result<BYTEV>          tryReadPage(BYTE page, const BYTEV* customApdu = nullptr);
+	Result<void>           tryWritePage(BYTE page, const BYTE* data, const BYTEV* customApdu = nullptr);
+	Result<void>           tryClearPage(BYTE page);
+	Result<void>           tryLoadKey(const BYTE* key, KeyStructure ks, BYTE keyNumber);
+	Result<void>           tryAuth(BYTE blockNumber, KeyType keyType, BYTE keyNumber);
+	Result<void>           tryAuthNew(BYTE blockNumber, KeyType keyType, BYTE keyNumber);
+	Result<void>           tryAuthNew(const BYTE data[5]);
+
+	// ── Configuration ─────────────────────────────────────────────────────
 
 	BYTE getLE() const noexcept;
 	void setLE(BYTE le) noexcept;
 
-	KeyType keyType() const noexcept;
-	void setKeyType(KeyType kt) noexcept;
-
-	KeyStructure keyStructure() const noexcept;
-	void setKeyStructure(KeyStructure ks) noexcept;
-
-	BYTE getKeyNumber() const noexcept;
-	void setKeyNumber(BYTE key) noexcept; // copies 6 bytes
-
-	// Full 16-byte key storage accessor: [keyA(6)|accessbits(4)|keyB(6)]
-	void getKeyAll(BYTE out16[16]) const noexcept;
-	void setKeyAll(const BYTE* key16) noexcept;
-
-	// Convenience helpers to get/set 6-byte Key A or Key B from the 16-byte blob
-	void getKey(KeyType keyType, BYTE out6[6]) const noexcept; // copies 6 bytes
-	void setKey(KeyType keyType, const BYTE* key6) noexcept; // copies 6 bytes into internal blob
-
-	bool keyLoaded() const noexcept;
-	void setKeyLoaded(bool loaded) noexcept;
-	
-	// Get reader type
 	virtual ReaderType getReaderType() const noexcept = 0;
-	
-	// Derived classes access CardConnection through this
+
 	CardConnection& cardConnection() noexcept;
 	const CardConnection& cardConnection() const noexcept;
 
@@ -228,8 +141,18 @@ protected:
 	virtual BYTE mapKeyStructure(KeyStructure structure) const noexcept = 0;
 	virtual BYTE mapKeyKind(KeyType kind) const noexcept = 0;
 
-	template<typename TReader>
-	struct KeyMapping;
+	// RAII guard for temporary LE changes — exception-safe
+	struct LEGuard {
+		Reader& reader;
+		BYTE saved;
+		LEGuard(Reader& r, BYTE newLE) : reader(r), saved(r.getLE()) { reader.setLE(newLE); }
+		~LEGuard() { reader.setLE(saved); }
+		LEGuard(const LEGuard&) = delete;
+		LEGuard& operator=(const LEGuard&) = delete;
+	};
+
+private:
+	BYTEV padToBlock(const BYTE* data, size_t dataLen) const;
 };
 
 #endif // PCSC_WORKSHOP1_READER_H

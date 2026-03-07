@@ -47,7 +47,7 @@ int main() {
 	// ACR1281UReader test moved to Tests project
 	// testACR1281UReaderUltralight(p.cardConnection());
 	BYTE key[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-	ACR1281UReader acr1281u(pcsc.cardConnection(), 16, true, KeyType::A, KeyStructure::NonVolatile, 0x01, key, key);
+	ACR1281UReader acr1281u(pcsc.cardConnection(), 16);
 	testACR1281UReaderMifareClassicUnsecured(acr1281u, 10);
 	
 	return 0;

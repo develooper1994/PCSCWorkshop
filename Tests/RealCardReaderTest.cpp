@@ -63,10 +63,7 @@ int testRealCardReader()
 
     // ── 2. CardIO oluştur ───────────────────────────────────────────────────
 
-    BYTE defaultKeyData[6] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
-    ACR1281UReader reader(
-        pcsc.cardConnection(), 16, false,
-        KeyType::A, KeyStructure::NonVolatile, 0x01, defaultKeyData);
+    ACR1281UReader reader(pcsc.cardConnection(), 16);
 
     CardIO io(reader, false /* 1K */);
 

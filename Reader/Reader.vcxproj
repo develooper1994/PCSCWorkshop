@@ -113,13 +113,15 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Reader\PcscCommands.h" />
     <ClInclude Include="Reader\Reader.h" />
     <ClInclude Include="Reader\Readers.h" />
     <ClInclude Include="Reader\ACR1281U\ACR1281UReader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Reader\Reader.cpp" />
     <ClCompile Include="Reader\ACR1281U\ACR1281UReader.cpp" />
+    <ClCompile Include="Reader\PcscCommands.cpp" />
+    <ClCompile Include="Reader\Reader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Cipher\Cipher.vcxproj">

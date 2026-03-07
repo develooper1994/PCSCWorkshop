@@ -2,6 +2,7 @@
 #define DESFIRE_COMMANDS_H
 
 #include "CardDataTypes.h"
+#include "Result.h"
 #include "../CardModel/DesfireMemoryLayout.h"
 #include <vector>
 #include <functional>
@@ -26,6 +27,7 @@ class DesfireCommands {
 public:
     // Transmit callback type
     using TransmitFn = std::function<BYTEV(const BYTEV&)>;
+    using TryTransmitFn = std::function<Result<BYTEV>(const BYTEV&)>;
 
     // ── Status codes ────────────────────────────────────────────────────────
 
@@ -183,16 +185,26 @@ public:
     // Validate response and throw on error
     static void checkResponse(const BYTEV& response, const char* context);
 
+    // ── Response Evaluation — Exception-free ────────────────────────────────
+
+    static PcscError evaluateResponse(const BYTEV& response);
+
     // ── Multi-frame receive ─────────────────────────────────────────────────
 
     // Send command, then keep requesting additional frames until complete.
     // Returns concatenated data from all frames.
     static BYTEV transceive(const TransmitFn& transmit, const BYTEV& cmd);
 
+    // Exception-free variant
+    static Result<BYTEV> tryTransceive(const TryTransmitFn& transmit, const BYTEV& cmd);
+
     // ── High-level Parsing ──────────────────────────────────────────────────
 
     // Parse GetVersion 3-part response into DesfireVersionInfo
     static DesfireVersionInfo parseGetVersion(const TransmitFn& transmit);
+
+    // Exception-free variant
+    static Result<DesfireVersionInfo> tryParseGetVersion(const TryTransmitFn& transmit);
 
     // Parse GetApplicationIDs response → vector of AIDs
     static std::vector<DesfireAID> parseApplicationIDs(const BYTEV& data);
