@@ -3,7 +3,7 @@
 Bu doküman, mevcut `Card` kütüphanesine `MIFARE DESFire` desteğini
 Classic/Ultralight davranışını bozmadan eklemek için yol haritasını içerir.
 
-> **⚠️ Durumu:** Faz 1-5 yazılım implentasyonu **TAMAMLANDI** (15/15 test PASS).
+> **⚠️ Durumu:** Faz 1-5 yazılım implementasyonu **TAMAMLANDI** (17/17 test PASS).
 > Donanım doğrulaması (gerçek DESFire kartı) **FUTURE WORK** — kart henüz mevcut değil.
 > 
 > Detaylar için → `Card/FUTURE_WORK.md`

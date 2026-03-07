@@ -11,7 +11,7 @@
 - Secure Messaging (EV1 CMAC support)
 - 25+ high-level API
 - Session timeout/caching (chrono-based)
-- 15/15 unit + integration test PASS
+- 17/17 unit + integration test PASS
 - Comprehensive documentation (DESFIRE_USAGE.md)
 
 ### ⏳ Henüz Yapılmayan (Donanım Doğrulaması)
