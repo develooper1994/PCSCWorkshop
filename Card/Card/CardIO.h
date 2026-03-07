@@ -5,6 +5,8 @@
 #include "Reader.h"
 #include <vector>
 #include <map>
+#include <functional>
+#include <memory>
 
 // Forward declares (TrailerConfig.h types — only used in method signatures)
 struct TrailerConfig;
@@ -12,6 +14,11 @@ struct SectorAccessConfig;
 struct DataBlockPermission;
 struct TrailerPermission;
 enum class SectorMode;
+struct DesfireAID;
+struct DesfireSession;
+struct DesfireVersionInfo;
+struct DesfireFileSettings;
+enum class DesfireKeyType : BYTE;
 
 // ════════════════════════════════════════════════════════════════════════════════
 // CardIO — Gerçek PCSC Kart I/O
@@ -103,6 +110,8 @@ public:
 
     // Backward-compatible: bool is4K → CardType
     explicit CardIO(Reader& reader, bool is4K);
+
+    ~CardIO();
 
     // ────────────────────────────────────────────────────────────────────────────
     // Key Ayarları  (auth öncesi çağrılmalı)
@@ -205,6 +214,36 @@ public:
     const CardInterface& card() const;
     Reader&              reader();
 
+    // ────────────────────────────────────────────────────────────────────────────
+    // DESFire API (yalnızca isDesfire() true iken geçerli)
+    // ────────────────────────────────────────────────────────────────────────────
+
+    // Kart keşfi: GetVersion → DesfireMemoryLayout'a yükle
+    DesfireVersionInfo discoverCard();
+
+    // Application seç (session düşer, yeniden auth gerekir)
+    void selectApplication(const DesfireAID& aid);
+
+    // DESFire 3-pass mutual auth (seçili app üzerinde)
+    void authenticateDesfire(const BYTEV& key, BYTE keyNo, DesfireKeyType keyType);
+
+    // Dosya bilgisi
+    std::vector<BYTE> getFileIDs();
+    DesfireFileSettings getFileSettings(BYTE fileNo);
+
+    // Dosya okuma/yazma (PlainText — secure messaging Faz 4)
+    BYTEV readFileData(BYTE fileNo, uint32_t offset, uint32_t length);
+    void  writeFileData(BYTE fileNo, uint32_t offset, const BYTEV& data);
+
+    // Application discovery
+    std::vector<DesfireAID> getApplicationIDs();
+
+    // Free memory
+    size_t getFreeMemory();
+
+    // DESFire session durumu
+    bool isDesfireAuthenticated() const;
+
 private:
     Reader&        reader_;
     CardInterface  card_;
@@ -247,6 +286,15 @@ private:
 
     // Classic → sector access bits, DESFire → KeyInfo::permission
     bool canKeyPerform(const KeyInfo& ki, int sector, AuthPurpose purpose) const;
+
+    // ── DESFire State ───────────────────────────────────────────────────────
+    std::unique_ptr<DesfireSession> desfireSession_;
+
+    // Raw APDU transmit through Reader's CardConnection
+    BYTEV desfireTransmit(const BYTEV& apdu);
+
+    // TransmitFn factory (for DesfireAuth / DesfireCommands callbacks)
+    std::function<BYTEV(const BYTEV&)> makeTransmitFn();
 };
 
 #endif // CARDIO_H

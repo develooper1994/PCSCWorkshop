@@ -68,120 +68,110 @@ Bu bilgi, `DesfireMemoryLayout.totalMemory` alanına yazılır ve
 
 ## TODO
 
-## 1) Model Katmanı
+## 1) Model Katmanı ✅
 
-- [ ] `DesfireVariant` enum ekle (EV1, EV2, EV3, Light)
-- [ ] `DesfireVersionInfo` struct ekle (`GetVersion` yanıtını parse eder,
-      `storageSize` → kapasite çevirisi yapar)
-- [ ] `Desfire` için yeni model tipleri ekle:
-  - [ ] `DesfireApplication` (AID, key settings, key count)
-  - [ ] `DesfireFile` (fileNo, fileType, comm mode, access rights, size)
-  - [ ] `DesfireKeySettings` / `DesfireAccessRights`
-- [ ] `DesfireMemoryLayout` — tek struct, boyuttan bağımsız:
-  - [ ] `totalMemory` / `freeMemory` runtime'da `GetVersion` + `GetFreeMemory` ile doldurulur.
-  - [ ] Variant bilgisi (EV1/EV2/EV3/Light) tutulur.
-  - [ ] Tüm boyut varyantları (2K–32K) aynı hiyerarşi ile çalışır.
-- [ ] `CardMemoryLayout` union'ına **gömülemez** (`std::vector` → heap).
-      `CardInterface` içinde ayrı `std::unique_ptr<DesfireMemoryLayout>` olarak yaşar.
-- [ ] DESFire bellek modelini sector/block yerine application/file perspektifinde temsil et.
+- [x] DesfireVariant enum (EV1, EV2, EV3, Light)
+- [x] DesfireVersionInfo struct (GetVersion parse, storageSize → kapasite)
+- [x] DesfireApplication (AID, key settings, key count)
+- [x] DesfireFile (fileNo, fileType, comm mode, access rights, size)
+- [x] DesfireKeySettings / DesfireAccessRights
+- [x] DesfireMemoryLayout — tek struct, boyuttan bağımsız
+- [x] CardInterface içinde unique_ptr<DesfireMemoryLayout>
+- [x] Bellek modeli app/file perspektifinde
 
-## 2) Topology / Addressing
+## 2) Topology / Addressing ✅
 
-- [ ] `CardLayoutTopology` içinde DESFire için özel adresleme ekle:
-  - [ ] `(AID, fileNo, offset, length)`
-- [ ] Classic/Ultralight `sector/block` modelinden ayrıştırılmış yöntemler ekle.
-- [ ] DESFire’da `isTrailerBlock` gibi kavramların `false/not-applicable` davranışını netleştir.
+- [x] CardLayoutTopology DESFire branch'leri (0 sector, 0 block)
+- [x] isDesfire(), hasSectors() helper method'ları
+- [x] isTrailerBlock = false, isManufacturerBlock düzeltildi
 
-## 3) Authentication (Kritik)
+## 3) Authentication ✅
 
-- [ ] `DesfireAuthenticationState` ekle.
-- [ ] 3-pass mutual authentication akışını implemente et:
-  - [ ] PICC level auth
-  - [ ] Application level auth
-- [ ] Session key türetme ve session timeout/caching ekle.
-- [ ] Yetkisiz erişimlerde net hata modeli tanımla.
+- [x] DesfireSession — session state (key, IV, counter)
+- [x] DesfireAuth — 3-pass mutual auth state machine (TransmitFn callback)
+- [x] DesfireCrypto — nonce, rotate, session key derivation (AES + 2K3DES)
+- [x] CngBlockCipher — raw AES/3DES CBC (no padding) + AES-CMAC
+- [x] Hata modeli: logic_error (yanlış kart tipi), runtime_error (auth fail)
+- [ ] Session timeout/caching (opsiyonel, Faz 4+)
 
-## 4) Key Yönetimi
+## 4) Key Yönetimi ✅ (temel)
 
-- [ ] DESFire key tipi desteği ekle:
-  - [ ] DES / 2K3DES / 3K3DES / AES
-- [ ] Key version ve key set metadata desteği ekle.
-- [ ] Mevcut `KeyManagement` genişletilecekse backward-compatible tasarla;
-      gerekirse `DesfireKeyManagement` ayrı sınıf aç.
+- [x] DesfireKeyType enum (DES, 2K3DES, AES-128)
+- [x] KeySettings bitfield (allowChangeMasterKey, freeDirectoryList, vb.)
+- [x] Key version metadata (DesfireKeyConfig.keyVersion)
+- [ ] 3K3DES (gerektiğinde)
+- [ ] ChangeKey komutu (Faz 4)
 
-## 5) I/O Katmanı
+## 5) I/O Katmanı ✅ (temel)
 
-- [ ] `DesfireIO` (veya `CardIO` içinde type-dispatch) ekle:
-  - [ ] `SelectApplication`
-  - [ ] `Authenticate` (3-pass)
-  - [ ] `ReadData` / `WriteData`
-  - [ ] `GetFileSettings`
-- [ ] Faz-2/opsiyonel komutlar:
-  - [ ] `CreateApplication`
-  - [ ] `CreateFile`
-  - [ ] `DeleteApplication/File`
-  - [ ] `ChangeKey`
+- [x] DesfireCommands — APDU construction + response parsing
+- [x] Multi-frame receive (transceive + additionalFrame)
+- [x] CardIO DESFire dispatch: selectApplication, authenticateDesfire
+- [x] CardIO: readFileData, writeFileData, getFileSettings, getFileIDs
+- [x] CardIO: discoverCard (GetVersion), getApplicationIDs, getFreeMemory
+- [x] Classic API guard: trailer/access ops throw logic_error
+- [ ] Faz-4: CreateApplication, CreateFile, DeleteApp/File, ChangeKey
 
-## 6) Tek API / Şeffaf Kullanım
+## 6) Tek API / Şeffaf Kullanım ✅ (temel)
 
-- [ ] Dış API’da kart tipine göre ayrı metod zorunluluğunu minimize et.
-- [ ] DESFire için “virtual block” yaklaşımını değerlendir:
-  - [ ] varsayılan `(AID, fileNo)` context içinde offset bazlı okuma/yazma.
-- [ ] Gelişmiş DESFire fonksiyonları için explicit API bırak (app/file yönetimi).
+- [x] CardIO facade: SelectApp → Auth → Read/Write
+- [x] Virtual block: DesfireMemoryLayout::readVirtualBlock/writeVirtualBlock
+- [ ] Gelişmiş DESFire API (app/file yönetimi — Faz 4)
 
-## 7) Test ve Doğrulama
+## 7) Test ve Doğrulama ✅ (unit)
 
-- [ ] Unit testler:
-  - [ ] auth state + session lifecycle
-  - [ ] access denied / success senaryoları
-  - [ ] key type uyumluluk kontrolleri
-- [ ] Integration testler:
-  - [ ] app seçmeden read/write fail
-  - [ ] app seç + auth sonrası read/write success
-- [ ] Regression:
-  - [ ] Classic testleri yeşil kalmalı
-  - [ ] Ultralight testleri yeşil kalmalı
+- [x] DesfireMemoryLayout model testi (10 section, DF_CHECK makro)
+- [x] DesfireAuth simulated 3-pass (9 section, DA_CHECK makro)
+- [x] CngBlockCipher AES/3DES round-trip + CMAC smoke
+- [x] Session key derivation (AES + 2K3DES)
+- [x] APDU construction + response parsing
+- [x] Regression: **12/12 PASS** (10 Classic/UL + 2 DESFire)
+- [ ] Integration testler (gerçek kart — Faz 5)
 
 ---
 
 ## Fazlı Plan
 
-## Faz 1 — Altyapı (Kırmadan Ekle)
+## Faz 1 — Altyapı (Kırmadan Ekle) ✅ TAMAMLANDI
 
-- `CardType::MifareDesfire` branch’lerini `CardMemoryLayout`, `CardLayoutTopology`,
-  `CardInterface`, `CardIO` içinde aç.
-- Mevcut Classic/Ultralight akışları aynen korunur.
+Commit: `feat: DESFire Faz 1`
 
-**Çıktı:** Derlenen, type-dispatch hazır iskelet.
+- CardType::MifareDesfire branch'leri: CardTopology, CardMemoryLayout, CardInterface, CardIO
+- 11/11 test geçti (10 mevcut + 1 yeni DESFire Memory Layout)
 
-## Faz 2 — Auth ve Güvenlik Çekirdeği
+## Faz 2 — Auth ve Güvenlik Çekirdeği ✅ TAMAMLANDI
 
-- 3-pass mutual auth akışı + session key üretimi.
-- Auth state + timeout/caching.
+Commit: `feat: DESFire Faz 2`
 
-**Çıktı:** Auth olmadan korumalı komutlar çalışmaz, auth sonrası çalışır.
+- CngBlockCipher (Cipher projesi): Raw AES/3DES CBC (no padding) + AES-CMAC
+- DesfireCrypto (Card projesi): nonce, rotate, session key derivation
+- DesfireAuth (Card projesi): 3-pass mutual auth state machine
+- DesfireSession (Card projesi): session state (key, IV, counter)
+- 12/12 test geçti (simulated 3-pass auth dahil)
 
-## Faz 3 — Veri Erişim Modeli
+## Faz 3 — Veri Erişim Modeli ✅ TAMAMLANDI
 
-- AID + fileNo bazlı read/write akışı.
-- Gerekirse virtual block adaptasyonu.
+Commit: `feat: DESFire Faz 3`
 
-**Çıktı:** Dış API’dan temel read/write akışı stabil.
+- DesfireCommands (Card projesi): APDU construction + response parsing + multi-frame
+- CardIO DESFire API: selectApplication, authenticateDesfire, readFileData, writeFileData
+- CardIO: discoverCard, getApplicationIDs, getFileIDs, getFileSettings, getFreeMemory
+- 12/12 test geçti
 
-## Faz 4 — Gelişmiş DESFire Özellikleri
+## Faz 4 — Gelişmiş DESFire Özellikleri ⏳ BEKLEMEDE
 
-- App/File yaratma/silme, key yönetimi komutları.
-- Hata yönetimi, transaction/retry davranışı.
+- [ ] CreateApplication / DeleteApplication
+- [ ] CreateFile / DeleteFile
+- [ ] ChangeKey
+- [ ] Secure Messaging (EV1 CMAC, EV2 full encryption)
+- [ ] Session timeout/caching
+- [ ] Transaction/retry davranışı
 
-**Çıktı:** Operasyonel DESFire feature set.
+## Faz 5 — Stabilizasyon ⏳ BEKLEMEDE
 
-## Faz 5 — Stabilizasyon
-
-- Gerçek kart testleri.
-- Regression + performans/güvenlik kontrolleri.
-- Dokümantasyon ve kullanım örnekleri.
-
-**Çıktı:** Üretime hazır DESFire desteği.
+- [ ] Gerçek DESFire kart ile integration test
+- [ ] Regression + performans kontrolleri
+- [ ] Dokümantasyon ve kullanım örnekleri
 
 ---
 

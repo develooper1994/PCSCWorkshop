@@ -2,6 +2,9 @@
 #include "CardModel/CardMemoryLayout.h"
 #include "CardModel/DesfireMemoryLayout.h"
 #include "CardModel/TrailerConfig.h"
+#include "CardProtocol/DesfireCommands.h"
+#include "CardProtocol/DesfireAuth.h"
+#include "CardProtocol/DesfireSession.h"
 #include <cstring>
 #include <stdexcept>
 
@@ -14,6 +17,8 @@ CardIO::CardIO(Reader& reader, CardType ct)
 {
     reader_.setAuthRequested(false);
     keys_.push_back(KeyInfo{});
+    if (card_.isDesfire())
+        desfireSession_ = std::make_unique<DesfireSession>();
 }
 
 CardIO::CardIO(Reader& reader, bool is4K)
@@ -21,6 +26,8 @@ CardIO::CardIO(Reader& reader, bool is4K)
                           : CardType::MifareClassic1K)
 {
 }
+
+CardIO::~CardIO() = default;
 
 // ════════════════════════════════════════════════════════════════════════════════
 // Key Ayarları
