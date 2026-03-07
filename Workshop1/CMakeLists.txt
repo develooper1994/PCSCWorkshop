@@ -1,22 +1,18 @@
 cmake_minimum_required(VERSION 3.14)
 project(PCSC_workshop1 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+file(GLOB WORKSHOP_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
-# -----------------------------------------------------------------------------
-# Application executable
-# Cipher, Reader and Utils are built as separate static libraries via the
-# top-level CMakeLists.txt (add_subdirectory) and linked below.
-# ----------------------------------------------------------------------------
+# Utils içindeki test helper'ları (testACR1281UReaderMifareClassicUnsecured vb.)
+file(GLOB_RECURSE UTILS_TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/../Utils/Utils/Tests/*.cpp")
+list(APPEND WORKSHOP_SOURCES ${UTILS_TEST_SOURCES})
 
-add_executable(PCSC_workshop1 main.cpp SmartCardApp.cpp)
+add_executable(PCSC_workshop1 ${WORKSHOP_SOURCES})
 
 target_include_directories(PCSC_workshop1 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../Utils/Utils/Tests/ACR1281U
+    ${CMAKE_CURRENT_SOURCE_DIR}/../Reader/Reader/ACR1281U
 )
 
-# Link the static libraries provided by sibling projects.
-# Include directories and platform libs (winscard, bcrypt) propagate
-# transitively through the PUBLIC dependencies of these targets.
-target_link_libraries(PCSC_workshop1 PRIVATE reader cipher utils)
+target_link_libraries(PCSC_workshop1 PRIVATE card reader cipher utils)

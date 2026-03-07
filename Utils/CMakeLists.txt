@@ -1,24 +1,41 @@
 cmake_minimum_required(VERSION 3.14)
 project(utils LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Collect sources (Utils.cpp is the only .cpp; the rest are header-only)
-file(GLOB UTILS_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Utils/*.cpp")
+file(GLOB_RECURSE UTILS_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Utils/*.cpp")
+# Tests/ içindeki dosyalar Reader'a bağımlı — döngüsel bağımlılık kaçınmak için
+# Utils kütüphanesinden hariç tutulur; Tests target'ına dahildir.
+list(FILTER UTILS_SOURCES EXCLUDE REGEX ".*/Tests/.*")
 add_library(utils STATIC ${UTILS_SOURCES})
 
-# The utils headers use wide-string Win32 APIs (SCardConnect, SCardListReadersW �)
-# so UNICODE / _UNICODE must be defined.
 target_compile_definitions(utils PUBLIC UNICODE _UNICODE)
 
-# Public include directories so consumers can #include "PcscUtils.h" etc.
 target_include_directories(utils PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/Utils
 )
 
-# On Windows the utils headers use winscard
 if(WIN32)
     target_link_libraries(utils PUBLIC winscard)
+else()
+    # Linux / macOS: pcsclite
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(PCSCLITE QUIET libpcsclite)
+    endif()
+    if(PCSCLITE_FOUND)
+        target_include_directories(utils PUBLIC ${PCSCLITE_INCLUDE_DIRS})
+        target_link_libraries(utils PUBLIC ${PCSCLITE_LIBRARIES})
+    else()
+        # Fallback: elle ara
+        find_path(PCSCLITE_INCLUDE NAMES PCSC/winscard.h
+                  PATHS /usr/include /usr/local/include)
+        find_library(PCSCLITE_LIB NAMES pcsclite
+                     PATHS /usr/lib /usr/local/lib)
+        if(PCSCLITE_INCLUDE AND PCSCLITE_LIB)
+            target_include_directories(utils PUBLIC ${PCSCLITE_INCLUDE})
+            target_link_libraries(utils PUBLIC ${PCSCLITE_LIB})
+        else()
+            message(WARNING "pcsclite not found — PCSC functions will not link")
+        endif()
+    endif()
 endif()

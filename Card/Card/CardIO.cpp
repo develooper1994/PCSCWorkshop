@@ -514,18 +514,6 @@ Result<BYTEV> CardIO::tryDesfireTransmit(const BYTEV& apdu) {
     return {result.value.raw(), PcscError{}};
 }
 
-std::function<BYTEV(const BYTEV&)> CardIO::makeTransmitFn() {
-    return [this](const BYTEV& apdu) -> BYTEV {
-        return desfireTransmit(apdu);
-    };
-}
-
-std::function<Result<BYTEV>(const BYTEV&)> CardIO::makeTryTransmitFn() {
-    return [this](const BYTEV& apdu) -> Result<BYTEV> {
-        return tryDesfireTransmit(apdu);
-    };
-}
-
 Result<void> CardIO::desfireExec(const BYTEV& apdu) {
     auto tx = tryDesfireTransmit(apdu);
     if (!tx) return {tx.error};
@@ -533,7 +521,8 @@ Result<void> CardIO::desfireExec(const BYTEV& apdu) {
 }
 
 Result<BYTEV> CardIO::desfireQuery(const BYTEV& apdu) {
-    return DesfireCommands::tryTransceive(makeTryTransmitFn(), apdu);
+    auto tx = [this](const BYTEV& a) -> Result<BYTEV> { return tryDesfireTransmit(a); };
+    return DesfireCommands::tryTransceive(tx, apdu);
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -544,7 +533,8 @@ DesfireVersionInfo CardIO::discoverCard() { return tryDiscoverCard().unwrap(); }
 
 Result<DesfireVersionInfo> CardIO::tryDiscoverCard() {
     if (!card_.isDesfire()) return {DesfireVersionInfo{}, {ErrorCode::NotDesfire}};
-    auto r = DesfireCommands::tryParseGetVersion(makeTryTransmitFn());
+    auto tx = [this](const BYTEV& a) -> Result<BYTEV> { return tryDesfireTransmit(a); };
+    auto r = DesfireCommands::tryParseGetVersion(tx);
     if (!r) return r;
     card_.getDesfireMemoryMutable().initFromVersion(r.value);
     return r;
@@ -571,7 +561,8 @@ Result<void> CardIO::tryAuthenticateDesfire(const BYTEV& key, BYTE keyNo, Desfir
     if (!desfireSession_)
         desfireSession_ = std::make_unique<DesfireSession>();
     DesfireAuth auth;
-    return auth.tryAuthenticate(*desfireSession_, key, keyNo, keyType, makeTryTransmitFn());
+    auto tx = [this](const BYTEV& a) -> Result<BYTEV> { return tryDesfireTransmit(a); };
+    return auth.tryAuthenticate(*desfireSession_, key, keyNo, keyType, tx);
 }
 
 std::vector<DesfireAID> CardIO::getApplicationIDs() { return tryGetApplicationIDs().unwrap(); }

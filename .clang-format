@@ -1,0 +1,58 @@
+# ════════════════════════════════════════════════════════════════════════════════
+# PCSCWorkshop — Clang-Format (Visual Studio uyumlu)
+# ════════════════════════════════════════════════════════════════════════════════
+
+Language: Cpp
+BasedOnStyle: Microsoft
+
+# ── Girinti ──────────────────────────────────────────────────────────────────
+UseTab: ForIndentation
+TabWidth: 4
+IndentWidth: 4
+ContinuationIndentWidth: 4
+IndentCaseLabels: false
+IndentPPDirectives: None
+NamespaceIndentation: None
+AccessModifierOffset: -4
+
+# ── Süslü parantez (Allman — VS varsayılanı) ────────────────────────────────
+BreakBeforeBraces: Allman
+
+# ── Satır genişliği ─────────────────────────────────────────────────────────
+ColumnLimit: 0
+
+# ── Kısa yapılar ────────────────────────────────────────────────────────────
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: true
+AllowShortBlocksOnASingleLine: Empty
+AllowShortEnumsOnASingleLine: true
+AllowShortLambdasOnASingleLine: Inline
+
+# ── Boşluklar ───────────────────────────────────────────────────────────────
+SpaceBeforeParens: ControlStatements
+SpaceAfterCStyleCast: false
+SpaceBeforeAssignmentOperators: true
+SpacesInParentheses: false
+SpacesInAngles: false
+SpaceAfterTemplateKeyword: false
+
+# ── Pointer / Referans ──────────────────────────────────────────────────────
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# ── Include sıralama ────────────────────────────────────────────────────────
+SortIncludes: CaseInsensitive
+IncludeBlocks: Preserve
+
+# ── Diğer ────────────────────────────────────────────────────────────────────
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignTrailingComments: true
+BinPackArguments: true
+BinPackParameters: true
+BreakConstructorInitializers: BeforeComma
+ConstructorInitializerIndentWidth: 4
+MaxEmptyLinesToKeep: 2
+ReflowComments: false
+FixNamespaceComments: true

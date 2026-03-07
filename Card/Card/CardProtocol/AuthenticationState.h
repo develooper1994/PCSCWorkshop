@@ -4,7 +4,6 @@
 #include "../CardDataTypes.h"
 #include <map>
 #include <chrono>
-#include <optional>
 
 // Forward declare
 struct CardMemoryLayout;

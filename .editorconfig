@@ -1,0 +1,49 @@
+# ════════════════════════════════════════════════════════════════════════════════
+# PCSCWorkshop — EditorConfig
+# ════════════════════════════════════════════════════════════════════════════════
+# https://editorconfig.org
+#
+# Editör ayarlarını proje genelinde standartlaştırır.
+# VS, VS Code, CLion, Vim, Emacs ve diğer editörler destekler.
+# ════════════════════════════════════════════════════════════════════════════════
+
+root = true
+
+# ── Genel ────────────────────────────────────────────────────────────────────
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# ── C / C++ ──────────────────────────────────────────────────────────────────
+[*.{h,hpp,c,cpp,inl}]
+indent_style = tab
+indent_size = 4
+tab_width = 4
+
+# ── CMake ────────────────────────────────────────────────────────────────────
+[CMakeLists.txt]
+indent_style = space
+indent_size = 4
+
+[*.cmake]
+indent_style = space
+indent_size = 4
+
+# ── Markdown ─────────────────────────────────────────────────────────────────
+[*.md]
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = false
+
+# ── YAML / JSON ─────────────────────────────────────────────────────────────
+[*.{yml,yaml,json}]
+indent_style = space
+indent_size = 2
+
+# ── Visual Studio proje dosyaları ────────────────────────────────────────────
+[*.{sln,vcxproj,vcxproj.filters,props}]
+indent_style = space
+indent_size = 2
+end_of_line = crlf

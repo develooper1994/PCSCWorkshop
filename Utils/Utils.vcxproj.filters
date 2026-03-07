@@ -18,9 +18,6 @@
     <Filter Include="Tests\ACR1281U">
       <UniqueIdentifier>{baab8c50-86fd-4401-954b-733d25b46e60}</UniqueIdentifier>
     </Filter>
-    <Filter Include="PCSC">
-      <UniqueIdentifier>{70da73f1-fb01-43d2-92b8-491775999538}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Log">
       <UniqueIdentifier>{9a89cffd-fd9f-4bae-bbf8-97398f98eece}</UniqueIdentifier>
     </Filter>
@@ -44,12 +41,6 @@
     <ClInclude Include="Utils\Tests\ACR1281U\ACR1281UReaderTests.h">
       <Filter>Tests\ACR1281U</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\PCSC.h">
-      <Filter>PCSC</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\CardConnection.h">
-      <Filter>PCSC</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\Log\Log.h">
       <Filter>Log</Filter>
     </ClInclude>
@@ -60,6 +51,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Utils\Result.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Platform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -76,14 +70,11 @@
     <ClCompile Include="Utils\Tests\ACR1281U\ACR1281UReaderTests.cpp">
       <Filter>Tests\ACR1281U</Filter>
     </ClCompile>
-    <ClCompile Include="Utils\PCSC.cpp">
-      <Filter>PCSC</Filter>
-    </ClCompile>
-    <ClCompile Include="Utils\CardConnection.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Utils\Log\Log.cpp">
       <Filter>Log</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\PCSC.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

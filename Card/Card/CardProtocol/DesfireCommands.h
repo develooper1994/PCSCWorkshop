@@ -5,7 +5,7 @@
 #include "Result.h"
 #include "../CardModel/DesfireMemoryLayout.h"
 #include <vector>
-#include <functional>
+#include <cstring>
 
 // ════════════════════════════════════════════════════════════════════════════════
 // DesfireCommands — DESFire Native APDU Construction & Response Parsing
@@ -25,10 +25,6 @@
 
 class DesfireCommands {
 public:
-    // Transmit callback type
-    using TransmitFn = std::function<BYTEV(const BYTEV&)>;
-    using TryTransmitFn = std::function<Result<BYTEV>(const BYTEV&)>;
-
     // ── Status codes ────────────────────────────────────────────────────────
 
     static constexpr BYTE SW1      = 0x91;
@@ -191,20 +187,19 @@ public:
 
     // ── Multi-frame receive ─────────────────────────────────────────────────
 
-    // Send command, then keep requesting additional frames until complete.
-    // Returns concatenated data from all frames.
-    static BYTEV transceive(const TransmitFn& transmit, const BYTEV& cmd);
+    template<typename TransmitFn>
+    static BYTEV transceive(TransmitFn&& transmit, const BYTEV& cmd);
 
-    // Exception-free variant
-    static Result<BYTEV> tryTransceive(const TryTransmitFn& transmit, const BYTEV& cmd);
+    template<typename TryTransmitFn>
+    static Result<BYTEV> tryTransceive(TryTransmitFn&& transmit, const BYTEV& cmd);
 
     // ── High-level Parsing ──────────────────────────────────────────────────
 
-    // Parse GetVersion 3-part response into DesfireVersionInfo
-    static DesfireVersionInfo parseGetVersion(const TransmitFn& transmit);
+    template<typename TransmitFn>
+    static DesfireVersionInfo parseGetVersion(TransmitFn&& transmit);
 
-    // Exception-free variant
-    static Result<DesfireVersionInfo> tryParseGetVersion(const TryTransmitFn& transmit);
+    template<typename TryTransmitFn>
+    static Result<DesfireVersionInfo> tryParseGetVersion(TryTransmitFn&& transmit);
 
     // Parse GetApplicationIDs response → vector of AIDs
     static std::vector<DesfireAID> parseApplicationIDs(const BYTEV& data);
@@ -227,5 +222,82 @@ public:
 private:
     DesfireCommands() = delete;
 };
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Template implementations
+// ════════════════════════════════════════════════════════════════════════════════
+
+template<typename TransmitFn>
+BYTEV DesfireCommands::transceive(TransmitFn&& transmit, const BYTEV& cmd) {
+    auto tryTx = [&](const BYTEV& apdu) -> Result<BYTEV> {
+        return {transmit(apdu), PcscError{}};
+    };
+    return tryTransceive(tryTx, cmd).unwrap();
+}
+
+template<typename TryTransmitFn>
+Result<BYTEV> DesfireCommands::tryTransceive(TryTransmitFn&& transmit, const BYTEV& cmd) {
+    auto txResult = transmit(cmd);
+    if (!txResult) return {BYTEV{}, txResult.error};
+    auto err = evaluateResponse(txResult.value);
+    if (!err.ok()) return {BYTEV{}, err};
+    BYTEV result = extractData(txResult.value);
+    while (hasMore(txResult.value)) {
+        txResult = transmit(additionalFrame());
+        if (!txResult) return {BYTEV{}, txResult.error};
+        err = evaluateResponse(txResult.value);
+        if (!err.ok()) return {BYTEV{}, err};
+        BYTEV chunk = extractData(txResult.value);
+        result.insert(result.end(), chunk.begin(), chunk.end());
+    }
+    return {std::move(result), PcscError{}};
+}
+
+template<typename TransmitFn>
+DesfireVersionInfo DesfireCommands::parseGetVersion(TransmitFn&& transmit) {
+    auto tryTx = [&](const BYTEV& apdu) -> Result<BYTEV> {
+        return {transmit(apdu), PcscError{}};
+    };
+    return tryParseGetVersion(tryTx).unwrap();
+}
+
+template<typename TryTransmitFn>
+Result<DesfireVersionInfo> DesfireCommands::tryParseGetVersion(TryTransmitFn&& transmit) {
+    DesfireVersionInfo vi;
+    auto r1 = transmit(getVersion());
+    if (!r1) return {vi, r1.error};
+    auto e1 = evaluateResponse(r1.value);
+    if (!e1.ok()) return {vi, e1};
+    BYTEV d1 = extractData(r1.value);
+    if (d1.size() >= 7) {
+        vi.hwVendorID = d1[0]; vi.hwType = d1[1]; vi.hwSubType = d1[2];
+        vi.hwMajorVer = d1[3]; vi.hwMinorVer = d1[4];
+        vi.hwStorageSize = d1[5]; vi.hwProtocol = d1[6];
+    }
+    if (!hasMore(r1.value)) return {vi, PcscError{}};
+    auto r2 = transmit(additionalFrame());
+    if (!r2) return {vi, r2.error};
+    auto e2 = evaluateResponse(r2.value);
+    if (!e2.ok()) return {vi, e2};
+    BYTEV d2 = extractData(r2.value);
+    if (d2.size() >= 7) {
+        vi.swVendorID = d2[0]; vi.swType = d2[1]; vi.swSubType = d2[2];
+        vi.swMajorVer = d2[3]; vi.swMinorVer = d2[4];
+        vi.swStorageSize = d2[5]; vi.swProtocol = d2[6];
+    }
+    if (!hasMore(r2.value)) return {vi, PcscError{}};
+    auto r3 = transmit(additionalFrame());
+    if (!r3) return {vi, r3.error};
+    auto e3 = evaluateResponse(r3.value);
+    if (!e3.ok()) return {vi, e3};
+    BYTEV d3 = extractData(r3.value);
+    if (d3.size() >= 14) {
+        std::memcpy(vi.uid, d3.data(), 7);
+        std::memcpy(vi.batchNo, d3.data() + 7, 5);
+        vi.productionWeek = d3[12];
+        vi.productionYear = d3[13];
+    }
+    return {vi, PcscError{}};
+}
 
 #endif // DESFIRE_COMMANDS_H

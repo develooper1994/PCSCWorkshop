@@ -4,7 +4,6 @@
 #include "DesfireSession.h"
 #include "DesfireCrypto.h"
 #include "Result.h"
-#include <functional>
 
 // ════════════════════════════════════════════════════════════════════════════════
 // DesfireAuth — 3-pass Mutual Authentication State Machine
@@ -43,29 +42,26 @@
 
 class DesfireAuth {
 public:
-    // Transmit callback type: send APDU, receive response (with SW)
-    using TransmitFn = std::function<BYTEV(const BYTEV&)>;
-    using TryTransmitFn = std::function<Result<BYTEV>(const BYTEV&)>;
 
     // ── Full 3-pass auth ────────────────────────────────────────────────────
 
-    // Performs complete 3-pass mutual authentication.
-    // On success: session is populated with session key and IV.
-    // On failure: session is reset, throws std::runtime_error.
-    //
-    // key: 16 bytes (AES-128) or 16 bytes (2K3DES)
-    // keyNo: 0–13 (application key number)
-    // transmit: callback that sends APDU and returns full response incl. SW
+    template<typename TransmitFn>
     void authenticate(DesfireSession& session,
                       const BYTEV& key, BYTE keyNo,
                       DesfireKeyType keyType,
-                      const TransmitFn& transmit);
+                      TransmitFn&& transmit) {
+        auto tryTx = [&](const BYTEV& apdu) -> Result<BYTEV> {
+            return {transmit(apdu), PcscError{}};
+        };
+        tryAuthenticate(session, key, keyNo, keyType, tryTx).unwrap();
+    }
 
     // Exception-free variant
+    template<typename TryTransmitFn>
     Result<void> tryAuthenticate(DesfireSession& session,
                                  const BYTEV& key, BYTE keyNo,
                                  DesfireKeyType keyType,
-                                 const TryTransmitFn& transmit);
+                                 TryTransmitFn&& transmit);
 
     // ── Individual steps (test/debug) ───────────────────────────────────────
 
@@ -100,6 +96,65 @@ public:
     static constexpr BYTE CMD_AUTH_ISO   = 0x1A;  // 2K3DES
     static constexpr BYTE CMD_AUTH_AES   = 0xAA;  // AES-128
     static constexpr BYTE CMD_MORE_DATA  = 0xAF;  // Additional frame
+
+    // Non-template crypto helpers (defined in .cpp)
+    static BYTEV decryptNonce(const BYTEV& encRndB, const BYTEV& key, DesfireKeyType keyType);
+    static BYTEV buildAuthPayloadInternal(const BYTEV& rndA, const BYTEV& rndB,
+                                           const BYTEV& key, DesfireKeyType keyType,
+                                           const BYTEV& iv);
+    static PcscError evaluateAuthSW(const BYTEV& resp, BYTE expectedSW2);
 };
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Template implementation
+// ════════════════════════════════════════════════════════════════════════════════
+
+template<typename TryTransmitFn>
+Result<void> DesfireAuth::tryAuthenticate(DesfireSession& session,
+                                          const BYTEV& key, BYTE keyNo,
+                                          DesfireKeyType keyType,
+                                          TryTransmitFn&& transmit) {
+    session.reset();
+    session.keyType = keyType;
+
+    // Step 1: Send auth cmd, receive ek(RndB)
+    auto r1 = transmit(buildAuthCmd(keyNo, keyType));
+    if (!r1) { session.reset(); return {r1.error}; }
+    auto e1 = evaluateAuthSW(r1.value, SW2_AF);
+    if (!e1.ok()) { session.reset(); return {e1}; }
+
+    size_t expected = DesfireCrypto::nonceSize(keyType);
+    if (r1.value.size() - 2 != expected) { session.reset(); return {{ErrorCode::InvalidData}}; }
+    BYTEV encRndB(r1.value.begin(), r1.value.begin() + expected);
+
+    // Step 2: Decrypt, build payload
+    size_t bs = DesfireCrypto::blockSize(keyType);
+    BYTEV rndB = decryptNonce(encRndB, key, keyType);
+    BYTEV rndA = DesfireCrypto::generateRndA(keyType);
+    BYTEV iv2(encRndB.end() - bs, encRndB.end());
+    BYTEV payload = buildAuthPayloadInternal(rndA, rndB, key, keyType, iv2);
+
+    // Step 3: Send payload, receive ek(rotL(RndA))
+    auto r2 = transmit(buildAdditionalFrame(payload));
+    if (!r2) { session.reset(); return {r2.error}; }
+    auto e2 = evaluateAuthSW(r2.value, SW2_OK);
+    if (!e2.ok()) { session.reset(); return {e2}; }
+
+    if (r2.value.size() - 2 != expected) { session.reset(); return {{ErrorCode::InvalidData}}; }
+    BYTEV encRndArot(r2.value.begin(), r2.value.begin() + expected);
+
+    BYTEV iv3(payload.end() - bs, payload.end());
+    bool ok = DesfireCrypto::verifyAuthResponse(encRndArot, rndA, key, keyType, iv3);
+    if (!ok) { session.reset(); return {{ErrorCode::DesfireAuthMismatch}}; }
+
+    session.authenticated = true;
+    session.authKeyNo = keyNo;
+    session.keyType = keyType;
+    session.sessionKey = DesfireCrypto::deriveSessionKey(rndA, rndB, keyType);
+    session.iv = BYTEV(bs, 0);
+    session.cmdCounter = 0;
+    session.touchAuthTime();
+    return {PcscError{}};
+}
 
 #endif // DESFIRE_AUTH_H

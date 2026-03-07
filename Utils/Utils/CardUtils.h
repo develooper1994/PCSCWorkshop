@@ -2,7 +2,7 @@
 #define PCSC_WORKSHOP1_CARDUTILS_H
 
 #include "PcscUtils.h"
-#include "CardConnection.h"
+#include "PCSC.h"
 #include <algorithm>
 #include <sstream>
 #include <iostream>
@@ -50,12 +50,12 @@ namespace CardUtils {
         }
     }
 
-    inline BYTEV getVersion(const CardConnection& cardConnection) {
-        return cardConnection.sendCommand(GETVERSIONAPDU);
+    inline BYTEV getVersion(const PCSC& pcsc) {
+        return pcsc.sendCommand(GETVERSIONAPDU);
     }
 
-    inline BYTEV getUid(const CardConnection& cardConnection) {
-        return cardConnection.sendCommand(GETUIDAPDU, false);
+    inline BYTEV getUid(const PCSC& pcsc) {
+        return pcsc.sendCommand(GETUIDAPDU, false);
     }
 
     inline void printFrame(const BYTEV& data, size_t& pos, const char* title) {
@@ -108,9 +108,9 @@ namespace CardUtils {
         }
     }
 
-    inline void printVersionInfo(const CardConnection& cardConnection) {
+    inline void printVersionInfo(const PCSC& pcsc) {
         try {
-            auto data = getVersion(cardConnection);
+            auto data = getVersion(pcsc);
             std::cout << "\nDESFire Version Raw: ";
             printHex(data.data(), static_cast<DWORD>(data.size()));
             parseAndPrintVersion(data);
@@ -120,9 +120,9 @@ namespace CardUtils {
         }
     }
 
-    inline void printUid(const CardConnection& cardConnection) {
+    inline void printUid(const PCSC& pcsc) {
         try {
-            auto uid = getUid(cardConnection);
+            auto uid = getUid(pcsc);
             std::cout << "UID: ";
             printHex(uid.data(), static_cast<DWORD>(uid.size()));
         }
@@ -131,10 +131,10 @@ namespace CardUtils {
         }
     }
 
-    inline void testDESFire(const CardConnection& cardConnection) {
+    inline void testDESFire(const PCSC& pcsc) {
         std::cout << "\n--- " << __func__ << ": ---\n";
-        printUid(cardConnection);
-        printVersionInfo(cardConnection);
+        printUid(pcsc);
+        printVersionInfo(pcsc);
     }
 
 } // namespace CardUtils

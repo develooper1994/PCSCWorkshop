@@ -1,43 +1,179 @@
-PCSC Workshop � Smartcard reader utilities
-=========================================
+# PCSC Workshop — Smart Card Reader & DESFire Interface
 
-A small Windows C++14 project demonstrating PC/SC smartcard communication and a pluggable reader/cipher architecture.
+High-performance C++17 library for smart card communication via PC/SC, with support for Mifare Classic/Ultralight and DESFire encrypted authentication.
 
-Project highlights
-- Reader abstraction with PIMPL: `Reader` / `ACR1281UReader` (reader-specific APDU read/write logic).
-- Cipher strategy: `ICipher` interface with an example `XorCipher` implementation. Ciphers expose a `test()` method to self-verify correctness.
-- Separation of concerns: the reader code is independent from encryption; new cipher implementations can be plugged in easily.
+**Platforms:** Windows (MSVC), Linux (GCC/Clang)  
+**Build:** Visual Studio 2022 + CMake 3.14+  
+**IDE:** Visual Studio Code (full debug/deploy support)
 
-Files of interest
-- `PCSC_workshop1.cpp` � program entry, reader selection and test harness.
-- `CardConnection.h` / `PcscUtils.h` � PC/SC wrapper utilities and helper functions.
-- `Reader.h` / `Reader.cpp` � Reader abstraction and `ACR1281UReader` implementation (PIMPL).
-- `Cipher.h` / `Cipher.cpp` � `ICipher` strategy and `XorCipher` implementation.
+---
 
-Prerequisites
-- Windows (desktop) with PC/SC runtime (Winscard).
-- Visual Studio (recommended) or msbuild; project targets x86/x64 configurations.
-- `winscard.lib` is required and referenced in the headers.
+## Quick Start
 
-Build
-- Open the solution `PCSC_workshop1` in Visual Studio and build.
-- Or use msbuild from the repo root:
+### Windows
 
-  `msbuild PCSC_workshop1\PCSC_workshop1.vcxproj /p:Configuration=Debug /p:Platform=x64`
+```bash
+git clone <repo>
+cd PCSCWorkshop
+PCSC_workshop.sln              # Open in Visual Studio 2022
+```
 
-Run
-1. Insert a smartcard-compatible reader with a tag.
-2. Run the `PCSC_workshop1` executable from Visual Studio or command line. The program will list readers and prompt selection.
-3. The `TEST` routine in `PCSC_workshop1.cpp` runs some DESFire queries and reader read/write demonstrations.
+Or CMake:
+```bash
+cmake -S . -B build -G "Visual Studio 17 2022"
+cmake --build build --config Debug
+```
 
-Tests
-- `XorCipher::test()` is executed during the secured reader test (`ACR1281UReader::testACR1281UReaderSecured`) before any card writes. The test checks roundtrip encrypt/decrypt, empty input handling and multi-block behavior.
-- To add unit tests or other cipher tests, implement `bool test() const` for new `ICipher` types and invoke them where appropriate.
+### Linux
 
-Extending
-- Add new cipher implementations by deriving from `ICipher` and implementing `encrypt`, `decrypt`, and `test`.
-- To use a new cipher in secured flows, construct the cipher and pass it to `Reader::writePageEncrypted` / `Reader::readPageDecrypted`.
+```bash
+sudo apt install libpcsclite-dev
+git clone <repo>
+cd PCSCWorkshop
+cmake -S . -B build
+cmake --build build
+./build/Tests/PCSC_tests
+```
 
-License & Contribution
-- This project is a workshop/demo. Modify and extend for your needs. Contributions and improvements are welcome.
+### VS Code
 
+```bash
+code .
+# Ctrl+Shift+B → CMake: Build All
+# F5 → Debug Workshop1 or Tests
+```
+
+---
+
+## Build Systems
+
+### Visual Studio 2022
+Direct `.sln` support. All projects inherit C++17 from `Directory.Build.props`.
+
+### CMake (both platforms)
+```bash
+# Preset-based:
+cmake --preset win-x64-debug    # Windows
+cmake --preset linux-debug      # Linux
+
+# Or manual:
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build
+```
+
+---
+
+## Architecture
+
+```
+Utils               PCSC context, reader discovery, cross-platform abstraction
+Cipher              XorCipher, CaesarCipher, CngAES/3DES (Win-only)
+Reader              ACR1281UReader for Mifare/NTAG cards
+Card                CardIO (Mifare model), DesfireAuth/Commands
+Workshop1           Main application executable
+Tests               Unit & integration test suite
+```
+
+Dependencies: `Utils ← Cipher ← Reader ← Card ← {Workshop1, Tests}`
+
+---
+
+## Features
+
+- ✅ **Mifare Classic** — Read/write with key auth & access control
+- ✅ **Mifare Ultralight / NTAG** — Page-based I/O
+- ✅ **DESFire** — Mutual 3-pass authentication (AES-128, 3DES), commands, secure messaging
+- ✅ **Cross-platform** — Windows (MSVC) + Linux (GCC/Clang)
+- ✅ **Exception-free** — `Result<T>` pattern for error handling
+- ✅ **Template callbacks** — No `std::function` (performance/clarity)
+
+---
+
+## Code Standards
+
+- **C++17** enforced via `Directory.Build.props` (MSVC) & root `CMakeLists.txt` (CMake)
+- **Format:** clang-format (Microsoft style, Allman braces, tab indent)
+- **Error handling:** `Result<T>` for non-throwing paths; `.unwrap()` for throwing versions
+- **Cross-platform:** `Platform.h` for PCSC includes; `#ifdef _WIN32` guards where needed
+- **No `std::function`** — use templates or function pointers
+
+---
+
+## Libraries
+
+| Library | Platform | Usage |
+|---------|----------|-------|
+| winscard (PC/SC) | Windows: `winscard.lib` / Linux: `libpcsclite` | Smart card I/O |
+| bcrypt (CNG) | Windows only | AES, 3DES, CMAC |
+
+---
+
+## Development
+
+### Feature Branch Workflow
+```bash
+# New feature (never on main):
+git checkout -b feature/xyz
+# ... develop, test, build ...
+git add . && git commit -m "feat: xyz"
+git push origin feature/xyz
+# ... merge to main after review ...
+git checkout main && git merge feature/xyz
+git push origin main
+git branch -d feature/xyz && git push origin --delete feature/xyz
+
+# Small fixes (main):
+git add . && git commit -m "fix: bug" && git push origin main
+```
+
+### Build Validation
+After any changes:
+```bash
+# Visual Studio
+msbuild PCSC_workshop.sln
+
+# CMake
+cmake --build build
+```
+
+---
+
+## Debugging
+
+**Visual Studio:** F5 (built-in debugger)  
+**VS Code (Linux/CMake):** F5 (GDB via `.vscode/launch.json`)
+
+Enable logging:
+```cpp
+pcsc::Log::getInstance().setLogLevel(pcsc::LogLevel::Debug);
+pcsc::Log::getInstance().enableAllCategories();
+```
+
+---
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `winscard.lib` not found (Windows) | Install Windows SDK (VS 2022 includes it) |
+| `PCSC/winscard.h` not found (Linux) | `sudo apt install libpcsclite-dev` |
+| `CardDataTypes.h` not found (CMake) | Regenerate: `cmake -S . -B build` |
+| Reader not detected | Check driver (ACR1281U needs ACR drivers) |
+
+---
+
+## Documentation
+
+- **Code guidelines:** `.github/copilot-instructions.md`
+- **Log system:** `Utils/Utils/Log/README.md`
+- **Format:** `.clang-format`, `.editorconfig`
+- **VS Code:** `.vscode/` (tasks, launch, settings)
+
+---
+
+## License
+
+[Your License]
+
+**Status:** Active development  
+**Maintainer:** [Team/Person]

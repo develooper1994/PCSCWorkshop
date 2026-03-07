@@ -118,11 +118,11 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
 }
 
 /********************  Ultralight ********************/
-void testACR1281UReaderUltralight(CardConnection& cardConnection, BYTE startPage) {
+void testACR1281UReaderUltralight(PCSC& pcsc, BYTE startPage) {
 	std::cout << "\n--- " << __func__ << ": ---\n";
-	auto uid = CardUtils::getUid(cardConnection);
+	auto uid = CardUtils::getUid(pcsc);
 	std::cout << "UID: " << std::string(uid.begin(), uid.end()) << "\n";
-	ACR1281UReader acr1281u(cardConnection);
+	ACR1281UReader acr1281u(pcsc);
 	testACR1281UReaderUltralightUnsecured(acr1281u, startPage);
 	testACR1281UReaderUltralightSecured(acr1281u, startPage);
 }

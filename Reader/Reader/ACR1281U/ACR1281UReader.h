@@ -5,8 +5,8 @@
 
 class ACR1281UReader : public Reader {
 public:
-	explicit ACR1281UReader(CardConnection& c);
-	ACR1281UReader(CardConnection& c, BYTE blockSize);
+	explicit ACR1281UReader(PCSC& pcsc);
+	ACR1281UReader(PCSC& pcsc, BYTE blockSize);
 	~ACR1281UReader() override;
 
 	ACR1281UReader(const ACR1281UReader&) = delete;

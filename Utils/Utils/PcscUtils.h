@@ -10,12 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <array>
-#include <windows.h>
-#include <winscard.h>
-
-#if defined(_MSC_VER) && (_MSC_VER >= 1020)
-#pragma comment(lib, "winscard.lib")
-#endif
+#include "Platform.h"
 
 using BYTE = uint8_t;
 using BYTEV = std::vector<BYTE>;

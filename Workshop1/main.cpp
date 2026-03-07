@@ -38,16 +38,16 @@ int main() {
 	if (!pcsc.chooseReader())     return 1;
 	if (!pcsc.connectToCard(500)) return 1;
 
-	auto uid = CardUtils::getUid(pcsc.cardConnection());
+	auto uid = CardUtils::getUid(pcsc);
 	std::cout << "UID: " << std::string(uid.begin(), uid.end()) << "\n";
-	
+
 	// Workshop1 testleri
 	// CardUtils::testDESFire(p.cardConnection());
 	// 
 	// ACR1281UReader test moved to Tests project
 	// testACR1281UReaderUltralight(p.cardConnection());
 	BYTE key[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-	ACR1281UReader acr1281u(pcsc.cardConnection(), 16);
+	ACR1281UReader acr1281u(pcsc, 16);
 	testACR1281UReaderMifareClassicUnsecured(acr1281u, 10);
 	
 	return 0;

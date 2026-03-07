@@ -1,0 +1,32 @@
+{
+    // ── Editor ──────────────────────────────────────────────────────────────
+    "editor.formatOnSave": false,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": false,
+    "editor.detectIndentation": false,
+
+    // ── C++ ─────────────────────────────────────────────────────────────────
+    "C_Cpp.default.cppStandard": "c++17",
+    "C_Cpp.default.cStandard": "c17",
+    "C_Cpp.clang_format_style": "file",
+    "C_Cpp.clang_format_fallbackStyle": "Microsoft",
+
+    // ── CMake ───────────────────────────────────────────────────────────────
+    "cmake.configureOnOpen": true,
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.generator": "Ninja",
+
+    // ── Files ───────────────────────────────────────────────────────────────
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.associations": {
+        "*.h": "cpp",
+        "*.inl": "cpp"
+    },
+    "files.exclude": {
+        "**/build": true,
+        "**/build-release": true,
+        "**/.vs": true,
+        "**/x64": true
+    }
+}

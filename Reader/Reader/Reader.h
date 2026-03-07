@@ -1,8 +1,7 @@
 ﻿#ifndef PCSC_WORKSHOP1_READER_H
 #define PCSC_WORKSHOP1_READER_H
 
-#include "CardConnection.h"
-#include "StatusWordHandler.h"
+#include "PCSC.h"
 #include "CardDataTypes.h"
 #include "Result.h"
 #include <string>
@@ -70,8 +69,8 @@ class Reader {
 public:
 	virtual ~Reader();
 
-	explicit Reader(CardConnection& c);
-	Reader(CardConnection& c, BYTE blockSize);
+	explicit Reader(PCSC& pcsc);
+	Reader(PCSC& pcsc, BYTE blockSize);
 
 	Reader(const Reader&) = delete;
 	Reader& operator=(const Reader&) = delete;
@@ -131,8 +130,8 @@ public:
 
 	virtual ReaderType getReaderType() const noexcept = 0;
 
-	CardConnection& cardConnection() noexcept;
-	const CardConnection& cardConnection() const noexcept;
+	PCSC& pcsc() noexcept;
+	const PCSC& pcsc() const noexcept;
 
 protected:
 	struct Impl;

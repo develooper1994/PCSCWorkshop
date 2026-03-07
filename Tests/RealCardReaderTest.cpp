@@ -56,14 +56,14 @@ int testRealCardReader()
     cout << "    OK\n";
 
     cout << "[4] UID (PCSC)...\n";
-    BYTEV pcscUid = CardUtils::getUid(pcsc.cardConnection());
+    BYTEV pcscUid = CardUtils::getUid(pcsc);
     cout << "    ";
     for (BYTE b : pcscUid) cout << hex << setfill('0') << setw(2) << (int)b << ' ';
     cout << dec << "(" << pcscUid.size() << " byte)\n\n";
 
     // ── 2. CardIO oluştur ───────────────────────────────────────────────────
 
-    ACR1281UReader reader(pcsc.cardConnection(), 16);
+    ACR1281UReader reader(pcsc, 16);
 
     CardIO io(reader, false /* 1K */);
 

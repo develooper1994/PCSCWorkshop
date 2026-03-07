@@ -89,13 +89,13 @@
     <ClCompile Include="Card\CardProtocol\DesfireCrypto.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Card\CardProtocol\DesfireAuth.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Card\CardProtocol\DesfireCommands.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Card\CardProtocol\DesfireSecureMessaging.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Card\CardProtocol\DesfireAuth.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -103,5 +103,8 @@
     <None Include="DESFIRE_PLAN.md" />
     <None Include="DESFIRE_USAGE.md" />
     <None Include="FUTURE_WORK.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

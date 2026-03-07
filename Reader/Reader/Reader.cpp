@@ -8,26 +8,26 @@
 // Reader::Impl — minimal: connection + block size
 // ============================================================
 struct Reader::Impl {
-	CardConnection& cardConnection;
+	PCSC& pcsc;
 	BYTE LE = 0x04;
 
-	explicit Impl(CardConnection& c, BYTE le = 0x04)
-		: cardConnection(c), LE(le) {}
+	explicit Impl(PCSC& p, BYTE le = 0x04)
+		: pcsc(p), LE(le) {}
 
 	Impl(const Impl&) = delete;
 	Impl& operator=(const Impl&) = delete;
 	Impl(Impl&& other) noexcept
-		: cardConnection(other.cardConnection), LE(other.LE) {}
+		: pcsc(other.pcsc), LE(other.LE) {}
 	Impl& operator=(Impl&&) = delete;
 };
 
 // ============================================================
 // Construction
 // ============================================================
-Reader::Reader(CardConnection& c)
-	: pImpl(std::make_unique<Impl>(c)) {}
-Reader::Reader(CardConnection& c, BYTE blockSize)
-	: pImpl(std::make_unique<Impl>(c, blockSize)) {}
+Reader::Reader(PCSC& p)
+	: pImpl(std::make_unique<Impl>(p)) {}
+Reader::Reader(PCSC& p, BYTE blockSize)
+	: pImpl(std::make_unique<Impl>(p, blockSize)) {}
 Reader::Reader(Reader&&) noexcept = default;
 Reader::~Reader() = default;
 Reader& Reader::operator=(Reader&&) noexcept = default;
@@ -35,8 +35,8 @@ Reader& Reader::operator=(Reader&&) noexcept = default;
 // ============================================================
 // Accessors
 // ============================================================
-CardConnection& Reader::cardConnection() noexcept { return pImpl->cardConnection; }
-const CardConnection& Reader::cardConnection() const noexcept { return pImpl->cardConnection; }
+PCSC& Reader::pcsc() noexcept { return pImpl->pcsc; }
+const PCSC& Reader::pcsc() const noexcept { return pImpl->pcsc; }
 BYTE Reader::getLE() const noexcept { return pImpl->LE; }
 void Reader::setLE(BYTE le) noexcept { pImpl->LE = le; }
 
@@ -59,15 +59,15 @@ BYTEV Reader::padToBlock(const BYTE* data, size_t dataLen) const {
 // Exception-free core — tryXxx metotları
 // ============================================================
 Result<ReaderResponse> Reader::tryTransmit(const BYTEV& apdu) {
-	if (!cardConnection().isConnected())
+	if (!pcsc().isConnected())
 		return {ReaderResponse{}, {ErrorCode::NotConnected}};
 
-	auto raw = cardConnection().transmit(apdu);
+	auto raw = pcsc().transmit(apdu);
 
 	if (raw.size() < 2)
 		return {ReaderResponse{}, {ErrorCode::ResponseTooShort}};
 
-	auto sw = cardConnection().getStatusWords(raw);
+	auto sw = pcsc().getStatusWords(raw);
 	BYTEV data(raw.begin(), raw.end() - 2);
 	return {ReaderResponse{std::move(data), sw}, PcscError{}};
 }

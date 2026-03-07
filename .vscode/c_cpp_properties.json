@@ -1,0 +1,39 @@
+{
+    "configurations": [
+        {
+            "name": "Windows (MSVC)",
+            "intelliSenseMode": "windows-msvc-x64",
+            "compilerPath": "cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "WIN32"
+            ],
+            "includePath": [
+                "${workspaceFolder}/**"
+            ]
+        },
+        {
+            "name": "Linux (GCC)",
+            "intelliSenseMode": "linux-gcc-x64",
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/include/PCSC"
+            ]
+        }
+    ],
+    "version": 4
+}

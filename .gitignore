@@ -17,6 +17,17 @@ x64/Debug/
 x64/Release/
 build/
 out/
+CMakeUserPresets.json
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+*.cmake
+!CMakeLists.txt
+!CMakePresets.json
 
 # Intermediate files
 *.tmp
@@ -37,8 +48,8 @@ out/
 *.so
 *.dylib
 
-# Visual Studio Code
-.vscode/
+# Visual Studio Code — kişisel ayarlar hariç, proje config'leri tracked
+# .vscode/  ← commit ediyoruz (tasks, launch, extensions, c_cpp_properties)
 
 # NuGet packages
 packages/

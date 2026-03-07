@@ -1,52 +1,53 @@
 #ifndef PCSC_WORKSHOP1_PCSC_H
 #define PCSC_WORKSHOP1_PCSC_H
 
-#include "CardConnection.h"
-#include <memory>
+#include "PcscUtils.h"
+#include "StatusWordHandler.h"
+#include "Exceptions/GenericExceptions.h"
 #include <string>
 #include <vector>
-#include <functional>
+#include <thread>
+#include <chrono>
 
-// ============================================================
-// PCSC � Tum PC/SC islemlerini tek sinifta yoneten facade.
+// ════════════════════════════════════════════════════════════════════════════════
+// PCSC — PC/SC iletişim katmanı (context + reader + transport)
+// ════════════════════════════════════════════════════════════════════════════════
 //
 // Sorumluluklar:
-//   1. Context yonetimi   (SCardEstablishContext / SCardReleaseContext)
-//   2. Reader kesfetme    (SCardListReaders / SCardFreeMemory)
-//   3. Kart baglantisi    (SCardConnect / SCardDisconnect)
-//   4. APDU iletimi       (SCardTransmit � CardConnection uzerinden)
-//   5. Ust-seviye erisim  (CardConnection&)
+//   1. Context yönetimi   (SCardEstablishContext / SCardReleaseContext)
+//   2. Reader keşfetme    (SCardListReaders)
+//   3. Kart bağlantısı    (SCardConnect / SCardDisconnect)
+//   4. APDU iletimi       (SCardTransmit)
+//   5. SW ayrıştırma      (getStatusWords)
 //
-// Kullanim:
+// Kullanım:
 //   PCSC pcsc;
-//   pcsc.run([](PCSC& p) {
-//       // workshop'a ozel testler
-//       DESFire::testDESFire(p.cardConnection());
-//   });
-// ============================================================
+//   pcsc.establishContext();
+//   pcsc.chooseReader();
+//   pcsc.connectToCard();
+//
+//   ACR1281UReader reader(pcsc, 16);
+//   auto data = reader.readPage(4);
+//
+// ════════════════════════════════════════════════════════════════════════════════
 
 class PCSC {
 public:
-    /// Disaridan verilen callback tipi.
-    /// Callback, baglanti kurulduktan sonra PCSC referansiyla cagirilir.
-    using TestCallback = std::function<void(PCSC&)>;
-
     PCSC() = default;
     ~PCSC();
 
-    // Kopyalanamaz, tasinabilir
     PCSC(const PCSC&) = delete;
     PCSC& operator=(const PCSC&) = delete;
     PCSC(PCSC&&) noexcept;
     PCSC& operator=(PCSC&&) noexcept;
 
-    // ---- 1. Context yonetimi ----
+    // ── 1. Context yönetimi ─────────────────────────────────────────────────
     bool establishContext();
     void releaseContext();
     bool hasContext() const;
     SCARDCONTEXT context() const;
 
-    // ---- 2. Reader kesfetme ----
+    // ── 2. Reader keşfetme ──────────────────────────────────────────────────
     struct ReaderList {
         std::vector<std::wstring> names;
         bool ok;
@@ -55,30 +56,34 @@ public:
     bool chooseReader(size_t defaultIndex = 1);
     const std::wstring& readerName() const;
 
-    // ---- 3. Kart baglantisi ----
+    // ── 3. Kart bağlantısı ──────────────────────────────────────────────────
     bool connectToCard(int retryMs = 500, int maxRetries = 0);
-    void disconnectCard();
+    void disconnect();
     bool isConnected() const;
 
-    // ---- 4. APDU iletimi ----
-    BYTEV transmit(const BYTEV& apdu) const;
-    BYTEV sendCommand(const BYTEV& apdu, bool followChaining = true) const;
+    // ── 4. Transport ────────────────────────────────────────────────────────
+    BYTEV transmit(const BYTEV& cmd) const;
+    BYTEV sendCommand(BYTEV cmd, bool followChaining = true) const;
 
-    // ---- 5. Ust-seviye erisim ----
-    CardConnection& cardConnection();
-    const CardConnection& cardConnection() const;
+    // ── 5. SW ayrıştırma ────────────────────────────────────────────────────
+    StatusWord getStatusWords(const BYTEV& resp) const;
 
-    // ---- Hazir akis ----
-    /// establishContext + chooseReader + connectToCard + callback
-    /// @param callback  Baglanti kurulduktan sonra calistirilacak fonksiyon.
-    ///                  Verilmezse sadece baglanti kurar, test calistirmaz.
-    int run(TestCallback callback = nullptr);
+    // ── Handle erişimi ──────────────────────────────────────────────────────
+    SCARDHANDLE handle() const;
+    DWORD protocol() const;
+
+    // ── Hazır akış ──────────────────────────────────────────────────────────
+    template<typename F>
+    int run(F&& callback) { callback(*this); return 0; }
 
 private:
-    SCARDCONTEXT hContext_{0};
+    SCARDCONTEXT hContext_        = 0;
     std::wstring readerName_;
-    std::unique_ptr<CardConnection> card_;
+    SCARDHANDLE  hCard_           = 0;
+    DWORD        activeProtocol_  = 0;
+    bool         connected_       = false;
 
+    bool connectOnce();
     void cleanup();
 };
 

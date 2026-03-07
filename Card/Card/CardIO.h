@@ -5,7 +5,6 @@
 #include "Reader.h"
 #include <vector>
 #include <map>
-#include <functional>
 #include <memory>
 
 // Forward declares (TrailerConfig.h types — only used in method signatures)
@@ -373,13 +372,9 @@ private:
     // ── DESFire State ───────────────────────────────────────────────────────
     std::unique_ptr<DesfireSession> desfireSession_;
 
-    // Raw APDU transmit through Reader's CardConnection
+    // Raw APDU transmit through Reader
     BYTEV desfireTransmit(const BYTEV& apdu);
     Result<BYTEV> tryDesfireTransmit(const BYTEV& apdu);
-
-    // TransmitFn factory (for DesfireAuth / DesfireCommands callbacks)
-    std::function<BYTEV(const BYTEV&)> makeTransmitFn();
-    std::function<Result<BYTEV>(const BYTEV&)> makeTryTransmitFn();
 
     // DESFire helpers — reduce boilerplate
     Result<void>  desfireExec(const BYTEV& apdu);
