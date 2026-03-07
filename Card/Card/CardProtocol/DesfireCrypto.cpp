@@ -1,9 +1,8 @@
 #include "DesfireCrypto.h"
-#include "CngBlockCipher.h"
+#include "BlockCipher.h"
+#include "Random.h"
 #include <stdexcept>
 #include <cstring>
-#include <windows.h>
-#include <bcrypt.h>
 
 // ════════════════════════════════════════════════════════════════════════════════
 // Sizes
@@ -38,15 +37,7 @@ size_t DesfireCrypto::keySize(DesfireKeyType kt) {
 // ════════════════════════════════════════════════════════════════════════════════
 
 BYTEV DesfireCrypto::generateRndA(DesfireKeyType kt) {
-    size_t n = nonceSize(kt);
-    BYTEV rndA(n);
-
-    NTSTATUS st = BCryptGenRandom(nullptr, rndA.data(),
-        static_cast<ULONG>(n), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-    if (!BCRYPT_SUCCESS(st))
-        throw std::runtime_error("BCryptGenRandom failed");
-
-    return rndA;
+    return crypto::randomBytes(nonceSize(kt));
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -83,11 +74,11 @@ BYTEV DesfireCrypto::buildAuthPayload(const BYTEV& rndA, const BYTEV& rndBdecryp
 
     // Encrypt
     if (kt == DesfireKeyType::AES128) {
-        return CngBlockCipher::encryptAES(key, iv, plain);
+        return crypto::block::encryptAesCbc(key, iv, plain);
     } else if (kt == DesfireKeyType::ThreeDES) {
-        return CngBlockCipher::encrypt3K3DES(key, iv, plain);
+        return crypto::block::encrypt3K3DesCbc(key, iv, plain);
     } else {
-        return CngBlockCipher::encrypt2K3DES(key, iv, plain);
+        return crypto::block::encrypt2K3DesCbc(key, iv, plain);
     }
 }
 
@@ -97,11 +88,11 @@ bool DesfireCrypto::verifyAuthResponse(const BYTEV& encryptedResponse,
                                         const BYTEV& iv) {
     BYTEV decrypted;
     if (kt == DesfireKeyType::AES128) {
-        decrypted = CngBlockCipher::decryptAES(key, iv, encryptedResponse);
+        decrypted = crypto::block::decryptAesCbc(key, iv, encryptedResponse);
     } else if (kt == DesfireKeyType::ThreeDES) {
-        decrypted = CngBlockCipher::decrypt3K3DES(key, iv, encryptedResponse);
+        decrypted = crypto::block::decrypt3K3DesCbc(key, iv, encryptedResponse);
     } else {
-        decrypted = CngBlockCipher::decrypt2K3DES(key, iv, encryptedResponse);
+        decrypted = crypto::block::decrypt2K3DesCbc(key, iv, encryptedResponse);
     }
 
     BYTEV expected = rotateLeft(rndA);

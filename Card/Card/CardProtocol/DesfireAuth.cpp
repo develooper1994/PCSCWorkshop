@@ -1,6 +1,6 @@
 #include "DesfireAuth.h"
 #include "DesfireCrypto.h"
-#include "CngBlockCipher.h"
+#include "BlockCipher.h"
 
 // ════════════════════════════════════════════════════════════════════════════════
 // APDU Construction
@@ -63,11 +63,11 @@ PcscError DesfireAuth::evaluateAuthSW(const BYTEV& resp, BYTE expectedSW2) {
 BYTEV DesfireAuth::decryptNonce(const BYTEV& encRndB, const BYTEV& key, DesfireKeyType keyType) {
     BYTEV zeroIV(DesfireCrypto::blockSize(keyType), 0);
     if (keyType == DesfireKeyType::AES128)
-        return CngBlockCipher::decryptAES(key, zeroIV, encRndB);
+        return crypto::block::decryptAesCbc(key, zeroIV, encRndB);
     else if (keyType == DesfireKeyType::ThreeDES)
-        return CngBlockCipher::decrypt3K3DES(key, zeroIV, encRndB);
+        return crypto::block::decrypt3K3DesCbc(key, zeroIV, encRndB);
     else
-        return CngBlockCipher::decrypt2K3DES(key, zeroIV, encRndB);
+        return crypto::block::decrypt2K3DesCbc(key, zeroIV, encRndB);
 }
 
 BYTEV DesfireAuth::buildAuthPayloadInternal(const BYTEV& rndA, const BYTEV& rndB,

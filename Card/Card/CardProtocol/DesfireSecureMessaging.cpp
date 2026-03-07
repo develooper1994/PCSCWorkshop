@@ -1,5 +1,5 @@
 #include "DesfireSecureMessaging.h"
-#include "CngBlockCipher.h"
+#include "BlockCipher.h"
 #include <stdexcept>
 #include <cstring>
 
@@ -13,7 +13,7 @@ BYTEV DesfireSecureMessaging::calculateCMAC(DesfireSession& session,
         throw std::runtime_error("SecureMessaging: no session key");
 
     // CMAC with current session key
-    BYTEV fullMAC = CngBlockCipher::cmacAES(session.sessionKey, data);
+    BYTEV fullMAC = crypto::block::cmacAes128(session.sessionKey, data);
 
     // IV = full CMAC (for next operation's IV chaining)
     session.iv = fullMAC;

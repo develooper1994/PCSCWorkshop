@@ -20,20 +20,20 @@
 void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE startPage) {
 	std::cout << "\n--- " << __func__ << ": (CardIO) ---\n";
 	try {
-		// 1) Hazýr metin
+		// 1) HazÄ±r metin
 		std::string text = "MustafaMustafa77";
 		std::cout << "Original: \"" << text << "\" size: " << text.size()
 			<< " bytes, needs " << ((text.size() + 15) / 16)
 			<< " pages. Starting at page: " << static_cast<int>(startPage) << "\n";
 
-		// 2) CardIO oluþtur
+		// 2) CardIO oluÅŸtur
 		CardIO io(acr1281u, false);  // 1K kart
 
 		// 3) Default key (factory)
 		KEYBYTES defKey = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 		io.setDefaultKey(defKey, KeyStructure::NonVolatile, 0x01, KeyType::A);
 
-		// 4) Tüm kartý oku
+		// 4) TÃ¼m kartÄ± oku
 		std::cout << "\nReading card memory...\n";
 		int okBlocks = io.readCard();
 		std::cout << "OK: " << okBlocks << "/" << io.card().getTotalBlocks() << " blocks\n";
@@ -51,7 +51,7 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
 		std::cout << "Target block: " << (int)startPage
 			<< " (sector " << sector << ", index " << blockInSector << ")\n";
 
-		// 7) Trailer oku — access bits incele
+		// 7) Trailer oku â€” access bits incele
 		std::cout << "\nReading trailers for sector " << sector << "...\n";
 		TrailerConfig tc = io.readTrailer(sector);
 		SectorAccessConfig cfg = tc.access;
@@ -59,7 +59,7 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
 		std::cout << "Data block: read=" << (dp.readA ? "A" : "") << (dp.readB ? "|B" : "")
 			<< " write=" << (dp.writeA ? "A" : "") << (dp.writeB ? "|B" : "") << "\n";
 
-		// 8) Okuma öncesi — boþ blok oku
+		// 8) Okuma Ã¶ncesi â€” boÅŸ blok oku
 		{
 			std::cout << "\nReading block " << (int)startPage << " before write:\n";
 			BYTEV before = io.readBlock(startPage);
@@ -81,7 +81,7 @@ void testACR1281UReaderMifareClassicUnsecured(ACR1281UReader& acr1281u, BYTE sta
 			std::cout << "Written OK\n";
 		}
 
-		// 10) Okuma sonrasý — veri oku ve doðrula
+		// 10) Okuma sonrasÄ± â€” veri oku ve doÄŸrula
 		{
 			std::cout << "\nReading block " << (int)startPage << " after write:\n";
 			BYTEV after = io.readBlock(startPage);
@@ -157,11 +157,9 @@ void testACR1281UReaderUltralightSecured(ACR1281UReader& acr1281u, BYTE startPag
 	std::cout << "\n--- " << __func__ << ": invoking per-cipher secured tests ---\n";
 	testACR1281UReaderXorCipher(acr1281u);
 	testACR1281UReaderCaesarCipher(acr1281u);
-#ifdef _WIN32
-	testACR1281UReaderCng3DES(acr1281u);
-	testACR1281UReaderCngAES(acr1281u);
-	testACR1281UReaderCngAESGcm(acr1281u);
-#endif
+testACR1281UReaderAesCbc(acr1281u);
+testACR1281UReaderTripleDes(acr1281u);
+testACR1281UReaderAesGcm(acr1281u);
 }
 
 void testACR1281UReaderXorCipher(ACR1281UReader& acr1281u, BYTE startPage) {
@@ -175,25 +173,23 @@ void testACR1281UReaderCaesarCipher(ACR1281UReader& acr1281u, BYTE startPage) {
 	runPerPageTest(acr1281u, cipher, "CaesarCipher", "Caesar cipher test string");
 }
 
-#ifdef _WIN32
-void testACR1281UReaderCngAES(ACR1281UReader& acr1281u, BYTE startPage) {
+void testACR1281UReaderAesCbc(ACR1281UReader& acr1281u, BYTE startPage) {
 	std::vector<BYTE> key(16, 0x01);
 	std::vector<BYTE> iv(16, 0x00);
-	CngAES cipher(key, iv);
-	runBlobTest(acr1281u, cipher, "CngAES", "CngAES test data");
+	AesCbcCipher cipher(key, iv);
+	runBlobTest(acr1281u, cipher, "AesCbcCipher", "AesCbc test data");
 }
 
-void testACR1281UReaderCng3DES(ACR1281UReader& acr1281u, BYTE startPage) {
+void testACR1281UReaderTripleDes(ACR1281UReader& acr1281u, BYTE startPage) {
 	std::vector<BYTE> key(24, 0x02);
 	std::vector<BYTE> iv(8, 0x00);
-	Cng3DES cipher(key, iv);
-	runBlobTest(acr1281u, cipher, "Cng3DES", "3DES test data!!");
+	TripleDesCbcCipher cipher(key, iv);
+	runBlobTest(acr1281u, cipher, "TripleDesCbc", "3DES test data!!");
 }
 
-void testACR1281UReaderCngAESGcm(ACR1281UReader& acr1281u, BYTE startPage) {
+void testACR1281UReaderAesGcm(ACR1281UReader& acr1281u, BYTE startPage) {
 	std::vector<BYTE> key(16, 0x03);
-	CngAESGcm cipher(key);
-	runBlobTestAAD(acr1281u, cipher, "CngAESGcm", "AES-GCM test str", "header");
+	AesGcmCipher cipher(key);
+	runBlobTestAAD(acr1281u, cipher, "AesGcmCipher", "AES-GCM test str", "header");
 }
-#endif
 

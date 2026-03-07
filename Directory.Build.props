@@ -1,13 +1,28 @@
 <Project>
   <PropertyGroup>
     <UtilsIncludeDir>$(MSBuildThisFileDirectory)Utils\Utils</UtilsIncludeDir>
+    <!-- OpenSSL: ortam değişkeni OPENSSL_DIR varsa onu kullan, yoksa standart yolları dene -->
+    <OpenSSLDir Condition="'$(OPENSSL_DIR)' != ''">$(OPENSSL_DIR)</OpenSSLDir>
+    <OpenSSLDir Condition="'$(OpenSSLDir)' == '' And Exists('C:\Program Files\OpenSSL-Win64\include\openssl\evp.h')">C:\Program Files\OpenSSL-Win64</OpenSSLDir>
+    <OpenSSLDir Condition="'$(OpenSSLDir)' == '' And Exists('C:\OpenSSL-Win64\include\openssl\evp.h')">C:\OpenSSL-Win64</OpenSSLDir>
+    <OpenSSLLibDir>$(OpenSSLDir)\lib\VC\x64\MD</OpenSSLLibDir>
+    <OpenSSLLibDirDebug>$(OpenSSLDir)\lib\VC\x64\MDd</OpenSSLLibDirDebug>
   </PropertyGroup>
 
   <ItemDefinitionGroup>
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(UtilsIncludeDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(UtilsIncludeDir);$(OpenSSLDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)'=='Debug'">$(OpenSSLLibDirDebug);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)'=='Release'">$(OpenSSLLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libcrypto.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)'=='Debug'">$(OpenSSLLibDirDebug);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)'=='Release'">$(OpenSSLLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
 </Project>

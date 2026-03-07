@@ -35,25 +35,46 @@
     <ClInclude Include="Cipher\CipherUtil.h">
       <Filter>Cipher\Header</Filter>
     </ClInclude>
-    <ClInclude Include="Cipher\Cng3DES.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Cipher\CngAES.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Cipher\CngAESGcm.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Cipher\CngAESGcmUtil.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
     <ClInclude Include="Cipher\ICipherAAD.h">
       <Filter>Cipher\Header</Filter>
     </ClInclude>
     <ClInclude Include="Cipher\XorCipher.h">
       <Filter>Cipher\Header</Filter>
     </ClInclude>
-    <ClInclude Include="Cipher\CngBlockCipher.h">
+    <ClInclude Include="Cipher\CryptoTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\Random.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\Hash.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\Hmac.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\Kdf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\BlockCipher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\AesCbcCipher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\TripleDesCbcCipher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\AesCtrCipher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\AesGcmCipher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\AesGcmUtil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cipher\Crypto.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -67,19 +88,34 @@
     <ClCompile Include="Cipher\CipherAadFallback.cpp">
       <Filter>Cipher\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Cipher\Cng3DES.cpp">
-      <Filter>Cipher\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Cipher\CngAES.cpp">
-      <Filter>Cipher\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Cipher\CngAESGcm.cpp">
-      <Filter>Cipher\Source</Filter>
-    </ClCompile>
     <ClCompile Include="Cipher\XorCipher.cpp">
       <Filter>Cipher\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Cipher\CngBlockCipher.cpp">
+    <ClCompile Include="Cipher\Random.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\Hash.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\Hmac.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\Kdf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\BlockCipher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\AesCbcCipher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\TripleDesCbcCipher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\AesCtrCipher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cipher\AesGcmCipher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

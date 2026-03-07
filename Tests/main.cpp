@@ -66,7 +66,7 @@ int runAllTests() {
     bool cipherRoundtrip = testFull();
     cout << (cipherRoundtrip ? "PASSED" : "FAILED") << "\n\n";
     
-    cout << "--- CNG cipher tests ---\n";
+    cout << "--- Crypto cipher tests ---\n";
     int cngResult = run_cipher_tests();
     cout << (cngResult == 0 ? "PASSED" : "FAILED") << "\n\n";
     
@@ -88,7 +88,7 @@ int runCipherTests() {
     bool result1 = testFull();
     cout << (result1 ? "PASSED" : "FAILED") << "\n\n";
     
-    cout << "--- CNG cipher tests ---\n";
+    cout << "--- Crypto cipher tests ---\n";
     int result2 = run_cipher_tests();
     cout << (result2 == 0 ? "PASSED" : "FAILED") << "\n";
     

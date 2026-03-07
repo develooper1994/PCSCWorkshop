@@ -14,10 +14,8 @@ void testACR1281UReaderUltralightUnsecured(ACR1281UReader& acr, BYTE startPage =
 void testACR1281UReaderUltralightSecured(ACR1281UReader& acr, BYTE startPage = 4);
 void testACR1281UReaderXorCipher(ACR1281UReader& acr, BYTE startPage = 4);
 void testACR1281UReaderCaesarCipher(ACR1281UReader& acr, BYTE startPage = 4);
-#ifdef _WIN32
-void testACR1281UReaderCngAES(ACR1281UReader& acr, BYTE startPage = 4);
-void testACR1281UReaderCng3DES(ACR1281UReader& acr, BYTE startPage = 4);
-void testACR1281UReaderCngAESGcm(ACR1281UReader& acr, BYTE startPage = 4);
-#endif
+void testACR1281UReaderAesCbc(ACR1281UReader& acr, BYTE startPage = 4);
+void testACR1281UReaderTripleDes(ACR1281UReader& acr, BYTE startPage = 4);
+void testACR1281UReaderAesGcm(ACR1281UReader& acr, BYTE startPage = 4);
 
 #endif // TESTS_ACR1281UREADER_TESTS_H

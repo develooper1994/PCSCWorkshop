@@ -15,7 +15,7 @@
 #include "../Card/Card/CardProtocol/DesfireCommands.h"
 #include "../Card/Card/CardProtocol/DesfireSecureMessaging.h"
 #include "../Card/Card/CardInterface.h"
-#include "../Cipher/Cipher/CngBlockCipher.h"
+#include "Crypto.h"
 #include <iostream>
 #include <cstring>
 #include <thread>
@@ -756,17 +756,17 @@ bool testDesfireAuth() {
         BYTEV aesIV(16, 0x00);
         BYTEV plain(16, 0x42);
 
-        BYTEV enc = CngBlockCipher::encryptAES(aesKey, aesIV, plain);
+        BYTEV enc = crypto::block::encryptAesCbc(aesKey, aesIV, plain);
         DA_CHECK(enc.size() == 16);
 
-        BYTEV dec = CngBlockCipher::decryptAES(aesKey, aesIV, enc);
+        BYTEV dec = crypto::block::decryptAesCbc(aesKey, aesIV, enc);
         DA_CHECK(dec == plain);
 
         // Multi-block
         BYTEV plain32(32, 0xAB);
-        BYTEV enc32 = CngBlockCipher::encryptAES(aesKey, aesIV, plain32);
+        BYTEV enc32 = crypto::block::encryptAesCbc(aesKey, aesIV, plain32);
         DA_CHECK(enc32.size() == 32);
-        BYTEV dec32 = CngBlockCipher::decryptAES(aesKey, aesIV, enc32);
+        BYTEV dec32 = crypto::block::decryptAesCbc(aesKey, aesIV, enc32);
         DA_CHECK(dec32 == plain32);
 
         // ── 2. CngBlockCipher 2K3DES round-trip ─────────────────────────────
@@ -775,9 +775,9 @@ bool testDesfireAuth() {
         BYTEV desIV(8, 0x00);
         BYTEV plainDES(8, 0x55);
 
-        BYTEV encDES = CngBlockCipher::encrypt2K3DES(desKey, desIV, plainDES);
+        BYTEV encDES = crypto::block::encrypt2K3DesCbc(desKey, desIV, plainDES);
         DA_CHECK(encDES.size() == 8);
-        BYTEV decDES = CngBlockCipher::decrypt2K3DES(desKey, desIV, encDES);
+        BYTEV decDES = crypto::block::decrypt2K3DesCbc(desKey, desIV, encDES);
         DA_CHECK(decDES == plainDES);
 
         // ── 3. Rotate ───────────────────────────────────────────────────────
@@ -860,7 +860,7 @@ bool testDesfireAuth() {
 
         // Card encrypts RndB and sends it
         BYTEV zeroIV16(16, 0);
-        BYTEV encSimRndB = CngBlockCipher::encryptAES(simKey, zeroIV16, simRndB);
+        BYTEV encSimRndB = crypto::block::encryptAesCbc(simKey, zeroIV16, simRndB);
 
         // Simulated transmit: tracks which step we're on
         int simStep = 0;
@@ -888,7 +888,7 @@ bool testDesfireAuth() {
                 // Card decrypts with IV = last block of encRndB
                 size_t bs = 16;
                 BYTEV cardIV(encSimRndB.end() - bs, encSimRndB.end());
-                BYTEV decPayload = CngBlockCipher::decryptAES(simKey, cardIV, capturedPayload);
+                BYTEV decPayload = crypto::block::decryptAesCbc(simKey, cardIV, capturedPayload);
 
                 // decPayload = RndA || rotL(RndB)
                 simRndAcaptured.assign(decPayload.begin(), decPayload.begin() + 16);
@@ -902,7 +902,7 @@ bool testDesfireAuth() {
                 // Card encrypts rotL(RndA) and sends it
                 BYTEV rndArot = DesfireCrypto::rotateLeft(simRndAcaptured);
                 BYTEV cardIV2(capturedPayload.end() - bs, capturedPayload.end());
-                BYTEV encRndArot = CngBlockCipher::encryptAES(simKey, cardIV2, rndArot);
+                BYTEV encRndArot = crypto::block::encryptAesCbc(simKey, cardIV2, rndArot);
 
                 BYTEV resp;
                 resp.insert(resp.end(), encRndArot.begin(), encRndArot.end());
@@ -932,20 +932,20 @@ bool testDesfireAuth() {
 
         BYTEV cmacKey(16, 0x00);
         BYTEV cmacData = {0x01, 0x02, 0x03, 0x04};
-        BYTEV mac = CngBlockCipher::cmacAES(cmacKey, cmacData);
+        BYTEV mac = crypto::block::cmacAes128(cmacKey, cmacData);
         DA_CHECK(mac.size() == 16);
 
         // Empty data CMAC
-        BYTEV macEmpty = CngBlockCipher::cmacAES(cmacKey, BYTEV{});
+        BYTEV macEmpty = crypto::block::cmacAes128(cmacKey, BYTEV{});
         DA_CHECK(macEmpty.size() == 16);
 
         // Same input → same MAC
-        BYTEV mac2 = CngBlockCipher::cmacAES(cmacKey, cmacData);
+        BYTEV mac2 = crypto::block::cmacAes128(cmacKey, cmacData);
         DA_CHECK(mac == mac2);
 
         // Different input → different MAC
         BYTEV cmacData2 = {0x05, 0x06, 0x07, 0x08};
-        BYTEV mac3 = CngBlockCipher::cmacAES(cmacKey, cmacData2);
+        BYTEV mac3 = crypto::block::cmacAes128(cmacKey, cmacData2);
         DA_CHECK(mac3 != mac);
 
         // ── 9. DesfireSession reset ─────────────────────────────────────────
@@ -1445,7 +1445,7 @@ bool testDesfireIntegration() {
             };
 
             BYTEV zeroIV16(16, 0);
-            BYTEV encSimRndB = CngBlockCipher::encryptAES(simKey, zeroIV16, simRndB);
+            BYTEV encSimRndB = crypto::block::encryptAesCbc(simKey, zeroIV16, simRndB);
 
             int step = 0;
             BYTEV capturedRndA;
@@ -1462,11 +1462,11 @@ bool testDesfireIntegration() {
                     BYTEV payload(apdu.begin() + 5, apdu.begin() + 5 + payLen);
                     size_t bs = 16;
                     BYTEV cardIV(encSimRndB.end() - bs, encSimRndB.end());
-                    BYTEV dec = CngBlockCipher::decryptAES(simKey, cardIV, payload);
+                    BYTEV dec = crypto::block::decryptAesCbc(simKey, cardIV, payload);
                     capturedRndA.assign(dec.begin(), dec.begin() + 16);
                     BYTEV rndArot = DesfireCrypto::rotateLeft(capturedRndA);
                     BYTEV cardIV2(payload.end() - bs, payload.end());
-                    BYTEV encRndArot = CngBlockCipher::encryptAES(simKey, cardIV2, rndArot);
+                    BYTEV encRndArot = crypto::block::encryptAesCbc(simKey, cardIV2, rndArot);
                     BYTEV resp;
                     resp.insert(resp.end(), encRndArot.begin(), encRndArot.end());
                     resp.push_back(0x91); resp.push_back(0x00);
@@ -1696,23 +1696,23 @@ bool testDesfire3K3DES() {
         BYTEV iv8(8, 0x00);
         BYTEV plain8(8, 0x42);
 
-        BYTEV enc = CngBlockCipher::encrypt3K3DES(key24, iv8, plain8);
+        BYTEV enc = crypto::block::encrypt3K3DesCbc(key24, iv8, plain8);
         D3_CHECK(enc.size() == 8);
         D3_CHECK(enc != plain8);
 
-        BYTEV dec = CngBlockCipher::decrypt3K3DES(key24, iv8, enc);
+        BYTEV dec = crypto::block::decrypt3K3DesCbc(key24, iv8, enc);
         D3_CHECK(dec == plain8);
 
         // Multi-block
         BYTEV plain16(16, 0x55);
-        BYTEV enc16 = CngBlockCipher::encrypt3K3DES(key24, iv8, plain16);
+        BYTEV enc16 = crypto::block::encrypt3K3DesCbc(key24, iv8, plain16);
         D3_CHECK(enc16.size() == 16);
-        BYTEV dec16 = CngBlockCipher::decrypt3K3DES(key24, iv8, enc16);
+        BYTEV dec16 = crypto::block::decrypt3K3DesCbc(key24, iv8, enc16);
         D3_CHECK(dec16 == plain16);
 
         // Wrong key size should throw
         bool threw = false;
-        try { CngBlockCipher::encrypt3K3DES(BYTEV(16, 0), iv8, plain8); }
+        try { crypto::block::encrypt3K3DesCbc(BYTEV(16, 0), iv8, plain8); }
         catch (const std::invalid_argument&) { threw = true; }
         D3_CHECK(threw);
 
@@ -1765,7 +1765,7 @@ bool testDesfire3K3DES() {
         // But CNG operates on 8-byte blocks. Nonce is 16 bytes.
         // Auth uses zero IV (8-byte for DES)
         BYTEV zeroIV8(8, 0);
-        BYTEV encSimRndB = CngBlockCipher::encrypt3K3DES(simKey, zeroIV8, simRndB);
+        BYTEV encSimRndB = crypto::block::encrypt3K3DesCbc(simKey, zeroIV8, simRndB);
         D3_CHECK(encSimRndB.size() == 16);
 
         int step = 0;
@@ -1786,12 +1786,12 @@ bool testDesfire3K3DES() {
 
                 // IV for step 2: last 8 bytes of encRndB
                 BYTEV cardIV(encSimRndB.end() - 8, encSimRndB.end());
-                BYTEV dec = CngBlockCipher::decrypt3K3DES(simKey, cardIV, payload);
+                BYTEV dec = crypto::block::decrypt3K3DesCbc(simKey, cardIV, payload);
                 capturedRndA.assign(dec.begin(), dec.begin() + 16);
 
                 BYTEV rndArot = DesfireCrypto::rotateLeft(capturedRndA);
                 BYTEV cardIV2(payload.end() - 8, payload.end());
-                BYTEV encRndArot = CngBlockCipher::encrypt3K3DES(simKey, cardIV2, rndArot);
+                BYTEV encRndArot = crypto::block::encrypt3K3DesCbc(simKey, cardIV2, rndArot);
 
                 BYTEV resp;
                 resp.insert(resp.end(), encRndArot.begin(), encRndArot.end());
