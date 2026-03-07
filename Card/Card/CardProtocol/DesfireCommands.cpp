@@ -252,6 +252,31 @@ BYTEV DesfireCommands::formatPICC() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
+// Record File Operations
+// ════════════════════════════════════════════════════════════════════════════════
+
+BYTEV DesfireCommands::readRecords(BYTE fileNo, uint32_t fromRecord, uint32_t toRecord) {
+    BYTEV data;
+    data.push_back(fileNo);
+    BYTE fr[3], tr[3];
+    writeLE24(fr, fromRecord);
+    writeLE24(tr, toRecord);
+    data.insert(data.end(), fr, fr + 3);
+    data.insert(data.end(), tr, tr + 3);
+    return wrapCommand(0xBB, data);
+}
+
+BYTEV DesfireCommands::appendRecord(BYTE fileNo, const BYTEV& recordData) {
+    BYTEV data;
+    data.push_back(fileNo);
+    BYTE len[3];
+    writeLE24(len, recordData.size());
+    data.insert(data.end(), len, len + 3);
+    data.insert(data.end(), recordData.begin(), recordData.end());
+    return wrapCommand(0x3B, data);
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
 // Response Parsing
 // ════════════════════════════════════════════════════════════════════════════════
 

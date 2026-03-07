@@ -582,6 +582,19 @@ void CardIO::writeFileData(BYTE fileNo, uint32_t offset, const BYTEV& data) {
     DesfireCommands::checkResponse(resp, "WriteData");
 }
 
+BYTEV CardIO::readRecords(BYTE fileNo, uint32_t fromRecord, uint32_t toRecord) {
+    requireDesfire(card_, "readRecords");
+    BYTEV cmd = DesfireCommands::readRecords(fileNo, fromRecord, toRecord);
+    return DesfireCommands::transceive(makeTransmitFn(), cmd);
+}
+
+void CardIO::appendRecord(BYTE fileNo, const BYTEV& recordData) {
+    requireDesfire(card_, "appendRecord");
+    BYTEV cmd = DesfireCommands::appendRecord(fileNo, recordData);
+    BYTEV resp = desfireTransmit(cmd);
+    DesfireCommands::checkResponse(resp, "AppendRecord");
+}
+
 size_t CardIO::getFreeMemory() {
     requireDesfire(card_, "getFreeMemory");
 
@@ -652,42 +665,4 @@ void CardIO::deleteFile(BYTE fileNo) {
     requireDesfire(card_, "deleteFile");
     BYTEV resp = desfireTransmit(DesfireCommands::deleteFile(fileNo));
     DesfireCommands::checkResponse(resp, "DeleteFile");
-}
-
-void CardIO::creditValue(BYTE fileNo, int32_t value) {
-    requireDesfire(card_, "creditValue");
-    BYTEV resp = desfireTransmit(DesfireCommands::credit(fileNo, value));
-    DesfireCommands::checkResponse(resp, "Credit");
-}
-
-void CardIO::debitValue(BYTE fileNo, int32_t value) {
-    requireDesfire(card_, "debitValue");
-    BYTEV resp = desfireTransmit(DesfireCommands::debit(fileNo, value));
-    DesfireCommands::checkResponse(resp, "Debit");
-}
-
-void CardIO::commitTransaction() {
-    requireDesfire(card_, "commitTransaction");
-    BYTEV resp = desfireTransmit(DesfireCommands::commitTransaction());
-    DesfireCommands::checkResponse(resp, "CommitTransaction");
-}
-
-void CardIO::abortTransaction() {
-    requireDesfire(card_, "abortTransaction");
-    BYTEV resp = desfireTransmit(DesfireCommands::abortTransaction());
-    DesfireCommands::checkResponse(resp, "AbortTransaction");
-}
-
-BYTE CardIO::getKeyVersion(BYTE keyNo) {
-    requireDesfire(card_, "getKeyVersion");
-    BYTEV data = DesfireCommands::transceive(makeTransmitFn(),
-                    DesfireCommands::getKeyVersion(keyNo));
-    if (data.empty()) throw std::runtime_error("GetKeyVersion: empty response");
-    return data[0];
-}
-
-void CardIO::formatPICC() {
-    requireDesfire(card_, "formatPICC");
-    BYTEV resp = desfireTransmit(DesfireCommands::formatPICC());
-    DesfireCommands::checkResponse(resp, "FormatPICC");
 }

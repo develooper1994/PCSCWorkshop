@@ -154,6 +154,16 @@ public:
     // FormatPICC: INS=0xFC (requires auth to PICC master key)
     static BYTEV formatPICC();
 
+    // ── Record File Operations ──────────────────────────────────────────────
+
+    // ReadRecords: INS=0xBB
+    //   data = fileNo(1) + fromRecord(3 LE) + toRecord(3 LE)
+    static BYTEV readRecords(BYTE fileNo, uint32_t fromRecord, uint32_t toRecord);
+
+    // AppendRecord: INS=0x3B
+    //   data = fileNo(1) + length(3 LE) + recordData
+    static BYTEV appendRecord(BYTE fileNo, const BYTEV& recordData);
+
     // ── Response Parsing ────────────────────────────────────────────────────
 
     // Extract SW2 from response

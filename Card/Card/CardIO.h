@@ -270,6 +270,10 @@ public:
                                  uint32_t recordSize, uint32_t maxRecords);
     void deleteFile(BYTE fileNo);
 
+    // Record File Operations
+    BYTEV readRecords(BYTE fileNo, uint32_t fromRecord, uint32_t toRecord);
+    void appendRecord(BYTE fileNo, const BYTEV& recordData);
+
     // Transaction
     void creditValue(BYTE fileNo, int32_t value);
     void debitValue(BYTE fileNo, int32_t value);
