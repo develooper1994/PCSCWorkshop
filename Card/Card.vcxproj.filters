@@ -102,5 +102,6 @@
   <ItemGroup>
     <None Include="DESFIRE_PLAN.md" />
     <None Include="DESFIRE_USAGE.md" />
+    <None Include="FUTURE_WORK.md" />
   </ItemGroup>
 </Project>
