@@ -13,6 +13,7 @@
 #include "../Card/Card/CardProtocol/DesfireAuth.h"
 #include "../Card/Card/CardProtocol/DesfireSession.h"
 #include "../Card/Card/CardProtocol/DesfireCommands.h"
+#include "../Card/Card/CardProtocol/DesfireSecureMessaging.h"
 #include "../Card/Card/CardInterface.h"
 #include "../Cipher/Cipher/CngBlockCipher.h"
 #include <iostream>
@@ -1164,6 +1165,220 @@ bool testDesfireCommands() {
 
 
 // ════════════════════════════════════════════════════════════════════════════════
+// TEST: DESFire Management APDU + Secure Messaging
+// ════════════════════════════════════════════════════════════════════════════════
+
+bool testDesfireManagement() {
+    int line = 0;
+    try {
+#define DM_CHECK(cond) do { line = __LINE__; if (!(cond)) { cout << "    FAIL at line " << line << ": " #cond "\n"; return false; } } while(0)
+
+        // ── 1. CreateApplication APDU ───────────────────────────────────────
+
+        DesfireAID appAid = DesfireAID::fromUint(0x010203);
+        BYTEV caCmd = DesfireCommands::createApplication(
+            appAid, 0x0F, 3, DesfireKeyType::AES128);
+        DM_CHECK(caCmd[0] == 0x90);
+        DM_CHECK(caCmd[1] == 0xCA);  // INS
+        DM_CHECK(caCmd[5] == appAid.aid[0]);
+        DM_CHECK(caCmd[6] == appAid.aid[1]);
+        DM_CHECK(caCmd[7] == appAid.aid[2]);
+        DM_CHECK(caCmd[8] == 0x0F);  // keySettings
+        DM_CHECK((caCmd[9] & 0x0F) == 3);    // maxKeys
+        DM_CHECK((caCmd[9] & 0x80) == 0x80); // AES flag
+
+        // 2K3DES variant
+        BYTEV caDesCmd = DesfireCommands::createApplication(
+            appAid, 0x0B, 2, DesfireKeyType::TwoDES);
+        DM_CHECK((caDesCmd[9] & 0x80) == 0x00);  // no AES flag
+        DM_CHECK((caDesCmd[9] & 0x0F) == 2);
+
+        // ── 2. DeleteApplication APDU ───────────────────────────────────────
+
+        BYTEV daCmd = DesfireCommands::deleteApplication(appAid);
+        DM_CHECK(daCmd[1] == 0xDA);
+        DM_CHECK(daCmd[5] == appAid.aid[0]);
+
+        // ── 3. CreateStdDataFile APDU ───────────────────────────────────────
+
+        DesfireAccessRights ar;
+        ar.readKey = 0x00; ar.writeKey = 0x00;
+        ar.readWriteKey = 0x00; ar.changeKey = 0x00;
+
+        BYTEV csfCmd = DesfireCommands::createStdDataFile(
+            0x01, DesfireCommMode::Plain, ar, 256);
+        DM_CHECK(csfCmd[1] == 0xCD);   // INS
+        DM_CHECK(csfCmd[5] == 0x01);   // fileNo
+        DM_CHECK(csfCmd[6] == 0x00);   // commMode = Plain
+        // fileSize = 256 = 0x000100 LE
+        DM_CHECK(csfCmd[9] == 0x00);   // LE byte 0
+        DM_CHECK(csfCmd[10] == 0x01);  // LE byte 1
+
+        // ── 4. CreateValueFile APDU ─────────────────────────────────────────
+
+        BYTEV cvfCmd = DesfireCommands::createValueFile(
+            0x02, DesfireCommMode::MAC, ar, 0, 10000, 500, true);
+        DM_CHECK(cvfCmd[1] == 0xCC);   // INS
+        DM_CHECK(cvfCmd[5] == 0x02);   // fileNo
+        DM_CHECK(cvfCmd[6] == 0x01);   // commMode = MAC
+
+        // ── 5. CreateLinearRecordFile APDU ──────────────────────────────────
+
+        BYTEV clrCmd = DesfireCommands::createLinearRecordFile(
+            0x03, DesfireCommMode::Full, ar, 32, 100);
+        DM_CHECK(clrCmd[1] == 0xC1);   // INS
+        DM_CHECK(clrCmd[6] == 0x03);   // commMode = Full
+
+        // CyclicRecordFile
+        BYTEV ccrCmd = DesfireCommands::createCyclicRecordFile(
+            0x04, DesfireCommMode::Plain, ar, 16, 50);
+        DM_CHECK(ccrCmd[1] == 0xC0);
+
+        // ── 6. DeleteFile APDU ──────────────────────────────────────────────
+
+        BYTEV dfCmd = DesfireCommands::deleteFile(0x01);
+        DM_CHECK(dfCmd[1] == 0xDF);
+        DM_CHECK(dfCmd[5] == 0x01);
+
+        // ── 7. Transaction APDUs ────────────────────────────────────────────
+
+        BYTEV crCmd = DesfireCommands::credit(0x02, 100);
+        DM_CHECK(crCmd[1] == 0x0C);
+        DM_CHECK(crCmd[5] == 0x02);
+        // value=100 LE32: 0x64, 0x00, 0x00, 0x00
+        DM_CHECK(crCmd[6] == 0x64);
+
+        BYTEV dbCmd = DesfireCommands::debit(0x02, 50);
+        DM_CHECK(dbCmd[1] == 0xDC);
+        DM_CHECK(dbCmd[6] == 0x32);  // 50 = 0x32
+
+        BYTEV ctCmd = DesfireCommands::commitTransaction();
+        DM_CHECK(ctCmd[1] == 0xC7);
+        DM_CHECK(ctCmd.size() == 5);  // no data
+
+        BYTEV atCmd = DesfireCommands::abortTransaction();
+        DM_CHECK(atCmd[1] == 0xA7);
+
+        // ── 8. Key management APDUs ─────────────────────────────────────────
+
+        BYTEV gksCmd = DesfireCommands::getKeySettings();
+        DM_CHECK(gksCmd[1] == 0x45);
+
+        BYTEV gkvCmd = DesfireCommands::getKeyVersion(0x02);
+        DM_CHECK(gkvCmd[1] == 0x64);
+        DM_CHECK(gkvCmd[5] == 0x02);
+
+        BYTEV ckCmd = DesfireCommands::changeKey(0x01, BYTEV(32, 0xAA));
+        DM_CHECK(ckCmd[1] == 0xC4);
+        DM_CHECK(ckCmd[5] == 0x01);  // keyNo
+
+        // FormatPICC
+        BYTEV fpCmd = DesfireCommands::formatPICC();
+        DM_CHECK(fpCmd[1] == 0xFC);
+
+        // ── 9. Secure Messaging — CMAC + truncate ──────────────────────────
+
+        // Create a fake session
+        DesfireSession session;
+        session.authenticated = true;
+        session.keyType = DesfireKeyType::AES128;
+        session.sessionKey = BYTEV(16, 0x42);
+        session.iv = BYTEV(16, 0x00);
+
+        // calculateCMAC should return 16 bytes and update IV
+        BYTEV testData = {0x01, 0x02, 0x03};
+        BYTEV mac1 = DesfireSecureMessaging::calculateCMAC(session, testData);
+        DM_CHECK(mac1.size() == 16);
+        DM_CHECK(session.iv == mac1);  // IV should be updated to CMAC
+
+        // Same key + same input → same CMAC (AES-CMAC is deterministic)
+        session.iv = BYTEV(16, 0x00);
+        BYTEV mac1b = DesfireSecureMessaging::calculateCMAC(session, testData);
+        DM_CHECK(mac1b == mac1);
+
+        // Different input → different CMAC
+        BYTEV testData2 = {0x04, 0x05, 0x06};
+        session.iv = BYTEV(16, 0x00);
+        BYTEV mac2 = DesfireSecureMessaging::calculateCMAC(session, testData2);
+        DM_CHECK(mac2.size() == 16);
+        DM_CHECK(mac1 != mac2);
+
+        // truncateCMAC — odd-indexed bytes
+        BYTEV fullMAC = {0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,
+                         0x88,0x99,0xAA,0xBB,0xCC,0xDD,0xEE,0xFF};
+        BYTEV trunc = DesfireSecureMessaging::truncateCMAC(fullMAC);
+        DM_CHECK(trunc.size() == 8);
+        DM_CHECK(trunc[0] == 0x11);
+        DM_CHECK(trunc[1] == 0x33);
+        DM_CHECK(trunc[2] == 0x55);
+        DM_CHECK(trunc[3] == 0x77);
+        DM_CHECK(trunc[4] == 0x99);
+        DM_CHECK(trunc[5] == 0xBB);
+        DM_CHECK(trunc[6] == 0xDD);
+        DM_CHECK(trunc[7] == 0xFF);
+
+        // ── 10. Secure Messaging — wrap/unwrap round-trip ───────────────────
+
+        session.iv = BYTEV(16, 0x00);  // reset IV
+
+        BYTEV cmdHeader = {0x90, 0xBD};  // ReadData CLA+INS
+        BYTEV cmdBody = {0x01, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00}; // fileNo + offset + len
+
+        // Wrap in MAC mode
+        BYTEV wrappedCmd = DesfireSecureMessaging::wrapCommand(
+            session, cmdHeader, cmdBody, DesfireCommMode::MAC);
+        // Wrapped should be longer than original (8 CMAC bytes added)
+        DM_CHECK(wrappedCmd.size() > cmdBody.size() + 5);
+
+        // Simulate response with MAC
+        BYTEV ivBeforeUnwrap = session.iv;
+        BYTEV responsePayload = {0xDE, 0xAD, 0xBE, 0xEF};
+
+        // Generate expected CMAC for this response
+        BYTEV cmacInput = responsePayload;
+        cmacInput.push_back(0x00);  // status code
+        BYTEV respMAC = DesfireSecureMessaging::calculateCMAC(session, cmacInput);
+        BYTEV respTrunc = DesfireSecureMessaging::truncateCMAC(respMAC);
+
+        // Build complete response: data + truncated CMAC
+        BYTEV fullResp = responsePayload;
+        fullResp.insert(fullResp.end(), respTrunc.begin(), respTrunc.end());
+
+        // Reset IV to what it was before CMAC calc (to simulate verifier)
+        session.iv = ivBeforeUnwrap;
+
+        BYTEV unwrapped = DesfireSecureMessaging::unwrapResponse(
+            session, fullResp, 0x00, DesfireCommMode::MAC);
+        DM_CHECK(unwrapped.size() == 4);
+        DM_CHECK(unwrapped[0] == 0xDE);
+        DM_CHECK(unwrapped[3] == 0xEF);
+
+        // ── 11. Plain mode should not throw ─────────────────────────────────
+
+        session.iv = BYTEV(16, 0x00);
+        BYTEV plainWrap = DesfireSecureMessaging::wrapCommand(
+            session, cmdHeader, cmdBody, DesfireCommMode::Plain);
+        DM_CHECK(!plainWrap.empty());
+
+        BYTEV plainUnwrap = DesfireSecureMessaging::unwrapResponse(
+            session, responsePayload, 0x00, DesfireCommMode::Plain);
+        DM_CHECK(plainUnwrap == responsePayload);
+
+#undef DM_CHECK
+        return true;
+    }
+    catch (const exception& e) {
+        cout << "    Exception at line " << line << ": " << e.what() << "\n";
+        return false;
+    }
+    catch (...) {
+        cout << "    Unknown exception at line " << line << "\n";
+        return false;
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════════
 // MAIN TEST RUNNER
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -1186,6 +1401,7 @@ int runCardSystemTests() {
     recordTest("DESFire Memory Layout", testDesfireMemoryLayout());
     recordTest("DESFire Auth", testDesfireAuth());
     recordTest("DESFire Commands", testDesfireCommands());
+    recordTest("DESFire Management", testDesfireManagement());
     
     // Summary
     cout << "\n=== Test Summary ===\n";

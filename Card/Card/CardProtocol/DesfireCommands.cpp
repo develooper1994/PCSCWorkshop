@@ -90,6 +90,168 @@ BYTEV DesfireCommands::additionalFrame() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
+// Application Management
+// ════════════════════════════════════════════════════════════════════════════════
+
+BYTEV DesfireCommands::createApplication(const DesfireAID& aid, BYTE keySettings,
+                                          BYTE maxKeys, DesfireKeyType keyType) {
+    BYTE keyTypeBits = 0;
+    switch (keyType) {
+        case DesfireKeyType::AES128:  keyTypeBits = 0x80; break;
+        case DesfireKeyType::ThreeDES:keyTypeBits = 0x40; break;
+        default: keyTypeBits = 0x00; break;  // DES / 2K3DES
+    }
+    BYTE maxKeysField = (maxKeys & 0x0F) | keyTypeBits;
+    return wrapCommand(0xCA, {aid.aid[0], aid.aid[1], aid.aid[2],
+                              keySettings, maxKeysField});
+}
+
+BYTEV DesfireCommands::deleteApplication(const DesfireAID& aid) {
+    return wrapCommand(0xDA, {aid.aid[0], aid.aid[1], aid.aid[2]});
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// File Management
+// ════════════════════════════════════════════════════════════════════════════════
+
+static BYTEV buildFileHeader(BYTE fileNo, DesfireCommMode comm,
+                              const DesfireAccessRights& access) {
+    auto ar = access.encode();
+    return {fileNo, static_cast<BYTE>(comm), ar[0], ar[1]};
+}
+
+BYTEV DesfireCommands::createStdDataFile(BYTE fileNo, DesfireCommMode comm,
+                                          const DesfireAccessRights& access,
+                                          uint32_t fileSize) {
+    BYTEV data = buildFileHeader(fileNo, comm, access);
+    BYTE sz[3]; writeLE24(sz, fileSize);
+    data.insert(data.end(), sz, sz + 3);
+    return wrapCommand(0xCD, data);
+}
+
+BYTEV DesfireCommands::createBackupDataFile(BYTE fileNo, DesfireCommMode comm,
+                                              const DesfireAccessRights& access,
+                                              uint32_t fileSize) {
+    BYTEV data = buildFileHeader(fileNo, comm, access);
+    BYTE sz[3]; writeLE24(sz, fileSize);
+    data.insert(data.end(), sz, sz + 3);
+    return wrapCommand(0xCB, data);
+}
+
+BYTEV DesfireCommands::createValueFile(BYTE fileNo, DesfireCommMode comm,
+                                        const DesfireAccessRights& access,
+                                        int32_t lowerLimit, int32_t upperLimit,
+                                        int32_t value, bool limitedCredit) {
+    BYTEV data = buildFileHeader(fileNo, comm, access);
+    // 4-byte LE for each value
+    auto pushLE32 = [&](int32_t v) {
+        uint32_t u = static_cast<uint32_t>(v);
+        data.push_back(static_cast<BYTE>(u & 0xFF));
+        data.push_back(static_cast<BYTE>((u >> 8) & 0xFF));
+        data.push_back(static_cast<BYTE>((u >> 16) & 0xFF));
+        data.push_back(static_cast<BYTE>((u >> 24) & 0xFF));
+    };
+    pushLE32(lowerLimit);
+    pushLE32(upperLimit);
+    pushLE32(value);
+    data.push_back(limitedCredit ? 0x01 : 0x00);
+    return wrapCommand(0xCC, data);
+}
+
+BYTEV DesfireCommands::createLinearRecordFile(BYTE fileNo, DesfireCommMode comm,
+                                               const DesfireAccessRights& access,
+                                               uint32_t recordSize, uint32_t maxRecords) {
+    BYTEV data = buildFileHeader(fileNo, comm, access);
+    BYTE rs[3], mr[3];
+    writeLE24(rs, recordSize);
+    writeLE24(mr, maxRecords);
+    data.insert(data.end(), rs, rs + 3);
+    data.insert(data.end(), mr, mr + 3);
+    return wrapCommand(0xC1, data);
+}
+
+BYTEV DesfireCommands::createCyclicRecordFile(BYTE fileNo, DesfireCommMode comm,
+                                               const DesfireAccessRights& access,
+                                               uint32_t recordSize, uint32_t maxRecords) {
+    BYTEV data = buildFileHeader(fileNo, comm, access);
+    BYTE rs[3], mr[3];
+    writeLE24(rs, recordSize);
+    writeLE24(mr, maxRecords);
+    data.insert(data.end(), rs, rs + 3);
+    data.insert(data.end(), mr, mr + 3);
+    return wrapCommand(0xC0, data);
+}
+
+BYTEV DesfireCommands::deleteFile(BYTE fileNo) {
+    return wrapCommand(0xDF, {fileNo});
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Key Management
+// ════════════════════════════════════════════════════════════════════════════════
+
+BYTEV DesfireCommands::changeKey(BYTE keyNo, const BYTEV& cryptogram) {
+    BYTEV data;
+    data.push_back(keyNo);
+    data.insert(data.end(), cryptogram.begin(), cryptogram.end());
+    return wrapCommand(0xC4, data);
+}
+
+BYTEV DesfireCommands::getKeySettings() {
+    return wrapCommand(0x45);
+}
+
+BYTEV DesfireCommands::changeKeySettings(const BYTEV& encSettings) {
+    return wrapCommand(0x54, encSettings);
+}
+
+BYTEV DesfireCommands::getKeyVersion(BYTE keyNo) {
+    return wrapCommand(0x64, {keyNo});
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Transaction
+// ════════════════════════════════════════════════════════════════════════════════
+
+BYTEV DesfireCommands::credit(BYTE fileNo, int32_t value) {
+    uint32_t u = static_cast<uint32_t>(value);
+    return wrapCommand(0x0C, {
+        fileNo,
+        static_cast<BYTE>(u & 0xFF),
+        static_cast<BYTE>((u >> 8) & 0xFF),
+        static_cast<BYTE>((u >> 16) & 0xFF),
+        static_cast<BYTE>((u >> 24) & 0xFF)
+    });
+}
+
+BYTEV DesfireCommands::debit(BYTE fileNo, int32_t value) {
+    uint32_t u = static_cast<uint32_t>(value);
+    return wrapCommand(0xDC, {
+        fileNo,
+        static_cast<BYTE>(u & 0xFF),
+        static_cast<BYTE>((u >> 8) & 0xFF),
+        static_cast<BYTE>((u >> 16) & 0xFF),
+        static_cast<BYTE>((u >> 24) & 0xFF)
+    });
+}
+
+BYTEV DesfireCommands::commitTransaction() {
+    return wrapCommand(0xC7);
+}
+
+BYTEV DesfireCommands::abortTransaction() {
+    return wrapCommand(0xA7);
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Card-level
+// ════════════════════════════════════════════════════════════════════════════════
+
+BYTEV DesfireCommands::formatPICC() {
+    return wrapCommand(0xFC);
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
 // Response Parsing
 // ════════════════════════════════════════════════════════════════════════════════
 

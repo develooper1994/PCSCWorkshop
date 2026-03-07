@@ -585,3 +585,95 @@ size_t CardIO::getFreeMemory() {
 bool CardIO::isDesfireAuthenticated() const {
     return desfireSession_ && desfireSession_->authenticated;
 }
+
+// ════════════════════════════════════════════════════════════════════════════════
+// DESFire — Management API (Faz 4)
+// ════════════════════════════════════════════════════════════════════════════════
+
+void CardIO::createApplication(const DesfireAID& aid, BYTE keySettings,
+                                BYTE maxKeys, DesfireKeyType keyType) {
+    requireDesfire(card_, "createApplication");
+    BYTEV resp = desfireTransmit(
+        DesfireCommands::createApplication(aid, keySettings, maxKeys, keyType));
+    DesfireCommands::checkResponse(resp, "CreateApplication");
+}
+
+void CardIO::deleteApplication(const DesfireAID& aid) {
+    requireDesfire(card_, "deleteApplication");
+    BYTEV resp = desfireTransmit(DesfireCommands::deleteApplication(aid));
+    DesfireCommands::checkResponse(resp, "DeleteApplication");
+}
+
+void CardIO::createStdDataFile(BYTE fileNo, DesfireCommMode comm,
+                                const DesfireAccessRights& access,
+                                uint32_t fileSize) {
+    requireDesfire(card_, "createStdDataFile");
+    BYTEV resp = desfireTransmit(
+        DesfireCommands::createStdDataFile(fileNo, comm, access, fileSize));
+    DesfireCommands::checkResponse(resp, "CreateStdDataFile");
+}
+
+void CardIO::createValueFile(BYTE fileNo, DesfireCommMode comm,
+                              const DesfireAccessRights& access,
+                              int32_t lower, int32_t upper, int32_t value,
+                              bool limitedCredit) {
+    requireDesfire(card_, "createValueFile");
+    BYTEV resp = desfireTransmit(
+        DesfireCommands::createValueFile(fileNo, comm, access,
+                                          lower, upper, value, limitedCredit));
+    DesfireCommands::checkResponse(resp, "CreateValueFile");
+}
+
+void CardIO::createLinearRecordFile(BYTE fileNo, DesfireCommMode comm,
+                                     const DesfireAccessRights& access,
+                                     uint32_t recordSize, uint32_t maxRecords) {
+    requireDesfire(card_, "createLinearRecordFile");
+    BYTEV resp = desfireTransmit(
+        DesfireCommands::createLinearRecordFile(fileNo, comm, access,
+                                                 recordSize, maxRecords));
+    DesfireCommands::checkResponse(resp, "CreateLinearRecordFile");
+}
+
+void CardIO::deleteFile(BYTE fileNo) {
+    requireDesfire(card_, "deleteFile");
+    BYTEV resp = desfireTransmit(DesfireCommands::deleteFile(fileNo));
+    DesfireCommands::checkResponse(resp, "DeleteFile");
+}
+
+void CardIO::creditValue(BYTE fileNo, int32_t value) {
+    requireDesfire(card_, "creditValue");
+    BYTEV resp = desfireTransmit(DesfireCommands::credit(fileNo, value));
+    DesfireCommands::checkResponse(resp, "Credit");
+}
+
+void CardIO::debitValue(BYTE fileNo, int32_t value) {
+    requireDesfire(card_, "debitValue");
+    BYTEV resp = desfireTransmit(DesfireCommands::debit(fileNo, value));
+    DesfireCommands::checkResponse(resp, "Debit");
+}
+
+void CardIO::commitTransaction() {
+    requireDesfire(card_, "commitTransaction");
+    BYTEV resp = desfireTransmit(DesfireCommands::commitTransaction());
+    DesfireCommands::checkResponse(resp, "CommitTransaction");
+}
+
+void CardIO::abortTransaction() {
+    requireDesfire(card_, "abortTransaction");
+    BYTEV resp = desfireTransmit(DesfireCommands::abortTransaction());
+    DesfireCommands::checkResponse(resp, "AbortTransaction");
+}
+
+BYTE CardIO::getKeyVersion(BYTE keyNo) {
+    requireDesfire(card_, "getKeyVersion");
+    BYTEV data = DesfireCommands::transceive(makeTransmitFn(),
+                    DesfireCommands::getKeyVersion(keyNo));
+    if (data.empty()) throw std::runtime_error("GetKeyVersion: empty response");
+    return data[0];
+}
+
+void CardIO::formatPICC() {
+    requireDesfire(card_, "formatPICC");
+    BYTEV resp = desfireTransmit(DesfireCommands::formatPICC());
+    DesfireCommands::checkResponse(resp, "FormatPICC");
+}

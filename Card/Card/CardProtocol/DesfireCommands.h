@@ -72,6 +72,88 @@ public:
     // AdditionalFrame (get more data): INS=0xAF
     static BYTEV additionalFrame();
 
+    // ── Application Management ──────────────────────────────────────────────
+
+    // CreateApplication: INS=0xCA
+    //   data = AID(3) + keySettings(1) + maxKeys(1)
+    //   maxKeys alt 4 bit = key count, üst 4 bit = key type flag
+    //     0x00–0x0E = DES/2K3DES, 0x40 = 3K3DES, 0x80 = AES
+    static BYTEV createApplication(const DesfireAID& aid, BYTE keySettings,
+                                    BYTE maxKeys, DesfireKeyType keyType);
+
+    // DeleteApplication: INS=0xDA, data=AID(3)
+    static BYTEV deleteApplication(const DesfireAID& aid);
+
+    // ── File Management ─────────────────────────────────────────────────────
+
+    // CreateStdDataFile: INS=0xCD
+    //   fileNo(1) + commMode(1) + accessRights(2) + fileSize(3 LE)
+    static BYTEV createStdDataFile(BYTE fileNo, DesfireCommMode comm,
+                                    const DesfireAccessRights& access,
+                                    uint32_t fileSize);
+
+    // CreateBackupDataFile: INS=0xCB (same structure as StdData)
+    static BYTEV createBackupDataFile(BYTE fileNo, DesfireCommMode comm,
+                                       const DesfireAccessRights& access,
+                                       uint32_t fileSize);
+
+    // CreateValueFile: INS=0xCC
+    //   fileNo(1) + commMode(1) + accessRights(2) + lowerLimit(4 LE) +
+    //   upperLimit(4 LE) + value(4 LE) + limitedCredit(1)
+    static BYTEV createValueFile(BYTE fileNo, DesfireCommMode comm,
+                                  const DesfireAccessRights& access,
+                                  int32_t lowerLimit, int32_t upperLimit,
+                                  int32_t value, bool limitedCredit);
+
+    // CreateLinearRecordFile: INS=0xC1
+    //   fileNo(1) + commMode(1) + accessRights(2) + recordSize(3 LE) + maxRecords(3 LE)
+    static BYTEV createLinearRecordFile(BYTE fileNo, DesfireCommMode comm,
+                                         const DesfireAccessRights& access,
+                                         uint32_t recordSize, uint32_t maxRecords);
+
+    // CreateCyclicRecordFile: INS=0xC0 (same structure as Linear)
+    static BYTEV createCyclicRecordFile(BYTE fileNo, DesfireCommMode comm,
+                                         const DesfireAccessRights& access,
+                                         uint32_t recordSize, uint32_t maxRecords);
+
+    // DeleteFile: INS=0xDF, data=fileNo(1)
+    static BYTEV deleteFile(BYTE fileNo);
+
+    // ── Key Management ──────────────────────────────────────────────────────
+
+    // ChangeKey: INS=0xC4
+    //   data = keyNo(1) + cryptogram (encrypted new key XOR old key + CRC)
+    //   Cryptogram hazırlığı DesfireCrypto'da yapılır
+    static BYTEV changeKey(BYTE keyNo, const BYTEV& cryptogram);
+
+    // GetKeySettings: INS=0x45
+    static BYTEV getKeySettings();
+
+    // ChangeKeySettings: INS=0x54, data=encrypted new settings
+    static BYTEV changeKeySettings(const BYTEV& encSettings);
+
+    // GetKeyVersion: INS=0x64, data=keyNo(1)
+    static BYTEV getKeyVersion(BYTE keyNo);
+
+    // ── Transaction ─────────────────────────────────────────────────────────
+
+    // Credit: INS=0x0C, data=fileNo(1) + value(4 LE)
+    static BYTEV credit(BYTE fileNo, int32_t value);
+
+    // Debit: INS=0xDC, data=fileNo(1) + value(4 LE)
+    static BYTEV debit(BYTE fileNo, int32_t value);
+
+    // CommitTransaction: INS=0xC7
+    static BYTEV commitTransaction();
+
+    // AbortTransaction: INS=0xA7
+    static BYTEV abortTransaction();
+
+    // ── Card-level ──────────────────────────────────────────────────────────
+
+    // FormatPICC: INS=0xFC (requires auth to PICC master key)
+    static BYTEV formatPICC();
+
     // ── Response Parsing ────────────────────────────────────────────────────
 
     // Extract SW2 from response

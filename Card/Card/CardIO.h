@@ -18,7 +18,9 @@ struct DesfireAID;
 struct DesfireSession;
 struct DesfireVersionInfo;
 struct DesfireFileSettings;
+struct DesfireAccessRights;
 enum class DesfireKeyType : BYTE;
+enum class DesfireCommMode : BYTE;
 
 // ════════════════════════════════════════════════════════════════════════════════
 // CardIO — Gerçek PCSC Kart I/O
@@ -243,6 +245,39 @@ public:
 
     // DESFire session durumu
     bool isDesfireAuthenticated() const;
+
+    // ────────────────────────────────────────────────────────────────────────────
+    // DESFire Management API (Faz 4)
+    // ────────────────────────────────────────────────────────────────────────────
+
+    // Application oluştur/sil
+    void createApplication(const DesfireAID& aid, BYTE keySettings,
+                            BYTE maxKeys, DesfireKeyType keyType);
+    void deleteApplication(const DesfireAID& aid);
+
+    // File oluştur/sil
+    void createStdDataFile(BYTE fileNo, DesfireCommMode comm,
+                            const DesfireAccessRights& access, uint32_t fileSize);
+    void createValueFile(BYTE fileNo, DesfireCommMode comm,
+                          const DesfireAccessRights& access,
+                          int32_t lower, int32_t upper, int32_t value,
+                          bool limitedCredit = false);
+    void createLinearRecordFile(BYTE fileNo, DesfireCommMode comm,
+                                 const DesfireAccessRights& access,
+                                 uint32_t recordSize, uint32_t maxRecords);
+    void deleteFile(BYTE fileNo);
+
+    // Transaction
+    void creditValue(BYTE fileNo, int32_t value);
+    void debitValue(BYTE fileNo, int32_t value);
+    void commitTransaction();
+    void abortTransaction();
+
+    // Key management
+    BYTE getKeyVersion(BYTE keyNo);
+
+    // Card-level
+    void formatPICC();
 
 private:
     Reader&        reader_;

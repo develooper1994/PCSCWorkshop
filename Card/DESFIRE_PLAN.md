@@ -100,7 +100,7 @@ Bu bilgi, `DesfireMemoryLayout.totalMemory` alanına yazılır ve
 - [x] KeySettings bitfield (allowChangeMasterKey, freeDirectoryList, vb.)
 - [x] Key version metadata (DesfireKeyConfig.keyVersion)
 - [ ] 3K3DES (gerektiğinde)
-- [ ] ChangeKey komutu (Faz 4)
+- [x] ChangeKey APDU (Faz 4)
 
 ## 5) I/O Katmanı ✅ (temel)
 
@@ -110,13 +110,13 @@ Bu bilgi, `DesfireMemoryLayout.totalMemory` alanına yazılır ve
 - [x] CardIO: readFileData, writeFileData, getFileSettings, getFileIDs
 - [x] CardIO: discoverCard (GetVersion), getApplicationIDs, getFreeMemory
 - [x] Classic API guard: trailer/access ops throw logic_error
-- [ ] Faz-4: CreateApplication, CreateFile, DeleteApp/File, ChangeKey
+- [x] Faz-4: CreateApplication, CreateFile, DeleteApp/File, ChangeKey, Secure Messaging
 
 ## 6) Tek API / Şeffaf Kullanım ✅ (temel)
 
 - [x] CardIO facade: SelectApp → Auth → Read/Write
 - [x] Virtual block: DesfireMemoryLayout::readVirtualBlock/writeVirtualBlock
-- [ ] Gelişmiş DESFire API (app/file yönetimi — Faz 4)
+- [x] Gelişmiş DESFire API: CreateApp/File, DeleteApp/File, Transaction, FormatPICC
 
 ## 7) Test ve Doğrulama ✅ (unit)
 
@@ -125,7 +125,7 @@ Bu bilgi, `DesfireMemoryLayout.totalMemory` alanına yazılır ve
 - [x] CngBlockCipher AES/3DES round-trip + CMAC smoke
 - [x] Session key derivation (AES + 2K3DES)
 - [x] APDU construction + response parsing
-- [x] Regression: **13/13 PASS** (10 Classic/UL + 3 DESFire)
+- [x] Regression: **14/14 PASS** (10 Classic/UL + 4 DESFire)
 - [ ] Integration testler (gerçek kart — Faz 5)
 
 ---
@@ -147,7 +147,7 @@ Commit: `feat: DESFire Faz 2`
 - DesfireCrypto (Card projesi): nonce, rotate, session key derivation
 - DesfireAuth (Card projesi): 3-pass mutual auth state machine
 - DesfireSession (Card projesi): session state (key, IV, counter)
-- 13/13 test geçti (simulated 3-pass auth dahil)
+- 14/14 test geçti (simulated 3-pass auth dahil)
 
 ## Faz 3 — Veri Erişim Modeli ✅ TAMAMLANDI
 
@@ -156,16 +156,22 @@ Commit: `feat: DESFire Faz 3`
 - DesfireCommands (Card projesi): APDU construction + response parsing + multi-frame
 - CardIO DESFire API: selectApplication, authenticateDesfire, readFileData, writeFileData
 - CardIO: discoverCard, getApplicationIDs, getFileIDs, getFileSettings, getFreeMemory
-- 13/13 test geçti
+- 14/14 test geçti
 
-## Faz 4 — Gelişmiş DESFire Özellikleri ⏳ BEKLEMEDE
+## Faz 4 — Gelişmiş DESFire Özellikleri ✅ TAMAMLANDI
 
-- [ ] CreateApplication / DeleteApplication
-- [ ] CreateFile / DeleteFile
-- [ ] ChangeKey
-- [ ] Secure Messaging (EV1 CMAC, EV2 full encryption)
-- [ ] Session timeout/caching
-- [ ] Transaction/retry davranışı
+Commit: `feat: DESFire Faz 4`
+
+- [x] CreateApplication / DeleteApplication — APDU + CardIO
+- [x] CreateStdDataFile / CreateBackupDataFile / CreateValueFile / CreateLinearRecordFile / CreateCyclicRecordFile
+- [x] DeleteFile
+- [x] ChangeKey APDU (cryptogram hazırlığı DesfireCrypto'da)
+- [x] GetKeySettings / ChangeKeySettings / GetKeyVersion
+- [x] Secure Messaging: DesfireSecureMessaging (CMAC calc, truncate, wrap/unwrap)
+- [x] Transaction: Credit / Debit / CommitTransaction / AbortTransaction
+- [x] FormatPICC
+- [x] 14/14 test geçti (Management APDU + Secure Messaging dahil)
+- [ ] Session timeout/caching (opsiyonel, istenirse eklenebilir)
 
 ## Faz 5 — Stabilizasyon ⏳ BEKLEMEDE
 
