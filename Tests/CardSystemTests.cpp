@@ -18,6 +18,7 @@
 #include "../Cipher/Cipher/CngBlockCipher.h"
 #include <iostream>
 #include <cstring>
+#include <thread>
 
 using namespace std;
 
@@ -1379,6 +1380,307 @@ bool testDesfireManagement() {
 
 
 // ════════════════════════════════════════════════════════════════════════════════
+// TEST: DESFire Integration — Full Lifecycle (simulated card)
+// ════════════════════════════════════════════════════════════════════════════════
+
+bool testDesfireIntegration() {
+    int line = 0;
+    try {
+#define DI_CHECK(cond) do { line = __LINE__; if (!(cond)) { cout << "    FAIL at line " << line << ": " #cond "\n"; return false; } } while(0)
+
+        // ── 1. Session timeout — isValid / isExpired ────────────────────────
+
+        {
+            DesfireSession ses;
+            DI_CHECK(!ses.isValid());         // not authenticated
+            DI_CHECK(ses.isExpired());        // expired because not auth
+
+            ses.authenticated = true;
+            ses.sessionKey = BYTEV(16, 0x42);
+            ses.touchAuthTime();
+            DI_CHECK(ses.isValid());          // auth + no timeout
+            DI_CHECK(!ses.isExpired());
+
+            // Set very long timeout — should not expire
+            ses.setTimeoutMs(60000);
+            DI_CHECK(ses.isValid());
+            DI_CHECK(!ses.isExpired());
+
+            // Set timeout to 0 — infinite
+            ses.setTimeoutMs(0);
+            DI_CHECK(ses.isValid());
+
+            // Set 1ms timeout, wait, should expire
+            ses.setTimeoutMs(1);
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            DI_CHECK(ses.isExpired());
+            DI_CHECK(!ses.isValid());
+
+            // Reset session — should not be valid
+            ses.reset();
+            DI_CHECK(!ses.isValid());
+            DI_CHECK(ses.sessionKey.empty());
+        }
+
+        // ── 2. Session resetKeepApp ─────────────────────────────────────────
+
+        {
+            DesfireSession ses;
+            ses.authenticated = true;
+            ses.currentAID = DesfireAID::fromUint(0x123456);
+            ses.sessionKey = BYTEV(16, 0xFF);
+            ses.resetKeepApp();
+            DI_CHECK(!ses.authenticated);
+            DI_CHECK(ses.sessionKey.empty());
+            DI_CHECK(ses.currentAID.toUint() == 0x123456);
+        }
+
+        // ── 3. Full 3-pass auth → session → timeout lifecycle ───────────────
+
+        {
+            BYTEV simKey(16, 0x00);
+            BYTEV simRndB = {
+                0x20,0x21,0x22,0x23, 0x24,0x25,0x26,0x27,
+                0x28,0x29,0x2A,0x2B, 0x2C,0x2D,0x2E,0x2F
+            };
+
+            BYTEV zeroIV16(16, 0);
+            BYTEV encSimRndB = CngBlockCipher::encryptAES(simKey, zeroIV16, simRndB);
+
+            int step = 0;
+            BYTEV capturedRndA;
+
+            auto transmit = [&](const BYTEV& apdu) -> BYTEV {
+                step++;
+                if (step == 1) {
+                    BYTEV resp;
+                    resp.insert(resp.end(), encSimRndB.begin(), encSimRndB.end());
+                    resp.push_back(0x91); resp.push_back(0xAF);
+                    return resp;
+                } else {
+                    size_t payLen = apdu[4];
+                    BYTEV payload(apdu.begin() + 5, apdu.begin() + 5 + payLen);
+                    size_t bs = 16;
+                    BYTEV cardIV(encSimRndB.end() - bs, encSimRndB.end());
+                    BYTEV dec = CngBlockCipher::decryptAES(simKey, cardIV, payload);
+                    capturedRndA.assign(dec.begin(), dec.begin() + 16);
+                    BYTEV rndArot = DesfireCrypto::rotateLeft(capturedRndA);
+                    BYTEV cardIV2(payload.end() - bs, payload.end());
+                    BYTEV encRndArot = CngBlockCipher::encryptAES(simKey, cardIV2, rndArot);
+                    BYTEV resp;
+                    resp.insert(resp.end(), encRndArot.begin(), encRndArot.end());
+                    resp.push_back(0x91); resp.push_back(0x00);
+                    return resp;
+                }
+            };
+
+            DesfireAuth auth;
+            DesfireSession session;
+            session.setTimeoutMs(100);  // 100ms timeout
+
+            auth.authenticate(session, simKey, 0, DesfireKeyType::AES128, transmit);
+            DI_CHECK(session.isValid());
+            DI_CHECK(session.authenticated);
+            DI_CHECK(!session.isExpired());
+
+            // Session key check
+            BYTEV expectedSK = DesfireCrypto::deriveSessionKey(capturedRndA, simRndB,
+                                                                DesfireKeyType::AES128);
+            DI_CHECK(session.sessionKey == expectedSK);
+
+            // Wait for timeout
+            std::this_thread::sleep_for(std::chrono::milliseconds(150));
+            DI_CHECK(session.isExpired());
+            DI_CHECK(!session.isValid());
+            DI_CHECK(session.authenticated);  // flag still true, but isValid = false
+        }
+
+        // ── 4. DesfireAccessRights encode/decode round-trip ─────────────────
+
+        {
+            DesfireAccessRights ar;
+            ar.readKey = 0x02;
+            ar.writeKey = 0x03;
+            ar.readWriteKey = 0x0E;  // free
+            ar.changeKey = 0x00;
+
+            auto encoded = ar.encode();
+            DI_CHECK(encoded.size() == 2);
+
+            auto decoded = DesfireAccessRights::decode(encoded[0], encoded[1]);
+            DI_CHECK(decoded.readKey == 0x02);
+            DI_CHECK(decoded.writeKey == 0x03);
+            DI_CHECK(decoded.readWriteKey == 0x0E);
+            DI_CHECK(decoded.changeKey == 0x00);
+        }
+
+        // ── 5. DesfireCommands full command set verification ────────────────
+
+        {
+            // SelectApp + GetVersion + GetAppIDs + GetFileIDs cover Faz 3
+            // Management commands cover Faz 4
+
+            // Verify all commands have correct INS bytes
+            DI_CHECK(DesfireCommands::selectApplication(DesfireAID::picc())[1] == 0x5A);
+            DI_CHECK(DesfireCommands::getVersion()[1] == 0x60);
+            DI_CHECK(DesfireCommands::getApplicationIDs()[1] == 0x6A);
+            DI_CHECK(DesfireCommands::getFileIDs()[1] == 0x6F);
+            DI_CHECK(DesfireCommands::getFileSettings(0)[1] == 0xF5);
+            DI_CHECK(DesfireCommands::readData(0,0,0)[1] == 0xBD);
+            DI_CHECK(DesfireCommands::writeData(0,0,{})[1] == 0x3D);
+            DI_CHECK(DesfireCommands::getValue(0)[1] == 0x6C);
+            DI_CHECK(DesfireCommands::getFreeMemory()[1] == 0x6E);
+            DI_CHECK(DesfireCommands::additionalFrame()[1] == 0xAF);
+
+            // Management
+            DesfireAccessRights ar{};
+            DI_CHECK(DesfireCommands::createApplication(DesfireAID::picc(),0,1,DesfireKeyType::AES128)[1] == 0xCA);
+            DI_CHECK(DesfireCommands::deleteApplication(DesfireAID::picc())[1] == 0xDA);
+            DI_CHECK(DesfireCommands::createStdDataFile(0,DesfireCommMode::Plain,ar,1)[1] == 0xCD);
+            DI_CHECK(DesfireCommands::createBackupDataFile(0,DesfireCommMode::Plain,ar,1)[1] == 0xCB);
+            DI_CHECK(DesfireCommands::createValueFile(0,DesfireCommMode::Plain,ar,0,0,0,false)[1] == 0xCC);
+            DI_CHECK(DesfireCommands::createLinearRecordFile(0,DesfireCommMode::Plain,ar,1,1)[1] == 0xC1);
+            DI_CHECK(DesfireCommands::createCyclicRecordFile(0,DesfireCommMode::Plain,ar,1,1)[1] == 0xC0);
+            DI_CHECK(DesfireCommands::deleteFile(0)[1] == 0xDF);
+            DI_CHECK(DesfireCommands::changeKey(0,{})[1] == 0xC4);
+            DI_CHECK(DesfireCommands::getKeySettings()[1] == 0x45);
+            DI_CHECK(DesfireCommands::changeKeySettings({})[1] == 0x54);
+            DI_CHECK(DesfireCommands::getKeyVersion(0)[1] == 0x64);
+            DI_CHECK(DesfireCommands::credit(0,0)[1] == 0x0C);
+            DI_CHECK(DesfireCommands::debit(0,0)[1] == 0xDC);
+            DI_CHECK(DesfireCommands::commitTransaction()[1] == 0xC7);
+            DI_CHECK(DesfireCommands::abortTransaction()[1] == 0xA7);
+            DI_CHECK(DesfireCommands::formatPICC()[1] == 0xFC);
+        }
+
+        // ── 6. Secure Messaging — end-to-end MAC verification ───────────────
+
+        {
+            DesfireSession ses;
+            ses.authenticated = true;
+            ses.keyType = DesfireKeyType::AES128;
+            ses.sessionKey = BYTEV(16, 0x55);
+            ses.iv = BYTEV(16, 0x00);
+
+            // Simulate: host sends command with MAC
+            BYTEV cmdHeader = {0x90, 0xBD};
+            BYTEV cmdBody = {0x01, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00};
+
+            // Save IV state before wrap
+            BYTEV ivBefore = ses.iv;
+            BYTEV wrapped = DesfireSecureMessaging::wrapCommand(
+                ses, cmdHeader, cmdBody, DesfireCommMode::MAC);
+
+            // Wrapped APDU should have 8 extra bytes (CMAC)
+            // Original: header(5) + body(7) + Le(1) = 13
+            // With MAC: header(5) + body(7) + mac(8) + Le(1) = 21
+            DI_CHECK(wrapped.size() == 21);
+
+            // Simulate: card responds with data + MAC
+            BYTEV respData = {0xAA, 0xBB, 0xCC};
+            BYTEV statusSW = {0x00};
+
+            // Calculate what card's MAC should be
+            BYTEV saveIV = ses.iv;
+            BYTEV cmacIn = respData;
+            cmacIn.push_back(0x00);
+            BYTEV fullMAC = DesfireSecureMessaging::calculateCMAC(ses, cmacIn);
+            BYTEV truncMAC = DesfireSecureMessaging::truncateCMAC(fullMAC);
+
+            // Build response with MAC
+            BYTEV fullResp = respData;
+            fullResp.insert(fullResp.end(), truncMAC.begin(), truncMAC.end());
+
+            // Unwrap — must reset IV to what it was before CMAC calc
+            ses.iv = saveIV;
+            BYTEV result = DesfireSecureMessaging::unwrapResponse(
+                ses, fullResp, 0x00, DesfireCommMode::MAC);
+            DI_CHECK(result.size() == 3);
+            DI_CHECK(result[0] == 0xAA);
+
+            // Wrong MAC should throw
+            ses.iv = saveIV;
+            BYTEV badResp = respData;
+            badResp.insert(badResp.end(), 8, 0xFF);  // bad MAC
+            bool threw = false;
+            try {
+                DesfireSecureMessaging::unwrapResponse(
+                    ses, badResp, 0x00, DesfireCommMode::MAC);
+            } catch (const std::runtime_error&) { threw = true; }
+            DI_CHECK(threw);
+        }
+
+        // ── 7. DesfireMemoryLayout — model consistency ──────────────────────
+
+        {
+            CardInterface card(CardType::MifareDesfire);
+            DesfireMemoryLayout& dfm = card.getDesfireMemoryMutable();
+
+            // Model init from version
+            DesfireVersionInfo vi;
+            vi.hwStorageSize = 0x18;  // 4KB
+            vi.hwMajorVer = 1;
+            vi.swMajorVer = 1;
+            std::memset(vi.uid, 0x04, 7);
+            dfm.initFromVersion(vi);
+
+            DI_CHECK(card.getTotalMemory() == 4096);
+            DI_CHECK(dfm.versionInfo.guessVariant() == DesfireVariant::EV1);
+
+            // Topology checks
+            DI_CHECK(card.isDesfire());
+            DI_CHECK(!card.isClassic());
+            DI_CHECK(card.getTotalSectors() == 0);
+            DI_CHECK(card.getTotalBlocks() == 0);
+
+            // DESFire guards — Classic-only ops
+            DI_CHECK(!card.isTrailerBlock(0));  // DESFire'da trailer yok
+
+            bool threwExport = false;
+            try { card.exportMemory(); }
+            catch (const std::logic_error&) { threwExport = true; }
+            DI_CHECK(threwExport);
+        }
+
+        // ── 8. Regression — Classic API still works ─────────────────────────
+
+        {
+            CardInterface classic1K(CardType::MifareClassic1K);
+            DI_CHECK(classic1K.isClassic());
+            DI_CHECK(!classic1K.isDesfire());
+            DI_CHECK(classic1K.getTotalSectors() == 16);
+            DI_CHECK(classic1K.getTotalBlocks() == 64);
+
+            // Trailer detection
+            DI_CHECK(classic1K.isTrailerBlock(3));
+            DI_CHECK(!classic1K.isTrailerBlock(2));
+
+            // Memory access
+            std::vector<BYTE> memBuf(1024, 0);
+            classic1K.loadMemory(memBuf.data(), memBuf.size());
+            BYTEV exported = classic1K.exportMemory();
+            DI_CHECK(exported.size() == 16 * 64);  // 1K full memory
+
+            CardInterface classic4K(CardType::MifareClassic4K);
+            DI_CHECK(classic4K.getTotalSectors() == 40);
+            DI_CHECK(classic4K.getTotalBlocks() == 256);
+        }
+
+#undef DI_CHECK
+        return true;
+    }
+    catch (const exception& e) {
+        cout << "    Exception at line " << line << ": " << e.what() << "\n";
+        return false;
+    }
+    catch (...) {
+        cout << "    Unknown exception at line " << line << "\n";
+        return false;
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════════
 // MAIN TEST RUNNER
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -1402,6 +1704,7 @@ int runCardSystemTests() {
     recordTest("DESFire Auth", testDesfireAuth());
     recordTest("DESFire Commands", testDesfireCommands());
     recordTest("DESFire Management", testDesfireManagement());
+    recordTest("DESFire Integration", testDesfireIntegration());
     
     // Summary
     cout << "\n=== Test Summary ===\n";

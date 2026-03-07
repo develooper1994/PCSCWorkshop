@@ -246,6 +246,9 @@ public:
     // DESFire session durumu
     bool isDesfireAuthenticated() const;
 
+    // Session timeout (ms). 0 = sınırsız (varsayılan).
+    void setDesfireSessionTimeout(uint32_t ms);
+
     // ────────────────────────────────────────────────────────────────────────────
     // DESFire Management API (Faz 4)
     // ────────────────────────────────────────────────────────────────────────────

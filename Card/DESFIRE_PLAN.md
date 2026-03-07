@@ -87,12 +87,12 @@ Bu bilgi, `DesfireMemoryLayout.totalMemory` alanına yazılır ve
 
 ## 3) Authentication ✅
 
-- [x] DesfireSession — session state (key, IV, counter)
+- [x] DesfireSession — session state (key, IV, counter, timeout)
 - [x] DesfireAuth — 3-pass mutual auth state machine (TransmitFn callback)
 - [x] DesfireCrypto — nonce, rotate, session key derivation (AES + 2K3DES)
 - [x] CngBlockCipher — raw AES/3DES CBC (no padding) + AES-CMAC
 - [x] Hata modeli: logic_error (yanlış kart tipi), runtime_error (auth fail)
-- [ ] Session timeout/caching (opsiyonel, Faz 4+)
+- [x] Session timeout/caching (chrono tabanlı, setTimeoutMs)
 
 ## 4) Key Yönetimi ✅ (temel)
 
@@ -118,15 +118,16 @@ Bu bilgi, `DesfireMemoryLayout.totalMemory` alanına yazılır ve
 - [x] Virtual block: DesfireMemoryLayout::readVirtualBlock/writeVirtualBlock
 - [x] Gelişmiş DESFire API: CreateApp/File, DeleteApp/File, Transaction, FormatPICC
 
-## 7) Test ve Doğrulama ✅ (unit)
+## 7) Test ve Doğrulama ✅
 
 - [x] DesfireMemoryLayout model testi (10 section, DF_CHECK makro)
 - [x] DesfireAuth simulated 3-pass (9 section, DA_CHECK makro)
 - [x] CngBlockCipher AES/3DES round-trip + CMAC smoke
 - [x] Session key derivation (AES + 2K3DES)
 - [x] APDU construction + response parsing
-- [x] Regression: **14/14 PASS** (10 Classic/UL + 4 DESFire)
-- [ ] Integration testler (gerçek kart — Faz 5)
+- [x] Management APDU + Secure Messaging (11 section)
+- [x] Integration test: session timeout, full auth lifecycle, command coverage, regression
+- [x] Regression: **15/15 PASS** (10 Classic/UL + 5 DESFire)
 
 ---
 
@@ -171,13 +172,17 @@ Commit: `feat: DESFire Faz 4`
 - [x] Transaction: Credit / Debit / CommitTransaction / AbortTransaction
 - [x] FormatPICC
 - [x] 14/14 test geçti (Management APDU + Secure Messaging dahil)
-- [ ] Session timeout/caching (opsiyonel, istenirse eklenebilir)
 
-## Faz 5 — Stabilizasyon ⏳ BEKLEMEDE (gerçek kart bekleniyor)
+## Faz 5 — Stabilizasyon ✅ TAMAMLANDI
 
-- [ ] Gerçek DESFire kart ile integration test
-- [ ] Regression + performans kontrolleri
+Commit: `feat: DESFire Faz 5`
+
+- [x] Session timeout/caching (`<chrono>` tabanlı, `setTimeoutMs()`, `isValid()/isExpired()`)
+- [x] Integration test: simulated full lifecycle (auth→timeout→expire, AccessRights round-trip,
+      full command INS coverage, Secure Messaging end-to-end, Classic regression)
+- [x] Regression: **15/15 PASS** (10 Classic/UL + 5 DESFire)
 - [x] Dokümantasyon ve kullanım örnekleri (DESFIRE_USAGE.md)
+- [ ] Gerçek DESFire EV1/EV2 kart ile donanım doğrulaması (kart hazır olduğunda)
 
 ---
 

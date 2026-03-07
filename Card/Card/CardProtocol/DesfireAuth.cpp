@@ -133,4 +133,5 @@ void DesfireAuth::authenticate(DesfireSession& session,
     session.sessionKey = DesfireCrypto::deriveSessionKey(rndA, rndB, keyType);
     session.iv = BYTEV(bs, 0);  // IV reset after auth
     session.cmdCounter = 0;
+    session.touchAuthTime();     // timeout timer başlat
 }

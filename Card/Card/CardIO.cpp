@@ -492,6 +492,14 @@ static void requireDesfire(const CardInterface& card, const char* op) {
         throw std::logic_error(std::string(op) + ": requires DESFire card");
 }
 
+// Session timeout kontrolü — auth gerektiren komutlarda çağrılır
+void requireAuth(const DesfireSession* session, const char* op) {
+    if (!session || !session->authenticated)
+        throw std::runtime_error(std::string(op) + ": not authenticated");
+    if (session->isExpired())
+        throw std::runtime_error(std::string(op) + ": session expired");
+}
+
 // ════════════════════════════════════════════════════════════════════════════════
 // DESFire — Public API
 // ════════════════════════════════════════════════════════════════════════════════
@@ -583,7 +591,13 @@ size_t CardIO::getFreeMemory() {
 }
 
 bool CardIO::isDesfireAuthenticated() const {
-    return desfireSession_ && desfireSession_->authenticated;
+    return desfireSession_ && desfireSession_->isValid();
+}
+
+void CardIO::setDesfireSessionTimeout(uint32_t ms) {
+    if (!desfireSession_)
+        desfireSession_ = std::make_unique<DesfireSession>();
+    desfireSession_->setTimeoutMs(ms);
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
