@@ -67,14 +67,14 @@ int runAllTests() {
     cout << (cipherRoundtrip ? "PASSED" : "FAILED") << "\n\n";
     
     cout << "--- Crypto cipher tests ---\n";
-    int cngResult = run_cipher_tests();
-    cout << (cngResult == 0 ? "PASSED" : "FAILED") << "\n\n";
+    int cryptoResult = run_cipher_tests();
+    cout << (cryptoResult == 0 ? "PASSED" : "FAILED") << "\n\n";
     
     // Card System tests
     int cardResult = runCardSystemTests();
     
     cout << "\n==========================================\n";
-    bool success = cipherRoundtrip && (cngResult == 0) && (cardResult == 0);
+    bool success = cipherRoundtrip && (cryptoResult == 0) && (cardResult == 0);
     cout << (success ? "ALL TESTS PASSED" : "SOME TESTS FAILED") << "\n";
     cout << "==========================================\n";
     

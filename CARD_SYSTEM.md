@@ -146,7 +146,7 @@ Tests.exe 4        # Real card reader test
 ### Test Results
 ```
 ✅ Cipher round-trip tests ......... PASSED
-✅ CNG cipher tests ................ PASSED
+✅ Crypto cipher tests ............. PASSED
 ✅ Card Memory Layout (1K) ......... PASSED
 ✅ Card Memory Layout (4K) ......... PASSED
 ✅ Card Topology ................... PASSED

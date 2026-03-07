@@ -67,7 +67,7 @@ cmake --build build
 
 ```
 Utils               PCSC context, reader discovery, cross-platform abstraction
-Cipher              XorCipher, CaesarCipher, CngAES/3DES (Win-only)
+Cipher              `crypto::` facade + OpenSSL backend (AES-CBC/CTR/GCM, 3DES, CMAC, SHA, HMAC, KDF, RNG)
 Reader              ACR1281UReader for Mifare/NTAG cards
 Card                CardIO (Mifare model), DesfireAuth/Commands
 Workshop1           Main application executable
@@ -104,7 +104,7 @@ Dependencies: `Utils ← Cipher ← Reader ← Card ← {Workshop1, Tests}`
 | Library | Platform | Usage |
 |---------|----------|-------|
 | winscard (PC/SC) | Windows: `winscard.lib` / Linux: `libpcsclite` | Smart card I/O |
-| bcrypt (CNG) | Windows only | AES, 3DES, CMAC |
+| OpenSSL (libcrypto) | Cross-platform | AES, 3DES, GCM, CMAC, SHA, HMAC, KDF, random |
 
 ---
 

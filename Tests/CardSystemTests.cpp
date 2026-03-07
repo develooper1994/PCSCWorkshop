@@ -750,7 +750,7 @@ bool testDesfireAuth() {
     try {
 #define DA_CHECK(cond) do { line = __LINE__; if (!(cond)) { cout << "    FAIL at line " << line << ": " #cond "\n"; return false; } } while(0)
 
-        // ── 1. CngBlockCipher AES round-trip (no padding) ───────────────────
+        // ── 1. BlockCipher AES round-trip (no padding) ───────────────────
 
         BYTEV aesKey(16, 0x00);
         BYTEV aesIV(16, 0x00);
@@ -769,7 +769,7 @@ bool testDesfireAuth() {
         BYTEV dec32 = crypto::block::decryptAesCbc(aesKey, aesIV, enc32);
         DA_CHECK(dec32 == plain32);
 
-        // ── 2. CngBlockCipher 2K3DES round-trip ─────────────────────────────
+        // ── 2. BlockCipher 2K3DES round-trip ─────────────────────────────
 
         BYTEV desKey(16, 0x00);
         BYTEV desIV(8, 0x00);
@@ -1689,7 +1689,7 @@ bool testDesfire3K3DES() {
     try {
 #define D3_CHECK(cond) do { line = __LINE__; if (!(cond)) { cout << "    FAIL at line " << line << ": " #cond "\n"; return false; } } while(0)
 
-        // ── 1. CngBlockCipher 3K3DES round-trip ─────────────────────────────
+        // ── 1. BlockCipher 3K3DES round-trip ─────────────────────────────
 
         BYTEV key24(24, 0x00);
         key24[0] = 0x11; key24[8] = 0x22; key24[16] = 0x33;
@@ -1762,7 +1762,7 @@ bool testDesfire3K3DES() {
         };
 
         // blockSize for 3K3DES = 16 (uses two 8-byte DES blocks chained)
-        // But CNG operates on 8-byte blocks. Nonce is 16 bytes.
+        // But 3K3DES operates on 8-byte blocks; nonce is 16 bytes.
         // Auth uses zero IV (8-byte for DES)
         BYTEV zeroIV8(8, 0);
         BYTEV encSimRndB = crypto::block::encrypt3K3DesCbc(simKey, zeroIV8, simRndB);
