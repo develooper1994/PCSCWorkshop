@@ -140,7 +140,6 @@
     <Text Include="Utils\Log\ORGANIZATION.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Utils\Log\BUGFIX.md" />
     <None Include="Utils\Log\INDEX.md" />
     <None Include="Utils\Log\QUICKSTART.md" />
     <None Include="Utils\Log\README.md" />
@@ -152,4 +151,3 @@
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
-

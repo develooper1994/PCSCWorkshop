@@ -86,9 +86,6 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Utils\Log\BUGFIX.md">
-      <Filter>Log</Filter>
-    </None>
     <None Include="Utils\Log\INDEX.md">
       <Filter>Log</Filter>
     </None>
@@ -109,4 +106,3 @@
     </None>
   </ItemGroup>
 </Project>
-

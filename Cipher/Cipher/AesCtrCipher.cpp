@@ -30,7 +30,7 @@ static const EVP_CIPHER* pickAesCtr(size_t keyLen) {
 }
 
 static BYTEV ctrTransform(const BYTEV& key, const BYTEV& nonce,
-                          const BYTE* data, size_t len) {
+						  const BYTE* data, size_t len) {
 	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
 	if (!ctx) throw pcsc::CipherError("EVP_CIPHER_CTX_new failed");
 
