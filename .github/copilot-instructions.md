@@ -21,12 +21,10 @@ Projede kullanılan kütüphaneler:
 | Kütüphane | Platform | Kullanım |
 |-----------|----------|----------|
 | winscard (PC/SC) | Windows: `winscard.lib` / Linux: `libpcsclite` | Akıllı kart iletişimi |
-| bcrypt (CNG) | Sadece Windows | AES, 3DES, CMAC şifreleme |
+| OpenSSL (libcrypto) | Tüm platformlar (vcpkg / apt / brew) | AES, 3DES, GCM, CMAC, SHA, HMAC, KDF, Random |
 
-> **⚠️ Planlanan değişiklik:** `bcrypt (CNG)` → `OpenSSL (libcrypto)` migration planlandı.
+> ✅ **CNG → OpenSSL migration tamamlandı.**
 > Detaylar: `Cipher/CRYPTO_MIGRATION_PLAN.md`
-> Branch: `feature/cipher-openssl-migration`
-> Bu migration sonrasında bcrypt satırı kaldırılıp yerine OpenSSL eklenecek.
 
 - Yeni kütüphane eklenirse bu listeyi güncelle.
 - Kütüphane kaldırılırsa listeden çıkar ve ilgili CMake/vcxproj bağımlılığını temizle.
@@ -34,8 +32,9 @@ Projede kullanılan kütüphaneler:
 ## Proje Mimarisi
 ```
 Utils (static lib)     — Platform.h, PCSC, PcscUtils, Log, Result, StatusWord
-Cipher (static lib)    — XorCipher, CaesarCipher, CngAES, CngBlockCipher (Win)
-                         ⚠️ OpenSSL migration planlandı → crypto:: facade (Cipher/CRYPTO_MIGRATION_PLAN.md)
+Cipher (static lib)    — crypto:: facade, AesCbcCipher, AesCtrCipher, AesGcmCipher,
+                         TripleDesCbcCipher, BlockCipher, Hash, Hmac, Kdf, Random
+                         XorCipher, CaesarCipher, AffineCipher (OpenSSL backend)
 Reader (static lib)    — Reader (base), ACR1281UReader, PcscCommands
 Card (static lib)      — CardIO, CardInterface, DesfireCommands, DesfireAuth
 Workshop1 (exe)        — Ana uygulama
