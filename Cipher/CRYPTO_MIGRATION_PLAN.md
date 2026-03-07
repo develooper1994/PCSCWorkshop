@@ -1,8 +1,8 @@
 # Cipher Projesi — OpenSSL Migration & Crypto Facade Planı
 
-> **Durum:** PLAN aşamasında — henüz implementasyon başlamadı.
-> **Branch:** `feature/cipher-openssl-migration`
-> **Öncelik:** Yüksek — Linux desteği için blocker.
+> **Durum:** ✅ **TAMAMLANDI** — Faz 0-4 implementasyonu tamamlandı, tüm testler PASS.
+> **Branch:** `chore/cipher-cleanup` → `main`'e merge edildi.
+> **OpenSSL:** 3.6.1 (ShiningLight), `Directory.Build.props` ile otomatik algılama.
 
 ---
 
@@ -362,91 +362,60 @@ Mevcut `BCryptGenRandom` (Windows-only) yerine geçer.
 
 ## 5. Implementasyon Fazları
 
-### Faz 0 — Temizlik (branch: `chore/cipher-cleanup`)
+### Faz 0 — Temizlik ✅
 
-**Tahmini süre: kısa**
+- [x] `Cipher/Ciphers.h` (root, guard'sız duplicate) silindi
+- [x] `Utils/Utils/PCSC_new.h` (boş) silindi
+- [x] `Utils/Utils/Types.h` tekil kaynak yapıldı, `PcscUtils.h` include eder
+- [x] `ArrayUtils.h` → `Utils/Utils/` altına taşındı
+- [x] `Reader/CMakeLists.txt` C++14 override kaldırıldı
+- [x] Build doğrulandı
 
-- [ ] `Cipher/Ciphers.h` (root, guard'sız duplicate) sil
-- [ ] `Utils/Utils/PCSC_new.h` (boş) sil
-- [ ] `Utils/Utils/Types.h` → `PcscUtils.h`'den BYTE/BYTEV tanımını kullan, `Types.h`'yi `PcscUtils.h` redirect'ine çevir ya da sil
-- [ ] `ArrayUtils.h` → `Utils/Utils/` altına taşı
-- [ ] Build doğrula (CMake + VS)
+### Faz 1 — OpenSSL Entegrasyonu ✅
 
-### Faz 1 — OpenSSL Entegrasyonu (branch: `feature/cipher-openssl-migration`)
+- [x] `Directory.Build.props`'a OpenSSL include/lib yolları eklendi
+- [x] `Cipher/CMakeLists.txt` → GLOB + `find_package(OpenSSL)`
+- [x] `Random.h/.cpp` — `crypto::randomBytes()` (RAND_bytes)
+- [x] `BlockCipher.h/.cpp` — raw CBC + CMAC (EVP + EVP_MAC)
+- [x] `AesCbcCipher.h/.cpp` — padded AES-CBC (ICipher)
+- [x] `TripleDesCbcCipher.h/.cpp` — padded 3DES-CBC (ICipher)
+- [x] `AesGcmCipher.h/.cpp` — AES-GCM (ICipherAAD)
+- [x] `AesGcmUtil.h` — nonce/tag split yardımcıları
+- [x] Eski `Cng*.h/.cpp` dosyaları silindi
+- [x] `Ciphers.h` güncellendi
+- [x] Build doğrulandı
 
-**Tahmini süre: orta**
+### Faz 2 — Yeni Crypto Primitifler ✅
 
-- [ ] `Cipher/CMakeLists.txt`'ye OpenSSL bağımlılığı ekle
-- [ ] `Random.h/.cpp` — `crypto::randomBytes()` implementasyonu
-- [ ] `BlockCipher.h/.cpp` — `CngBlockCipher` → OpenSSL EVP ile yeniden yaz
-  - `encryptAES`, `decryptAES` → `EVP_aes_128_cbc()` + `set_padding(0)`
-  - `encrypt2K3DES`, `decrypt2K3DES` → `EVP_des_ede3_cbc()` + key expansion
-  - `encrypt3K3DES`, `decrypt3K3DES` → `EVP_des_ede3_cbc()`
-  - `cmacAES` → `EVP_MAC` (OpenSSL 3.x) veya `CMAC_CTX` (1.1.x)
-- [ ] `AesCbcCipher.h/.cpp` — `CngAES` → OpenSSL
-- [ ] `TripleDesCbcCipher.h/.cpp` — `Cng3DES` → OpenSSL
-- [ ] `AesGcmCipher.h/.cpp` — `CngAESGcm` → OpenSSL
-- [ ] `AesGcmUtil.h` — `CngAESGcmUtil.h` rename (içerik değişmez)
-- [ ] Eski `Cng*.h/.cpp` dosyalarını sil
-- [ ] `Ciphers.h` güncelle (yeni dosya isimleri)
-- [ ] Build doğrula (CMake + VS)
+- [x] `Hash.h/.cpp` — SHA-256, SHA-384, SHA-512 (EVP_Digest)
+- [x] `Hmac.h/.cpp` — HMAC-SHA256/384/512 (EVP_MAC)
+- [x] `AesCtrCipher.h/.cpp` — AES-CTR (ICipher)
+- [x] `Kdf.h/.cpp` — PBKDF2-SHA256, HKDF (EVP_KDF)
+- [x] Build doğrulandı
 
-### Faz 2 — Yeni Crypto Primitifler (branch: aynı veya `feature/cipher-new-primitives`)
+### Faz 3 — Crypto Facade ✅
 
-**Tahmini süre: orta**
+- [x] `CryptoTypes.h` — `CipherType` enum
+- [x] `Crypto.h` — tek giriş noktası:
+  - `crypto::create()` factory (runtime, ICipher*)
+  - `crypto::encrypt(CipherType, ...)` / `crypto::decrypt(...)` (runtime)
+  - `crypto::encrypt<CipherType>(...)` / `crypto::decrypt<...>(...)` (compile-time, `if constexpr`)
+- [x] Build doğrulandı
 
-- [ ] `Hash.h/.cpp` — SHA-256, SHA-384, SHA-512
-- [ ] `Hmac.h/.cpp` — HMAC-SHA256, HMAC-SHA384, HMAC-SHA512
-- [ ] `AesCtrCipher.h/.cpp` — AES-CTR (ICipher implementasyonu)
-- [ ] `Kdf.h/.cpp` — PBKDF2-SHA256, HKDF
-- [ ] Build doğrula
+### Faz 4 — Tüketici Güncelleme ✅
 
-### Faz 3 — Crypto Facade (branch: aynı)
+- [x] `DesfireCrypto.cpp` — `CngBlockCipher::*` → `crypto::block::*`, `BCryptGenRandom` → `crypto::randomBytes`
+- [x] `DesfireAuth.cpp` — `CngBlockCipher::*` → `crypto::block::*`
+- [x] `DesfireSecureMessaging.cpp` — `CngBlockCipher::cmacAES` → `crypto::block::cmacAes128`
+- [x] `Tests/cipher_test.cpp` — yeni API ile yeniden yazıldı (10 test)
+- [x] `Tests/CardSystemTests.cpp` — tüm `CngBlockCipher` → `crypto::block::*`
+- [x] `ACR1281UReaderTests.cpp/.h` — `CngAES/Cng3DES/CngAESGcm` → yeni sınıflar
+- [x] Build doğrulandı
+- [x] Tüm testler geçti (17/17 Card System + Cipher round-trip + 10 crypto)
 
-**Tahmini süre: kısa**
+### Faz 5 — Backward Compatibility Alias — ATLANIDI
 
-- [ ] `Crypto.h/.cpp` — tüm `crypto::` namespace fonksiyonlarını tek header'da topla
-- [ ] Factory fonksiyonları: `crypto::aesCbc()`, `crypto::aesGcm()`, `crypto::tripleDesCbc()`, `crypto::aesCtr()`
-- [ ] Build doğrula
-
-### Faz 4 — Tüketici Güncelleme (branch: aynı)
-
-**Tahmini süre: orta**
-
-- [ ] `Card/Card/CardProtocol/DesfireCrypto.cpp`:
-  - `#include "CngBlockCipher.h"` → `#include "Crypto.h"`
-  - `CngBlockCipher::encryptAES(...)` → `crypto::block::encryptAesCbc(...)`
-  - `CngBlockCipher::decryptAES(...)` → `crypto::block::decryptAesCbc(...)`
-  - `CngBlockCipher::encrypt2K3DES(...)` → `crypto::block::encrypt2K3DesCbc(...)`
-  - `CngBlockCipher::decrypt2K3DES(...)` → `crypto::block::decrypt2K3DesCbc(...)`
-  - `CngBlockCipher::encrypt3K3DES(...)` → `crypto::block::encrypt3K3DesCbc(...)`
-  - `CngBlockCipher::decrypt3K3DES(...)` → `crypto::block::decrypt3K3DesCbc(...)`
-  - `BCryptGenRandom(...)` → `crypto::randomBytes(...)`
-  - `#include <windows.h>` + `<bcrypt.h>` kaldır
-- [ ] `Card/Card/CardIO.cpp` — etkileniyorsa güncelle
-- [ ] `Tests/cipher_test.cpp`:
-  - `#ifdef _WIN32` guard'ını kaldır
-  - `CngAESGcm(key)` → `crypto::aesGcm(key)`
-  - `CngAES(key, iv)` → `crypto::aesCbc(key, iv)`
-  - `Cng3DES(key3, iv3)` → `crypto::tripleDesCbc(key3, iv3)`
-- [ ] `Tests/CardSystemTests.cpp`:
-  - `CngBlockCipher::encrypt3K3DES(...)` → `crypto::block::encrypt3K3DesCbc(...)`
-- [ ] Build doğrula (CMake + VS)
-- [ ] Tüm testleri çalıştır
-
-### Faz 5 — Backward Compatibility Alias (isteğe bağlı)
-
-Eğer geçiş döneminde eski isimler gerekirse:
-
-```cpp
-// Compat.h — geçici, sonra silinecek
-using CngBlockCipher = crypto::BlockCipherCompat;
-using CngAES = AesCbcCipher;
-using Cng3DES = TripleDesCbcCipher;
-using CngAESGcm = AesGcmCipher;
-```
-
-Bu faz isteğe bağlı — eğer tüketici güncellemeleri tek seferde yapılırsa gerek yok.
+Tüm tüketiciler tek seferde güncellendiği için gerek kalmadı.
 
 ---
 
@@ -598,11 +567,12 @@ EVP_MD_CTX_free(ctx);
 
 ## 10. Başarı Kriterleri
 
-- [ ] `cmake --build . --config Release` hem Windows hem Linux'ta başarılı
-- [ ] `#include <windows.h>` ve `<bcrypt.h>` Cipher projesinde **sıfır** kez geçiyor
-- [ ] `#include <windows.h>` ve `<bcrypt.h>` Card/DesfireCrypto.cpp'de **sıfır** kez geçiyor
-- [ ] Mevcut tüm cipher testleri PASS
-- [ ] Mevcut tüm DESFire auth testleri PASS (17/17)
-- [ ] Yeni crypto primitif testleri (hash, hmac, kdf, random, aes-ctr) PASS
-- [ ] `crypto::` namespace tek giriş noktası olarak çalışıyor
-- [ ] copilot-instructions.md kütüphane tablosu güncel
+- [x] VS build başarılı (Debug x64)
+- [x] `#include <windows.h>` ve `<bcrypt.h>` Cipher projesinde **sıfır** kez geçiyor
+- [x] `#include <windows.h>` ve `<bcrypt.h>` Card/DesfireCrypto.cpp'de **sıfır** kez geçiyor
+- [x] Mevcut tüm cipher round-trip testleri PASS
+- [x] Mevcut tüm DESFire auth testleri PASS (17/17)
+- [x] Yeni crypto primitif testleri (hash, hmac, kdf, random, aes-ctr, cmac, block-cipher) PASS
+- [x] `crypto::` namespace tek giriş noktası olarak çalışıyor (compile-time + runtime)
+- [x] copilot-instructions.md kütüphane tablosu güncel
+- [ ] `cmake --build .` Linux'ta başarılı — FUTURE (OpenSSL + pcsclite kurulumu gerekli)

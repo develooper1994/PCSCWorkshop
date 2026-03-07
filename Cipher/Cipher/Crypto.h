@@ -60,7 +60,7 @@ inline std::unique_ptr<ICipher> create(CipherType type, const BYTEV& key, const 
 // ── Runtime encrypt/decrypt ─────────────────────────────────────────────────
 
 inline BYTEV encrypt(CipherType type, const BYTEV& key, const BYTEV& iv,
-                     const BYTE* data, size_t len) {
+					 const BYTE* data, size_t len) {
 	switch (type) {
 	case CipherType::AES_128_CBC_RAW:
 		return block::encryptAesCbc(key, iv, data, len);
@@ -76,7 +76,7 @@ inline BYTEV encrypt(CipherType type, const BYTEV& key, const BYTEV& iv,
 }
 
 inline BYTEV decrypt(CipherType type, const BYTEV& key, const BYTEV& iv,
-                     const BYTE* data, size_t len) {
+					 const BYTE* data, size_t len) {
 	switch (type) {
 	case CipherType::AES_128_CBC_RAW:
 		return block::decryptAesCbc(key, iv, data, len);
