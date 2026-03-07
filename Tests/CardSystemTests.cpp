@@ -12,6 +12,7 @@
 #include "../Card/Card/CardProtocol/DesfireCrypto.h"
 #include "../Card/Card/CardProtocol/DesfireAuth.h"
 #include "../Card/Card/CardProtocol/DesfireSession.h"
+#include "../Card/Card/CardProtocol/DesfireCommands.h"
 #include "../Card/Card/CardInterface.h"
 #include "../Cipher/Cipher/CngBlockCipher.h"
 #include <iostream>
@@ -967,6 +968,202 @@ bool testDesfireAuth() {
 
 
 // ════════════════════════════════════════════════════════════════════════════════
+// TEST: DESFire Commands (APDU construction, response parsing, simulated I/O)
+// ════════════════════════════════════════════════════════════════════════════════
+
+bool testDesfireCommands() {
+    int line = 0;
+    try {
+#define DC_CHECK(cond) do { line = __LINE__; if (!(cond)) { cout << "    FAIL at line " << line << ": " #cond "\n"; return false; } } while(0)
+
+        // ── 1. wrapCommand ──────────────────────────────────────────────────
+
+        BYTEV cmd = DesfireCommands::wrapCommand(0x60);
+        DC_CHECK(cmd.size() == 5);  // 90 60 00 00 00
+        DC_CHECK(cmd[0] == 0x90);
+        DC_CHECK(cmd[1] == 0x60);
+        DC_CHECK(cmd[4] == 0x00);
+
+        BYTEV cmdData = DesfireCommands::wrapCommand(0x5A, {0x01, 0x02, 0x03});
+        DC_CHECK(cmdData.size() == 9);  // 90 5A 00 00 03 01 02 03 00
+        DC_CHECK(cmdData[4] == 0x03);  // Lc
+        DC_CHECK(cmdData[5] == 0x01);  // data[0]
+        DC_CHECK(cmdData[8] == 0x00);  // Le
+
+        // ── 2. SelectApplication APDU ───────────────────────────────────────
+
+        DesfireAID testAid = DesfireAID::fromUint(0x010203);
+        BYTEV selApp = DesfireCommands::selectApplication(testAid);
+        DC_CHECK(selApp.size() == 9);
+        DC_CHECK(selApp[1] == 0x5A);  // INS
+        DC_CHECK(selApp[5] == testAid.aid[0]);
+        DC_CHECK(selApp[6] == testAid.aid[1]);
+        DC_CHECK(selApp[7] == testAid.aid[2]);
+
+        // ── 3. ReadData / WriteData APDU ────────────────────────────────────
+
+        BYTEV readCmd = DesfireCommands::readData(0x01, 0x000010, 0x000020);
+        DC_CHECK(readCmd[1] == 0xBD);  // INS
+        DC_CHECK(readCmd[5] == 0x01);  // fileNo
+        // offset LE24: 0x10, 0x00, 0x00
+        DC_CHECK(readCmd[6] == 0x10);
+        DC_CHECK(readCmd[7] == 0x00);
+        // length LE24: 0x20, 0x00, 0x00
+        DC_CHECK(readCmd[9] == 0x20);
+
+        BYTEV writePayload = {0xAA, 0xBB, 0xCC, 0xDD};
+        BYTEV writeCmd = DesfireCommands::writeData(0x02, 0, writePayload);
+        DC_CHECK(writeCmd[1] == 0x3D);  // INS
+        DC_CHECK(writeCmd[5] == 0x02);  // fileNo
+
+        // ── 4. LE24 helpers ─────────────────────────────────────────────────
+
+        BYTE buf[3];
+        DesfireCommands::writeLE24(buf, 0x123456);
+        DC_CHECK(buf[0] == 0x56);
+        DC_CHECK(buf[1] == 0x34);
+        DC_CHECK(buf[2] == 0x12);
+        DC_CHECK(DesfireCommands::readLE24(buf) == 0x123456);
+
+        DesfireCommands::writeLE24(buf, 0);
+        DC_CHECK(DesfireCommands::readLE24(buf) == 0);
+
+        DesfireCommands::writeLE24(buf, 0xFFFFFF);
+        DC_CHECK(DesfireCommands::readLE24(buf) == 0xFFFFFF);
+
+        // ── 5. Response parsing ─────────────────────────────────────────────
+
+        BYTEV respOK = {0xDE, 0xAD, 0x91, 0x00};
+        DC_CHECK(DesfireCommands::isOK(respOK));
+        DC_CHECK(!DesfireCommands::hasMore(respOK));
+        DC_CHECK(DesfireCommands::statusCode(respOK) == 0x00);
+
+        BYTEV dataOK = DesfireCommands::extractData(respOK);
+        DC_CHECK(dataOK.size() == 2);
+        DC_CHECK(dataOK[0] == 0xDE);
+
+        BYTEV respMore = {0x01, 0x02, 0x03, 0x91, 0xAF};
+        DC_CHECK(!DesfireCommands::isOK(respMore));
+        DC_CHECK(DesfireCommands::hasMore(respMore));
+
+        BYTEV respErr = {0x91, 0xAE};
+        DC_CHECK(!DesfireCommands::isOK(respErr));
+
+        // checkResponse should throw for error
+        bool threw = false;
+        try { DesfireCommands::checkResponse(respErr, "test"); }
+        catch (const std::runtime_error&) { threw = true; }
+        DC_CHECK(threw);
+
+        // checkResponse should NOT throw for OK or MORE
+        DesfireCommands::checkResponse(respOK, "test");
+        DesfireCommands::checkResponse(respMore, "test");
+
+        // ── 6. Multi-frame transceive (simulated) ──────────────────────────
+
+        int frameCount = 0;
+        auto simTransmit = [&](const BYTEV& apdu) -> BYTEV {
+            frameCount++;
+            if (frameCount == 1) {
+                // First call: return partial data + AF
+                return {0x10, 0x11, 0x12, 0x91, 0xAF};
+            } else if (frameCount == 2) {
+                // Second call (additional frame): return more data + AF
+                return {0x20, 0x21, 0x91, 0xAF};
+            } else {
+                // Third call: final data + OK
+                return {0x30, 0x91, 0x00};
+            }
+        };
+
+        BYTEV initialCmd = DesfireCommands::wrapCommand(0x60);
+        BYTEV allData = DesfireCommands::transceive(simTransmit, initialCmd);
+        DC_CHECK(frameCount == 3);
+        DC_CHECK(allData.size() == 6);  // 3 + 2 + 1
+        DC_CHECK(allData[0] == 0x10);
+        DC_CHECK(allData[3] == 0x20);
+        DC_CHECK(allData[5] == 0x30);
+
+        // ── 7. parseApplicationIDs ──────────────────────────────────────────
+
+        BYTEV aidData = {0x01, 0x02, 0x03, 0xAA, 0xBB, 0xCC};
+        auto aids = DesfireCommands::parseApplicationIDs(aidData);
+        DC_CHECK(aids.size() == 2);
+        DC_CHECK(aids[0].aid[0] == 0x01);
+        DC_CHECK(aids[1].aid[0] == 0xAA);
+
+        // ── 8. parseFileIDs ─────────────────────────────────────────────────
+
+        BYTEV fileData = {0x00, 0x01, 0x02, 0x05};
+        auto files = DesfireCommands::parseFileIDs(fileData);
+        DC_CHECK(files.size() == 4);
+        DC_CHECK(files[3] == 0x05);
+
+        // ── 9. parseFileSettings ────────────────────────────────────────────
+
+        // StandardData file: type=0x00, comm=0x00, access=2bytes, size=3bytes
+        BYTEV fsData = {
+            0x00,       // fileType = StandardData
+            0x00,       // commMode = Plain
+            0x23, 0xE0, // access rights (encoded)
+            0x80, 0x00, 0x00  // fileSize = 128 (LE24)
+        };
+        auto fs = DesfireCommands::parseFileSettings(fsData);
+        DC_CHECK(fs.fileType == DesfireFileType::StandardData);
+        DC_CHECK(fs.commMode == DesfireCommMode::Plain);
+        DC_CHECK(fs.standard.fileSize == 128);
+
+        // ── 10. parseFreeMemory ─────────────────────────────────────────────
+
+        BYTEV fmData = {0x00, 0x10, 0x00};  // 4096 LE24
+        size_t freeMem = DesfireCommands::parseFreeMemory(fmData);
+        DC_CHECK(freeMem == 4096);
+
+        // ── 11. GetVersion simulated parse ──────────────────────────────────
+
+        int gvStep = 0;
+        auto gvTransmit = [&](const BYTEV& apdu) -> BYTEV {
+            gvStep++;
+            if (gvStep == 1) {
+                // Part 1: HW info (7 bytes) + AF
+                return {0x04, 0x01, 0x01, 0x01, 0x00, 0x18, 0x05, 0x91, 0xAF};
+            } else if (gvStep == 2) {
+                // Part 2: SW info (7 bytes) + AF
+                return {0x04, 0x01, 0x01, 0x01, 0x00, 0x18, 0x05, 0x91, 0xAF};
+            } else {
+                // Part 3: UID(7) + batch(5) + prod(2) + OK
+                return {0x04, 0xAB, 0xCD, 0xEF, 0x12, 0x34, 0x56,
+                        0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x28, 0x19,
+                        0x91, 0x00};
+            }
+        };
+
+        auto vi = DesfireCommands::parseGetVersion(gvTransmit);
+        DC_CHECK(vi.hwVendorID == 0x04);
+        DC_CHECK(vi.hwStorageSize == 0x18);
+        DC_CHECK(vi.swMajorVer == 0x01);
+        DC_CHECK(vi.uid[0] == 0x04);
+        DC_CHECK(vi.uid[1] == 0xAB);
+        DC_CHECK(vi.productionWeek == 0x28);
+        DC_CHECK(vi.productionYear == 0x19);
+        DC_CHECK(vi.totalCapacity() == 4096);
+
+#undef DC_CHECK
+        return true;
+    }
+    catch (const exception& e) {
+        cout << "    Exception at line " << line << ": " << e.what() << "\n";
+        return false;
+    }
+    catch (...) {
+        cout << "    Unknown exception at line " << line << "\n";
+        return false;
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════════
 // MAIN TEST RUNNER
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -988,6 +1185,7 @@ int runCardSystemTests() {
     recordTest("Card Simulation", testCardSimulation());
     recordTest("DESFire Memory Layout", testDesfireMemoryLayout());
     recordTest("DESFire Auth", testDesfireAuth());
+    recordTest("DESFire Commands", testDesfireCommands());
     
     // Summary
     cout << "\n=== Test Summary ===\n";

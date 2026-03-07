@@ -472,3 +472,116 @@ void CardIO::restoreAllTrailers(const std::vector<TrailerConfig>& configs)
 CardInterface&       CardIO::card()       { return card_; }
 const CardInterface& CardIO::card() const { return card_; }
 Reader&              CardIO::reader()     { return reader_; }
+
+// ════════════════════════════════════════════════════════════════════════════════
+// DESFire — Internal Helpers
+// ════════════════════════════════════════════════════════════════════════════════
+
+BYTEV CardIO::desfireTransmit(const BYTEV& apdu) {
+    return reader_.cardConnection().transmit(apdu);
+}
+
+std::function<BYTEV(const BYTEV&)> CardIO::makeTransmitFn() {
+    return [this](const BYTEV& apdu) -> BYTEV {
+        return desfireTransmit(apdu);
+    };
+}
+
+static void requireDesfire(const CardInterface& card, const char* op) {
+    if (!card.isDesfire())
+        throw std::logic_error(std::string(op) + ": requires DESFire card");
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// DESFire — Public API
+// ════════════════════════════════════════════════════════════════════════════════
+
+DesfireVersionInfo CardIO::discoverCard() {
+    requireDesfire(card_, "discoverCard");
+
+    auto vi = DesfireCommands::parseGetVersion(makeTransmitFn());
+
+    DesfireMemoryLayout& dfm = card_.getDesfireMemoryMutable();
+    dfm.initFromVersion(vi);
+
+    return vi;
+}
+
+void CardIO::selectApplication(const DesfireAID& aid) {
+    requireDesfire(card_, "selectApplication");
+
+    BYTEV cmd = DesfireCommands::selectApplication(aid);
+    BYTEV resp = desfireTransmit(cmd);
+    DesfireCommands::checkResponse(resp, "SelectApplication");
+
+    // Session düşer — yeniden auth gerekir
+    if (desfireSession_)
+        desfireSession_->resetKeepApp();
+
+    if (desfireSession_)
+        desfireSession_->currentAID = aid;
+
+    // Model tarafında da seçili app'i güncelle
+    card_.getDesfireMemoryMutable().currentAID = aid;
+}
+
+void CardIO::authenticateDesfire(const BYTEV& key, BYTE keyNo, DesfireKeyType keyType) {
+    requireDesfire(card_, "authenticateDesfire");
+
+    if (!desfireSession_)
+        desfireSession_ = std::make_unique<DesfireSession>();
+
+    DesfireAuth auth;
+    auth.authenticate(*desfireSession_, key, keyNo, keyType, makeTransmitFn());
+}
+
+std::vector<DesfireAID> CardIO::getApplicationIDs() {
+    requireDesfire(card_, "getApplicationIDs");
+
+    BYTEV data = DesfireCommands::transceive(makeTransmitFn(),
+                    DesfireCommands::getApplicationIDs());
+    return DesfireCommands::parseApplicationIDs(data);
+}
+
+std::vector<BYTE> CardIO::getFileIDs() {
+    requireDesfire(card_, "getFileIDs");
+
+    BYTEV data = DesfireCommands::transceive(makeTransmitFn(),
+                    DesfireCommands::getFileIDs());
+    return DesfireCommands::parseFileIDs(data);
+}
+
+DesfireFileSettings CardIO::getFileSettings(BYTE fileNo) {
+    requireDesfire(card_, "getFileSettings");
+
+    BYTEV data = DesfireCommands::transceive(makeTransmitFn(),
+                    DesfireCommands::getFileSettings(fileNo));
+    return DesfireCommands::parseFileSettings(data);
+}
+
+BYTEV CardIO::readFileData(BYTE fileNo, uint32_t offset, uint32_t length) {
+    requireDesfire(card_, "readFileData");
+
+    BYTEV cmd = DesfireCommands::readData(fileNo, offset, length);
+    return DesfireCommands::transceive(makeTransmitFn(), cmd);
+}
+
+void CardIO::writeFileData(BYTE fileNo, uint32_t offset, const BYTEV& data) {
+    requireDesfire(card_, "writeFileData");
+
+    BYTEV cmd = DesfireCommands::writeData(fileNo, offset, data);
+    BYTEV resp = desfireTransmit(cmd);
+    DesfireCommands::checkResponse(resp, "WriteData");
+}
+
+size_t CardIO::getFreeMemory() {
+    requireDesfire(card_, "getFreeMemory");
+
+    BYTEV data = DesfireCommands::transceive(makeTransmitFn(),
+                    DesfireCommands::getFreeMemory());
+    return DesfireCommands::parseFreeMemory(data);
+}
+
+bool CardIO::isDesfireAuthenticated() const {
+    return desfireSession_ && desfireSession_->authenticated;
+}
