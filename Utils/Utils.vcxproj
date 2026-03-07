@@ -119,7 +119,6 @@
     <ClInclude Include="Utils\Exceptions\GenericExceptions.h" />
     <ClInclude Include="Utils\Log\Log.h" />
     <ClInclude Include="Utils\PcscUtils.h" />
-    <ClInclude Include="Utils\PCSC_new.h" />
     <ClInclude Include="Utils\Platform.h" />
     <ClInclude Include="Utils\Result.h" />
     <ClInclude Include="Utils\StatusWordHandler.h" />
@@ -127,9 +126,9 @@
     <ClInclude Include="Utils\Tests\ACR1281U\ACR1281UReaderTests.h" />
     <ClInclude Include="Utils\Types.h" />
     <ClInclude Include="Utils\Utils.h" />
+    <ClInclude Include="Utils\ArrayUtils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ArrayUtils.h" />
     <ClCompile Include="Utils\Log\Log.cpp" />
     <ClCompile Include="Utils\PCSC.cpp" />
     <ClCompile Include="Utils\Tests\ACR1281U\ACR1281UReaderTestHelpers.cpp" />
@@ -153,3 +152,4 @@
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
+

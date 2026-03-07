@@ -139,7 +139,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Ciphers.h" />
     <ClInclude Include="Cipher\AffineCipher.h" />
     <ClInclude Include="Cipher\CaesarCipher.h" />
     <ClInclude Include="Cipher\Cipher.h" />

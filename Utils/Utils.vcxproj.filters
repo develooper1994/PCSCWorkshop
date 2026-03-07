@@ -56,16 +56,13 @@
     <ClInclude Include="Utils\Platform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\PCSC_new.h">
+    <ClInclude Include="Utils\ArrayUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Utils\Utils.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ArrayUtils.h">
-      <Filter>Header Files</Filter>
     </ClCompile>
     <ClCompile Include="Utils\Tests\ACR1281U\ACR1281UReaderTestHelpers.cpp">
       <Filter>Tests\ACR1281U</Filter>
@@ -112,3 +109,4 @@
     </None>
   </ItemGroup>
 </Project>
+

@@ -53,9 +53,6 @@
     <ClInclude Include="Cipher\XorCipher.h">
       <Filter>Cipher\Header</Filter>
     </ClInclude>
-    <ClInclude Include="Ciphers.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Cipher\CngBlockCipher.h">
       <Filter>Header Files</Filter>
     </ClInclude>

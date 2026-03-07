@@ -11,15 +11,13 @@
 #include <cstdint>
 #include <array>
 #include "Platform.h"
-
-using BYTE = uint8_t;
-using BYTEV = std::vector<BYTE>;
+#include "Types.h"
 
 // ============================================================
 // Yardimci fonksiyonlar
 // ============================================================
 
-// datadan gelen küçük verileri hex çeviriyor.
+// datadan gelen kÃ¼Ã§Ã¼k verileri hex Ã§eviriyor.
 inline void printHex(const BYTE* data, DWORD len) {
     for (DWORD i = 0; i < len; ++i)
         std::cout << std::uppercase << std::hex
@@ -38,7 +36,7 @@ inline void printHex(const std::string& data) {
     printHex(reinterpret_cast<const BYTE*>(data.data()), static_cast<DWORD>(data.size()));
 }
 
-// datadan gelen tüm veriyi hex çeviriyor ve string olarak döndürüyor.
+// datadan gelen tÃ¼m veriyi hex Ã§eviriyor ve string olarak dÃ¶ndÃ¼rÃ¼yor.
 inline std::string toHex(const BYTE* data, size_t len)
 {
     if (!data || len == 0) return "<empty>";
