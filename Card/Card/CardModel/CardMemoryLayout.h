@@ -230,6 +230,7 @@ struct CardMemoryLayout {
     bool is1K()        const { return cardType == CardType::MifareClassic1K; }
     bool isUltralight()const { return cardType == CardType::MifareUltralight; }
     bool isClassic()   const { return is1K() || is4K(); }
+    bool isDesfire()   const { return cardType == CardType::MifareDesfire; }
 
     // ── Constructors ────────────────────────────────────────────────────────
 
@@ -238,7 +239,8 @@ struct CardMemoryLayout {
     }
 
     explicit CardMemoryLayout(CardType ct) : cardType(ct) {
-        std::memset(getRawMemory(), 0, memorySize());
+        if (!isDesfire())
+            std::memset(getRawMemory(), 0, memorySize());
     }
 
     // Backward-compatible: bool is4K → CardType
@@ -252,6 +254,7 @@ struct CardMemoryLayout {
         switch (cardType) {
             case CardType::MifareClassic4K:  return Card4KMemoryLayout::MEMORY_SIZE;
             case CardType::MifareUltralight: return UltralightMemoryLayout::MEMORY_SIZE;
+            case CardType::MifareDesfire:    return 0;  // lives in DesfireMemoryLayout
             default:                         return Card1KMemoryLayout::MEMORY_SIZE;
         }
     }
@@ -260,6 +263,7 @@ struct CardMemoryLayout {
         switch (cardType) {
             case CardType::MifareClassic4K:  return Card4KMemoryLayout::TOTAL_BLOCKS;
             case CardType::MifareUltralight: return UltralightMemoryLayout::TOTAL_BLOCKS;
+            case CardType::MifareDesfire:    return 0;  // virtual blocks via DesfireMemoryLayout
             default:                         return Card1KMemoryLayout::TOTAL_BLOCKS;
         }
     }

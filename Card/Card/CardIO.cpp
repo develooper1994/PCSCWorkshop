@@ -1,5 +1,6 @@
 #include "CardIO.h"
 #include "CardModel/CardMemoryLayout.h"
+#include "CardModel/DesfireMemoryLayout.h"
 #include "CardModel/TrailerConfig.h"
 #include <cstring>
 #include <stdexcept>
@@ -203,6 +204,8 @@ void CardIO::authenticate(int sector, KeyType kt, BYTE slot)
 
 int CardIO::readCard()
 {
+    if (card_.isDesfire()) return 0;  // DESFire: SelectApp + Auth gerekli
+
     int totalBlocks  = card_.getTotalBlocks();
     int totalSectors = card_.getTotalSectors();
     int okCount = 0;
@@ -241,6 +244,8 @@ int CardIO::readCard()
 
 bool CardIO::readSector(int sector)
 {
+    if (card_.isDesfire()) return false;  // no sectors in DESFire
+
     try { ensureAuth(sector); }
     catch (...) { invalidateAuth(); return false; }
 
@@ -322,6 +327,9 @@ void CardIO::writeBlock(int block, const BYTEV& data)
 
 TrailerConfig CardIO::readTrailer(int sector)
 {
+    if (card_.isDesfire())
+        throw std::logic_error("DESFire has no trailer blocks");
+
     int trailerBlock = card_.getTrailerBlockOfSector(sector);
     ensureAuth(sector);
 
@@ -341,6 +349,9 @@ TrailerConfig CardIO::readTrailer(int sector)
 
 void CardIO::writeTrailer(int sector, const TrailerConfig& config)
 {
+    if (card_.isDesfire())
+        throw std::logic_error("DESFire has no trailer blocks");
+
     if (!config.isValid())
         throw std::invalid_argument("Geçersiz access bits — kart kilitlenebilir!");
 
@@ -361,6 +372,9 @@ void CardIO::writeTrailer(int sector, const TrailerConfig& config)
 
 SectorAccessConfig CardIO::getAccessConfig(int sector) const
 {
+    if (card_.isDesfire())
+        throw std::logic_error("DESFire has no access bits");
+
     const MifareBlock& trailer = card_.getBlock(
         card_.getTrailerBlockOfSector(sector));
     ACCESSBYTES ab;
@@ -370,6 +384,9 @@ SectorAccessConfig CardIO::getAccessConfig(int sector) const
 
 void CardIO::setAccessConfig(int sector, const SectorAccessConfig& config)
 {
+    if (card_.isDesfire())
+        throw std::logic_error("DESFire has no access bits");
+
     // Mevcut trailer'ı oku
     TrailerConfig tc = readTrailer(sector);
     tc.access = config;
@@ -378,17 +395,23 @@ void CardIO::setAccessConfig(int sector, const SectorAccessConfig& config)
 
 void CardIO::setSectorMode(int sector, SectorMode mode)
 {
+    if (card_.isDesfire())
+        throw std::logic_error("DESFire has no sector modes");
     setAccessConfig(sector, sectorModeToConfig(mode));
 }
 
 DataBlockPermission CardIO::getDataPermission(int sector, int blockIndex) const
 {
+    if (card_.isDesfire())
+        throw std::logic_error("DESFire has no data block permissions");
     SectorAccessConfig cfg = getAccessConfig(sector);
     return cfg.dataPermission(blockIndex);
 }
 
 TrailerPermission CardIO::getTrailerPermission(int sector) const
 {
+    if (card_.isDesfire())
+        throw std::logic_error("DESFire has no trailer permissions");
     SectorAccessConfig cfg = getAccessConfig(sector);
     return cfg.trailerPermission();
 }
@@ -399,6 +422,8 @@ TrailerPermission CardIO::getTrailerPermission(int sector) const
 
 std::vector<TrailerConfig> CardIO::saveAllTrailers()
 {
+    if (card_.isDesfire()) return {};  // no trailers
+
     int totalSectors = card_.getTotalSectors();
     std::vector<TrailerConfig> configs;
     configs.reserve(totalSectors);
@@ -417,6 +442,8 @@ std::vector<TrailerConfig> CardIO::saveAllTrailers()
 
 void CardIO::restoreAllTrailers(const std::vector<TrailerConfig>& configs)
 {
+    if (card_.isDesfire()) return;  // no trailers
+
     int totalSectors = card_.getTotalSectors();
     int count = static_cast<int>(configs.size());
     if (count > totalSectors) count = totalSectors;

@@ -54,6 +54,7 @@ public:
     bool is1K() const noexcept { return cardType_ == CardType::MifareClassic1K; }
     bool isUltralight() const noexcept { return cardType_ == CardType::MifareUltralight; }
     bool isClassic() const noexcept { return is1K() || is4K(); }
+    bool isDesfire() const noexcept { return cardType_ == CardType::MifareDesfire; }
 
     // ────────────────────────────────────────────────────────────────────────────
     // Memory Size
@@ -102,6 +103,9 @@ public:
 
     // Does this card type have trailer blocks?
     bool hasTrailers() const noexcept { return isClassic(); }
+
+    // Does this card type use sector/block addressing? (false for DESFire)
+    bool hasSectors() const noexcept { return !isDesfire(); }
 
     // Is this a data block (not manufacturer, not trailer)?
     bool isDataBlock(int block) const noexcept;

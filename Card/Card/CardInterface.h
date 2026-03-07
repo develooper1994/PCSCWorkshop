@@ -12,6 +12,7 @@ class AccessControl;
 class KeyManagement;
 class AuthenticationState;
 struct MifareBlock;
+struct DesfireMemoryLayout;
 
 // ════════════════════════════════════════════════════════════════════════════════
 // CardInterface — Mifare Classic Kart Modeli (In-Memory)
@@ -181,6 +182,7 @@ public:
     bool is1K() const;
     bool isUltralight() const;
     bool isClassic() const;
+    bool isDesfire() const;
 
     // Get card size info
     size_t getTotalMemory() const;
@@ -200,6 +202,13 @@ public:
     // Get UID from manufacturer block
     KEYBYTES getUID() const;
 
+    // ────────────────────────────────────────────────────────────────────────────
+    // DESFire Model Access (only valid when isDesfire())
+    // ────────────────────────────────────────────────────────────────────────────
+
+    const DesfireMemoryLayout& getDesfireMemory() const;
+    DesfireMemoryLayout& getDesfireMemoryMutable();
+
 private:
     // Components
     std::unique_ptr<CardMemoryLayout> memory_;
@@ -207,6 +216,9 @@ private:
     std::unique_ptr<AccessControl> accessControl_;
     std::unique_ptr<KeyManagement> keyMgmt_;
     std::unique_ptr<AuthenticationState> authState_;
+
+    // DESFire model (only allocated when cardType_ == MifareDesfire)
+    std::unique_ptr<DesfireMemoryLayout> desfire_;
 
     CardType cardType_;
 };

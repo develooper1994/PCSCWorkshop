@@ -5,6 +5,7 @@
 #include "../Card/Card/CardModel/CardMemoryLayout.h"
 #include "../Card/Card/CardModel/CardTopology.h"
 #include "../Card/Card/CardModel/TrailerConfig.h"
+#include "../Card/Card/CardModel/DesfireMemoryLayout.h"
 #include "../Card/Card/CardProtocol/AccessControl.h"
 #include "../Card/Card/CardProtocol/KeyManagement.h"
 #include "../Card/Card/CardProtocol/AuthenticationState.h"
@@ -550,14 +551,198 @@ bool testCardSimulation() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
-// MAIN TEST RUNNER - All Card System Tests
+// TEST: DESFire Memory Layout + CardInterface integration
+// ════════════════════════════════════════════════════════════════════════════════
+
+bool testDesfireMemoryLayout() {
+    int line = 0;
+    try {
+#define DF_CHECK(cond) do { line = __LINE__; if (!(cond)) { cout << "    FAIL at line " << line << ": " #cond "\n"; return false; } } while(0)
+
+        // ── 1. DesfireVersionInfo parse
+        DesfireVersionInfo vi;
+        vi.hwVendorID = 0x04;  // NXP
+        vi.hwMajorVer = 1;
+        vi.hwStorageSize = 0x18;  // 4KB
+        vi.swMajorVer = 1;
+        vi.uid[0] = 0x04; vi.uid[1] = 0xAB; vi.uid[2] = 0xCD;
+        vi.uid[3] = 0xEF; vi.uid[4] = 0x12; vi.uid[5] = 0x34; vi.uid[6] = 0x56;
+
+        DF_CHECK(DesfireVersionInfo::storageSizeToBytes(0x16) == 2048);
+        DF_CHECK(DesfireVersionInfo::storageSizeToBytes(0x18) == 4096);
+        DF_CHECK(DesfireVersionInfo::storageSizeToBytes(0x1A) == 8192);
+        DF_CHECK(vi.totalCapacity() == 4096);
+        DF_CHECK(vi.guessVariant() == DesfireVariant::EV1);
+
+        // ── 2. DesfireMemoryLayout init
+        DesfireMemoryLayout layout;
+        layout.initFromVersion(vi);
+
+        DF_CHECK(layout.totalMemory == 4096);
+        DF_CHECK(layout.freeMemory == 4096);
+        DF_CHECK(layout.variant == DesfireVariant::EV1);
+
+        // ── 3. Application oluştur
+        DesfireApplication app;
+        app.aid = DesfireAID::fromUint(0x010203);
+        app.keyConfig.keyCount = 3;
+        app.keyConfig.keyType = DesfireKeyType::AES128;
+
+        DesfireFile file;
+        file.fileNo = 0;
+        file.settings.fileType = DesfireFileType::StandardData;
+        file.settings.standard.fileSize = 128;
+        file.settings.access.readKey = 0;
+        file.settings.access.writeKey = 1;
+        file.allocate();
+
+        DF_CHECK(file.data.size() == 128);
+        app.files.push_back(file);
+
+        DesfireFile vfile;
+        vfile.fileNo = 1;
+        vfile.settings.fileType = DesfireFileType::Value;
+        vfile.settings.value.lowerLimit = 0;
+        vfile.settings.value.upperLimit = 10000;
+        vfile.settings.value.value = 500;
+        vfile.allocate();
+
+        DF_CHECK(vfile.data.size() == 4);
+        app.files.push_back(vfile);
+
+        layout.applications.push_back(app);
+
+        // ── 4. Sorgu testi
+        DF_CHECK(layout.hasApp(DesfireAID::fromUint(0x010203)));
+        DF_CHECK(!layout.hasApp(DesfireAID::fromUint(0x999999)));
+
+        auto* foundApp = layout.findApp(DesfireAID::fromUint(0x010203));
+        DF_CHECK(foundApp != nullptr);
+        DF_CHECK(foundApp->files.size() == 2);
+        DF_CHECK(foundApp->hasFile(0));
+        DF_CHECK(foundApp->hasFile(1));
+        DF_CHECK(!foundApp->hasFile(5));
+        DF_CHECK(foundApp->totalDataSize() == 132);
+
+        // ── 5. Virtual block read/write
+        layout.currentAID = DesfireAID::fromUint(0x010203);
+        layout.currentFile = 0;
+
+        DF_CHECK(layout.virtualBlockCount() == 8);
+
+        BYTE testData[16] = {'D','E','S','F','i','r','e',' ','T','e','s','t','!',0,0,0};
+        DF_CHECK(layout.writeVirtualBlock(0, testData));
+
+        BYTE readBuf[16] = {};
+        DF_CHECK(layout.readVirtualBlock(0, readBuf));
+        DF_CHECK(memcmp(readBuf, testData, 16) == 0);
+        DF_CHECK(!layout.readVirtualBlock(99, readBuf));
+
+        // ── 6. AccessRights encode/decode
+        DesfireAccessRights ar;
+        ar.readKey = 0x02;
+        ar.writeKey = 0x03;
+        ar.readWriteKey = 0x0E;
+        ar.changeKey = 0x00;
+
+        auto encoded = ar.encode();
+        auto decoded = DesfireAccessRights::decode(encoded[0], encoded[1]);
+
+        DF_CHECK(decoded.readKey == 0x02);
+        DF_CHECK(decoded.writeKey == 0x03);
+        DF_CHECK(decoded.readWriteKey == 0x0E);
+        DF_CHECK(decoded.changeKey == 0x00);
+        DF_CHECK(!decoded.isFreeRead());
+        DF_CHECK(!decoded.isDenyWrite());
+
+        // ── 7. AID helpers
+        DesfireAID picc = DesfireAID::picc();
+        DF_CHECK(picc.isPICC());
+
+        DesfireAID a = DesfireAID::fromUint(0xABCDEF);
+        DF_CHECK(a.toUint() == 0xABCDEF);
+        DF_CHECK(!a.isPICC());
+
+        // ── 8. CardInterface DESFire integration
+        CardInterface card(CardType::MifareDesfire);
+
+        DF_CHECK(card.isDesfire());
+        DF_CHECK(!card.isClassic());
+        DF_CHECK(!card.isUltralight());
+        DF_CHECK(card.getTotalBlocks() == 0);
+        DF_CHECK(card.getTotalSectors() == 0);
+
+        DesfireMemoryLayout& dfm = card.getDesfireMemoryMutable();
+        dfm.initFromVersion(vi);
+        dfm.applications.push_back(app);
+
+        DF_CHECK(card.getTotalMemory() == 4096);
+
+        KEYBYTES uid = card.getUID();
+        DF_CHECK(uid[0] == 0x04);
+        DF_CHECK(uid[1] == 0xAB);
+        DF_CHECK(uid[5] == 0x34);
+
+        bool loadThrew = false;
+        try { card.loadMemory(nullptr, 100); }
+        catch (const std::logic_error&) { loadThrew = true; }
+        DF_CHECK(loadThrew);
+
+        bool exportThrew = false;
+        try { card.exportMemory(); }
+        catch (const std::logic_error&) { exportThrew = true; }
+        DF_CHECK(exportThrew);
+
+        // ── 9. KeySettings bitfield
+        DesfireKeyConfig kc;
+        kc.keySettings = 0x0F;
+        DF_CHECK(kc.allowChangeMasterKey());
+        DF_CHECK(kc.allowFreeDirectoryList());
+        DF_CHECK(kc.allowFreeCreateDelete());
+        DF_CHECK(kc.allowConfigChangeable());
+
+        kc.keySettings = 0x00;
+        DF_CHECK(!kc.allowChangeMasterKey());
+        DF_CHECK(!kc.allowFreeDirectoryList());
+
+        // ── 10. Variant detection
+        DesfireVersionInfo ev2vi;
+        ev2vi.hwMajorVer = 1;
+        ev2vi.swMajorVer = 2;
+        DF_CHECK(ev2vi.guessVariant() == DesfireVariant::EV2);
+
+        DesfireVersionInfo ev3vi;
+        ev3vi.hwMajorVer = 1;
+        ev3vi.swMajorVer = 3;
+        DF_CHECK(ev3vi.guessVariant() == DesfireVariant::EV3);
+
+        DesfireVersionInfo lightvi;
+        lightvi.hwMajorVer = 0; lightvi.hwMinorVer = 0; lightvi.swMajorVer = 0;
+        DF_CHECK(lightvi.guessVariant() == DesfireVariant::Light);
+
+#undef DF_CHECK
+        return true;
+    }
+    catch (const exception& e) {
+        cout << "    Exception at line " << line << ": " << e.what() << "\n";
+        return false;
+    }
+    catch (...) {
+        cout << "    Unknown exception at line " << line << "\n";
+        return false;
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════════
+// MAIN TEST RUNNER
 // ════════════════════════════════════════════════════════════════════════════════
 
 int runCardSystemTests() {
     cout << "\n=== Card System Tests ===\n\n";
-    
+
     testResults.clear();
-    
+
     // Run all tests
     recordTest("Card Memory Layout (1K)", testCardMemoryLayout1K());
     recordTest("Card Memory Layout (4K)", testCardMemoryLayout4K());
@@ -569,6 +754,7 @@ int runCardSystemTests() {
     recordTest("AccessBits Codec", testAccessBitsCodec());
     recordTest("Trailer Config", testTrailerConfig());
     recordTest("Card Simulation", testCardSimulation());
+    recordTest("DESFire Memory Layout", testDesfireMemoryLayout());
     
     // Summary
     cout << "\n=== Test Summary ===\n";
