@@ -2,23 +2,9 @@
 #include "Exceptions/GenericExceptions.h"
 #include <openssl/evp.h>
 #include <algorithm>
+#include <cstring>
 
-struct AesCtrCipher::Impl {
-	BYTEV key;
-	BYTEV nonce;
-	explicit Impl(const BYTEV& k, const BYTEV& n) : key(k), nonce(n) {}
-};
-
-AesCtrCipher::AesCtrCipher(const BYTEV& key, const BYTEV& nonce)
-	: pImpl(std::make_unique<Impl>(key, nonce)) {
-	if (nonce.size() != 16) throw pcsc::CipherError("AES-CTR IV/nonce must be 16 bytes");
-	if (key.size() != 16 && key.size() != 24 && key.size() != 32)
-		throw pcsc::CipherError("AES key must be 16, 24, or 32 bytes");
-}
-
-AesCtrCipher::~AesCtrCipher() = default;
-AesCtrCipher::AesCtrCipher(AesCtrCipher&&) noexcept = default;
-AesCtrCipher& AesCtrCipher::operator=(AesCtrCipher&&) noexcept = default;
+static const size_t AES_IV_SIZE = 16;
 
 static const EVP_CIPHER* pickAesCtr(size_t keyLen) {
 	switch (keyLen) {
@@ -29,30 +15,80 @@ static const EVP_CIPHER* pickAesCtr(size_t keyLen) {
 	}
 }
 
-static BYTEV ctrTransform(const BYTEV& key, const BYTEV& nonce,
-						  const BYTE* data, size_t len) {
-	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
-	if (!ctx) throw pcsc::CipherError("EVP_CIPHER_CTX_new failed");
+static EVP_CIPHER_CTX* acquireThreadLocalCtx() {
+	thread_local struct CtxHolder {
+		EVP_CIPHER_CTX* ctx;
+		CtxHolder() : ctx(EVP_CIPHER_CTX_new()) {}
+		~CtxHolder() { if (ctx) EVP_CIPHER_CTX_free(ctx); }
+		CtxHolder(const CtxHolder&) = delete;
+		CtxHolder& operator=(const CtxHolder&) = delete;
+	} holder;
+	return holder.ctx;
+}
 
-	BYTEV ivCopy = nonce;
-	EVP_EncryptInit_ex(ctx, pickAesCtr(key.size()), nullptr, key.data(), ivCopy.data());
+struct AesCtrCipher::Impl {
+	BYTEV key;
+	BYTE nonce[AES_IV_SIZE];
+	const EVP_CIPHER* cipher;
 
-	BYTEV out(len + 16);
+	explicit Impl(const BYTEV& k, const BYTEV& n)
+		: key(k), cipher(pickAesCtr(k.size())) {
+		std::memcpy(nonce, n.data(), AES_IV_SIZE);
+	}
+};
+
+AesCtrCipher::AesCtrCipher(const BYTEV& key, const BYTEV& nonce)
+	: pImpl(nullptr) {
+	if (nonce.size() != AES_IV_SIZE)
+		throw pcsc::CipherError("AES-CTR IV/nonce must be 16 bytes");
+	if (key.size() != 16 && key.size() != 24 && key.size() != 32)
+		throw pcsc::CipherError("AES key must be 16, 24, or 32 bytes");
+	pImpl = std::make_unique<Impl>(key, nonce);
+}
+
+AesCtrCipher::~AesCtrCipher() = default;
+AesCtrCipher::AesCtrCipher(AesCtrCipher&&) noexcept = default;
+AesCtrCipher& AesCtrCipher::operator=(AesCtrCipher&&) noexcept = default;
+
+static size_t ctrTransformInto(const AesCtrCipher::Impl* impl,
+                               const BYTE* data, size_t len,
+                               BYTE* out, size_t outCapacity) {
+	EVP_CIPHER_CTX* ctx = acquireThreadLocalCtx();
+	if (!ctx) throw pcsc::CipherError("EVP_CIPHER_CTX thread-local allocation failed");
+
+	BYTE ivBuf[AES_IV_SIZE];
+	std::memcpy(ivBuf, impl->nonce, AES_IV_SIZE);
+	EVP_EncryptInit_ex(ctx, impl->cipher, nullptr, impl->key.data(), ivBuf);
+
 	int outLen = 0, finalLen = 0;
-	EVP_EncryptUpdate(ctx, out.data(), &outLen, data, static_cast<int>(len));
-	EVP_EncryptFinal_ex(ctx, out.data() + outLen, &finalLen);
-	EVP_CIPHER_CTX_free(ctx);
+	EVP_EncryptUpdate(ctx, out, &outLen, data, static_cast<int>(len));
+	EVP_EncryptFinal_ex(ctx, out + outLen, &finalLen);
 
-	out.resize(static_cast<size_t>(outLen + finalLen));
-	return out;
+	return static_cast<size_t>(outLen + finalLen);
 }
 
 BYTEV AesCtrCipher::encrypt(const BYTE* data, size_t len) const {
-	return ctrTransform(pImpl->key, pImpl->nonce, data, len);
+	BYTEV out(len);
+	size_t written = ctrTransformInto(pImpl.get(), data, len, out.data(), out.size());
+	out.resize(written);
+	return out;
 }
 
 BYTEV AesCtrCipher::decrypt(const BYTE* data, size_t len) const {
-	return ctrTransform(pImpl->key, pImpl->nonce, data, len);
+	BYTEV out(len);
+	size_t written = ctrTransformInto(pImpl.get(), data, len, out.data(), out.size());
+	out.resize(written);
+	return out;
+}
+
+size_t AesCtrCipher::encryptIntoSized(const BYTE* data, size_t len,
+                                       BYTE* out, size_t outCapacity) const {
+	return ctrTransformInto(pImpl.get(), data, len, out, outCapacity);
+}
+
+size_t AesCtrCipher::decryptIntoSized(const BYTE* data, size_t len,
+                                       BYTE* out, size_t outCapacity) const {
+	return ctrTransformInto(pImpl.get(), data, len, out, outCapacity);
 }
 
 bool AesCtrCipher::test() const {

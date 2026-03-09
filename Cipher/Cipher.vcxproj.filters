@@ -29,9 +29,6 @@
     <ClInclude Include="Cipher\Cipher.h">
       <Filter>Cipher\Header</Filter>
     </ClInclude>
-    <ClInclude Include="Cipher\Ciphers.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
     <ClInclude Include="Cipher\CipherUtil.h">
       <Filter>Cipher\Header</Filter>
     </ClInclude>
@@ -69,9 +66,6 @@
       <Filter>Cipher\Header</Filter>
     </ClInclude>
     <ClInclude Include="Cipher\AesGcmCipher.h">
-      <Filter>Cipher\Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Cipher\AesGcmUtil.h">
       <Filter>Cipher\Header</Filter>
     </ClInclude>
     <ClInclude Include="Cipher\Crypto.h">
@@ -123,6 +117,6 @@
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="CRYPTO_MIGRATION_PLAN.md" />
+    <None Include="CIPHER_OPTIMIZATION_GUIDE.md" />
   </ItemGroup>
 </Project>

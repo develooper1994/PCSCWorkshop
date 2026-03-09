@@ -151,16 +151,16 @@ struct PcscError {
 
 	// StatusWord → ErrorCode çevrimi
 	static PcscError fromStatusWord(const StatusWord& s) {
-		if (s.isSuccess())        return {ErrorCode::Success, s};
-		if (s.isAuthSentinel())   return {ErrorCode::AuthRequired, s};
-		if (s.isAuthBlocked())    return {ErrorCode::AuthBlocked, s};
-		if (s.isSecurityError())  return {ErrorCode::SecurityNotSatisfied, s};
-		if (s.isWrongLength())    return {ErrorCode::WrongLength, s};
-		if (s.isFileNotFound())   return {ErrorCode::FileNotFound, s};
-		if (s.isIncorrectP1P2())  return {ErrorCode::IncorrectParameters, s};
-		if (s.isINSNotSupported()) return {ErrorCode::InsNotSupported, s};
-		if (s.isCLANotSupported()) return {ErrorCode::ClaNotSupported, s};
-		return {ErrorCode::Unknown, s};
+		if (s.isSuccess())				return {ErrorCode::Success, s};
+		else if (s.isAuthSentinel())	return {ErrorCode::AuthRequired, s};
+		else if (s.isAuthBlocked())		return {ErrorCode::AuthBlocked, s};
+		else if (s.isSecurityError())	return {ErrorCode::SecurityNotSatisfied, s};
+		else if (s.isWrongLength())		return {ErrorCode::WrongLength, s};
+		else if (s.isFileNotFound())	return {ErrorCode::FileNotFound, s};
+		else if (s.isIncorrectP1P2())	return {ErrorCode::IncorrectParameters, s};
+		else if (s.isINSNotSupported())	return {ErrorCode::InsNotSupported, s};
+		else if (s.isCLANotSupported())	return {ErrorCode::ClaNotSupported, s};
+		else							return {ErrorCode::Unknown, s};
 	}
 };
 

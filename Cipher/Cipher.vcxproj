@@ -142,12 +142,10 @@
     <ClInclude Include="Cipher\AesCbcCipher.h" />
     <ClInclude Include="Cipher\AesCtrCipher.h" />
     <ClInclude Include="Cipher\AesGcmCipher.h" />
-    <ClInclude Include="Cipher\AesGcmUtil.h" />
     <ClInclude Include="Cipher\AffineCipher.h" />
     <ClInclude Include="Cipher\BlockCipher.h" />
     <ClInclude Include="Cipher\CaesarCipher.h" />
     <ClInclude Include="Cipher\Cipher.h" />
-    <ClInclude Include="Cipher\Ciphers.h" />
     <ClInclude Include="Cipher\CipherUtil.h" />
     <ClInclude Include="Cipher\Crypto.h" />
     <ClInclude Include="Cipher\CryptoTypes.h" />
@@ -183,7 +181,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="CRYPTO_MIGRATION_PLAN.md" />
+    <None Include="CIPHER_OPTIMIZATION_GUIDE.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -5,23 +5,6 @@
 #include <algorithm>
 #include <cstring>
 
-struct AesGcmCipher::Impl {
-	BYTEV key;
-	static constexpr size_t NONCE_SIZE = 12;
-	static constexpr size_t TAG_SIZE = 16;
-	explicit Impl(const BYTEV& k) : key(k) {}
-};
-
-AesGcmCipher::AesGcmCipher(const BYTEV& key)
-	: pImpl(std::make_unique<Impl>(key)) {
-	if (key.size() != 16 && key.size() != 24 && key.size() != 32)
-		throw pcsc::CipherError("AES-GCM key must be 16, 24, or 32 bytes");
-}
-
-AesGcmCipher::~AesGcmCipher() = default;
-AesGcmCipher::AesGcmCipher(AesGcmCipher&&) noexcept = default;
-AesGcmCipher& AesGcmCipher::operator=(AesGcmCipher&&) noexcept = default;
-
 static const EVP_CIPHER* pickAesGcm(size_t keyLen) {
 	switch (keyLen) {
 	case 16: return EVP_aes_128_gcm();
@@ -31,15 +14,47 @@ static const EVP_CIPHER* pickAesGcm(size_t keyLen) {
 	}
 }
 
+static EVP_CIPHER_CTX* acquireThreadLocalCtx() {
+	thread_local struct CtxHolder {
+		EVP_CIPHER_CTX* ctx;
+		CtxHolder() : ctx(EVP_CIPHER_CTX_new()) {}
+		~CtxHolder() { if (ctx) EVP_CIPHER_CTX_free(ctx); }
+		CtxHolder(const CtxHolder&) = delete;
+		CtxHolder& operator=(const CtxHolder&) = delete;
+	} holder;
+	return holder.ctx;
+}
+
+struct AesGcmCipher::Impl {
+	BYTEV key;
+	const EVP_CIPHER* cipher;
+	static constexpr size_t NONCE_SIZE = 12;
+	static constexpr size_t TAG_SIZE = 16;
+
+	explicit Impl(const BYTEV& k)
+		: key(k), cipher(pickAesGcm(k.size())) {}
+};
+
+AesGcmCipher::AesGcmCipher(const BYTEV& key)
+	: pImpl(nullptr) {
+	if (key.size() != 16 && key.size() != 24 && key.size() != 32)
+		throw pcsc::CipherError("AES-GCM key must be 16, 24, or 32 bytes");
+	pImpl = std::make_unique<Impl>(key);
+}
+
+AesGcmCipher::~AesGcmCipher() = default;
+AesGcmCipher::AesGcmCipher(AesGcmCipher&&) noexcept = default;
+AesGcmCipher& AesGcmCipher::operator=(AesGcmCipher&&) noexcept = default;
+
 static BYTEV gcmEncrypt(const AesGcmCipher::Impl* impl,
                         const BYTE* data, size_t len,
                         const BYTE* aad, size_t aadLen) {
 	BYTEV nonce = crypto::randomBytes(impl->NONCE_SIZE);
 
-	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
-	if (!ctx) throw pcsc::CipherError("EVP_CIPHER_CTX_new failed");
+	EVP_CIPHER_CTX* ctx = acquireThreadLocalCtx();
+	if (!ctx) throw pcsc::CipherError("EVP_CIPHER_CTX thread-local allocation failed");
 
-	EVP_EncryptInit_ex(ctx, pickAesGcm(impl->key.size()), nullptr, nullptr, nullptr);
+	EVP_EncryptInit_ex(ctx, impl->cipher, nullptr, nullptr, nullptr);
 	EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, static_cast<int>(impl->NONCE_SIZE), nullptr);
 	EVP_EncryptInit_ex(ctx, nullptr, nullptr, impl->key.data(), nonce.data());
 
@@ -47,24 +62,22 @@ static BYTEV gcmEncrypt(const AesGcmCipher::Impl* impl,
 	if (aad && aadLen > 0)
 		EVP_EncryptUpdate(ctx, nullptr, &outLen, aad, static_cast<int>(aadLen));
 
-	BYTEV ct(len);
-	EVP_EncryptUpdate(ctx, ct.data(), &outLen, data, static_cast<int>(len));
+	// nonce || ciphertext || tag — tek allocation
+	BYTEV ret(impl->NONCE_SIZE + len + impl->TAG_SIZE);
+	std::memcpy(ret.data(), nonce.data(), impl->NONCE_SIZE);
+
+	BYTE* ctOut = ret.data() + impl->NONCE_SIZE;
+	EVP_EncryptUpdate(ctx, ctOut, &outLen, data, static_cast<int>(len));
 	int ctLen = outLen;
 
 	int finalLen = 0;
-	EVP_EncryptFinal_ex(ctx, ct.data() + ctLen, &finalLen);
+	EVP_EncryptFinal_ex(ctx, ctOut + ctLen, &finalLen);
 	ctLen += finalLen;
 
-	BYTEV tag(impl->TAG_SIZE);
-	EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, static_cast<int>(impl->TAG_SIZE), tag.data());
-	EVP_CIPHER_CTX_free(ctx);
+	EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG,
+	                     static_cast<int>(impl->TAG_SIZE), ctOut + ctLen);
 
-	// nonce || ciphertext || tag
-	BYTEV ret;
-	ret.reserve(nonce.size() + static_cast<size_t>(ctLen) + tag.size());
-	ret.insert(ret.end(), nonce.begin(), nonce.end());
-	ret.insert(ret.end(), ct.begin(), ct.begin() + ctLen);
-	ret.insert(ret.end(), tag.begin(), tag.end());
+	ret.resize(impl->NONCE_SIZE + static_cast<size_t>(ctLen) + impl->TAG_SIZE);
 	return ret;
 }
 
@@ -79,10 +92,10 @@ static BYTEV gcmDecrypt(const AesGcmCipher::Impl* impl,
 	size_t ctLen = len - impl->NONCE_SIZE - impl->TAG_SIZE;
 	const BYTE* tagPtr = data + impl->NONCE_SIZE + ctLen;
 
-	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
-	if (!ctx) throw pcsc::CipherError("EVP_CIPHER_CTX_new failed");
+	EVP_CIPHER_CTX* ctx = acquireThreadLocalCtx();
+	if (!ctx) throw pcsc::CipherError("EVP_CIPHER_CTX thread-local allocation failed");
 
-	EVP_DecryptInit_ex(ctx, pickAesGcm(impl->key.size()), nullptr, nullptr, nullptr);
+	EVP_DecryptInit_ex(ctx, impl->cipher, nullptr, nullptr, nullptr);
 	EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, static_cast<int>(impl->NONCE_SIZE), nullptr);
 	EVP_DecryptInit_ex(ctx, nullptr, nullptr, impl->key.data(), nonce);
 
@@ -98,8 +111,6 @@ static BYTEV gcmDecrypt(const AesGcmCipher::Impl* impl,
 	                     static_cast<int>(impl->TAG_SIZE), const_cast<BYTE*>(tagPtr));
 
 	int rc = EVP_DecryptFinal_ex(ctx, pt.data() + ptLen, &outLen);
-	EVP_CIPHER_CTX_free(ctx);
-
 	if (rc <= 0) throw pcsc::CipherError("AES-GCM authentication failed");
 	ptLen += outLen;
 	pt.resize(static_cast<size_t>(ptLen));

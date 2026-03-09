@@ -1,6 +1,8 @@
 #ifndef PCSC_WORKSHOP1_CIPHER_H
 #define PCSC_WORKSHOP1_CIPHER_H
 
+#include "Types.h"
+
 #include <vector>
 #include <memory>
 #include <iterator>
@@ -9,22 +11,20 @@
 #include <algorithm>
 #include <string>
 
-#include "Types.h"
-
 // Forward declare ICipherAAD so we can reference it in implementation file
 class ICipherAAD;
 
 // ============================================================
-// ICipher — þifreleme stratejisi arayüzü
+// ICipher â€” ÅŸifreleme stratejisi arayÃ¼zÃ¼
 // ============================================================
 class ICipher {
 public:
     virtual ~ICipher() = default;
 
-    // Veriyi þifrele — out buffer'ý en az len byte olmalý
+    // Veriyi ÅŸifrele â€” out buffer'Ä± en az len byte olmalÄ±
     virtual BYTEV encrypt(const BYTE* data, size_t len) const = 0;
 
-    // Þifreli veriyi çöz — out buffer'ý en az len byte olmalý
+    // Åžifreli veriyi Ã§Ã¶z â€” out buffer'Ä± en az len byte olmalÄ±
     virtual BYTEV decrypt(const BYTE* data, size_t len) const = 0;
 
     // Convenience overloads for common container types
@@ -33,7 +33,7 @@ public:
     BYTEV encrypt(const std::string& s) const { return encrypt(reinterpret_cast<const BYTE*>(s.data()), s.size()); }
     BYTEV decrypt(const std::string& s) const { return decrypt(reinterpret_cast<const BYTE*>(s.data()), s.size()); }
 
-    // Backwards-compatible output-into virtuals: cipher implementasyonlarý optimize edebilir
+    // Backwards-compatible output-into virtuals: cipher implementasyonlarÄ± optimize edebilir
     // Default implementation uses old virtuals and copies result into out only when sizes match.
     virtual void encryptInto(const BYTE* data, size_t len, BYTE* out) const {
         BYTEV tmp = encrypt(data, len);

@@ -16,6 +16,8 @@ public:
 
 	BYTEV encrypt(const BYTE* data, size_t len) const override;
 	BYTEV decrypt(const BYTE* data, size_t len) const override;
+	size_t encryptIntoSized(const BYTE* data, size_t len, BYTE* out, size_t outCapacity) const override;
+	size_t decryptIntoSized(const BYTE* data, size_t len, BYTE* out, size_t outCapacity) const override;
 	bool test() const override;
 
 private:
