@@ -115,13 +115,15 @@ bool CardLayoutTopology::isValidSector(int sector) const noexcept {
 
 void CardLayoutTopology::validateBlock(int block) const {
     if (!isValidBlock(block)) {
-        throw std::out_of_range("Block out of range");
+		PcscError::make(PcscErrorCode::InvalidData,
+            "Block out of range: " + std::to_string(block)).throwIfError();
     }
 }
 
 void CardLayoutTopology::validateSector(int sector) const {
     if (!isValidSector(sector)) {
-        throw std::out_of_range("Sector out of range");
+		PcscError::make(PcscErrorCode::InvalidData,
+            "Sector out of range: " + std::to_string(sector)).throwIfError();
     }
 }
 

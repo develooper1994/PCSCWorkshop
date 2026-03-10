@@ -112,6 +112,9 @@
     <ClCompile Include="Cipher\AesGcmCipher.cpp">
       <Filter>Cipher\Source</Filter>
     </ClCompile>
+    <ClCompile Include="Cipher\CipherUtil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

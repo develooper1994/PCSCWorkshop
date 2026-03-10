@@ -308,17 +308,17 @@ void DesfireCommands::checkResponse(const BYTEV& response, const char* context) 
 
 PcscError DesfireCommands::evaluateResponse(const BYTEV& response) {
     if (response.size() < 2)
-        return {ErrorCode::ResponseTooShort};
+        return {PcscErrorCode::ResponseTooShort};
     BYTE sw1 = response[response.size() - 2];
     BYTE sw2 = response[response.size() - 1];
     if (sw1 == SW1 && (sw2 == OK || sw2 == MORE))
         return {};
     StatusWord sw(sw1, sw2);
-    if (sw2 == AUTH_ERR) return {ErrorCode::DesfireAuthMismatch, sw};
-    if (sw2 == PERM_ERR) return {ErrorCode::DesfirePermissionDenied, sw};
-    if (sw2 == NO_APP)   return {ErrorCode::DesfireAppNotFound, sw};
-    if (sw2 == NO_FILE)  return {ErrorCode::DesfireFileNotFound, sw};
-    return {ErrorCode::DesfireError, sw};
+    if (sw2 == AUTH_ERR) return {PcscErrorCode::DesfireAuthMismatch, sw};
+    if (sw2 == PERM_ERR) return {PcscErrorCode::DesfirePermissionDenied, sw};
+    if (sw2 == NO_APP)   return {PcscErrorCode::DesfireAppNotFound, sw};
+    if (sw2 == NO_FILE)  return {PcscErrorCode::DesfireFileNotFound, sw};
+    return {PcscErrorCode::DesfireError, sw};
 }
 
 // Template implementations are in DesfireCommands.h
@@ -340,8 +340,11 @@ std::vector<BYTE> DesfireCommands::parseFileIDs(const BYTEV& data) {
 }
 
 DesfireFileSettings DesfireCommands::parseFileSettings(const BYTEV& data) {
-    DesfireFileSettings fs;
-    if (data.size() < 7) throw std::runtime_error("FileSettings too short");
+DesfireFileSettings fs;
+if (data.size() < 7) {
+    PcscError::make(PcscErrorCode::InvalidData, "FileSettings too short").throwIfError();
+    return fs;
+}
 
     fs.fileType = static_cast<DesfireFileType>(data[0]);
     fs.commMode = static_cast<DesfireCommMode>(data[1]);
@@ -376,6 +379,9 @@ DesfireFileSettings DesfireCommands::parseFileSettings(const BYTEV& data) {
 }
 
 size_t DesfireCommands::parseFreeMemory(const BYTEV& data) {
-    if (data.size() < 3) throw std::runtime_error("FreeMem too short");
+if (data.size() < 3) {
+PcscError::make(PcscErrorCode::InvalidData, "FreeMem response too short").throwIfError();
+return 0;
+}
     return static_cast<size_t>(readLE24(data.data()));
 }

@@ -165,6 +165,7 @@
     <ClCompile Include="Cipher\BlockCipher.cpp" />
     <ClCompile Include="Cipher\CaesarCipher.cpp" />
     <ClCompile Include="Cipher\CipherAadFallback.cpp" />
+    <ClCompile Include="Cipher\CipherUtil.cpp" />
     <ClCompile Include="Cipher\Hash.cpp" />
     <ClCompile Include="Cipher\Hmac.cpp" />
     <ClCompile Include="Cipher\Kdf.cpp" />

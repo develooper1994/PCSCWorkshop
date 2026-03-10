@@ -226,6 +226,10 @@ DWORD PCSC::protocol() const { return activeProtocol_; }
 // ============================================================
 
 BYTEV PCSC::transmit(const BYTEV& cmd) const {
+    return tryTransmit(cmd).unwrap();
+}
+
+Result<BYTEV> PCSC::tryTransmit(const BYTEV& cmd) const {
     BYTE recv[512];
     DWORD recvLen = sizeof(recv);
     SCARD_IO_REQUEST pci = (activeProtocol_ == SCARD_PROTOCOL_T0)
@@ -245,7 +249,7 @@ BYTEV PCSC::transmit(const BYTEV& cmd) const {
     if (r != SCARD_S_SUCCESS) {
         std::string msg = "SCardTransmit: " + getSCardErrorMessage(r);
         LOG_PCSC_ERROR(msg);
-        throw pcsc::ReaderError(msg);
+        return {BYTEV{}, PcscError::make(PcscErrorCode::NotConnected, msg)};
     }
 
     {
@@ -255,14 +259,22 @@ BYTEV PCSC::transmit(const BYTEV& cmd) const {
         LOG_PCSC_DEBUG(oss.str());
     }
 
-    return BYTEV(recv, recv + recvLen);
+    return {BYTEV(recv, recv + recvLen), PcscError{}};
 }
 
 BYTEV PCSC::sendCommand(BYTEV cmd, bool followChaining) const {
+    return trySendCommand(std::move(cmd), followChaining).unwrap();
+}
+
+Result<BYTEV> PCSC::trySendCommand(BYTEV cmd, bool followChaining) const {
     BYTEV full;
     while (true) {
-        BYTEV resp = transmit(cmd);
-        auto sw = getStatusWords(resp);
+        auto txResult = tryTransmit(cmd);
+        if (!txResult) return txResult;
+		BYTEV resp = std::move(txResult.unwrap());
+        auto swResult = tryGetStatusWords(resp);
+		if (!swResult) return Result<BYTEV>{swResult.error()};
+		auto sw = swResult.unwrap();
 
         if (resp.size() > 2)
             full.insert(full.end(), resp.begin(), resp.end() - 2);
@@ -275,10 +287,11 @@ BYTEV PCSC::sendCommand(BYTEV cmd, bool followChaining) const {
         else if (sw.sw2 == 0x00 && (sw.sw1 == 0x91 || sw.sw1 == 0x90)) break;
         else {
             LOG_PCSC_ERROR("Unexpected SW: " + sw.toHexFormatted());
-            throw pcsc::ReaderError("Card returned error: " + sw.toHexFormatted());
+            return {BYTEV{}, PcscError::make(PcscErrorCode::Unknown, sw,
+                "Card returned error: " + sw.toHexFormatted())};
         }
     }
-    return full;
+    return {std::move(full), PcscError{}};
 }
 
 // ============================================================
@@ -286,7 +299,10 @@ BYTEV PCSC::sendCommand(BYTEV cmd, bool followChaining) const {
 // ============================================================
 
 StatusWord PCSC::getStatusWords(const BYTEV& resp) const {
-    if (resp.size() < 2)
-        throw pcsc::ReaderError("Response too short");
-    return StatusWord(resp[resp.size() - 2], resp[resp.size() - 1]);
+    return tryGetStatusWords(resp).unwrap();
+}
+
+Result<StatusWord> PCSC::tryGetStatusWords(const BYTEV& resp) const {
+	if (resp.size() < 2) return Result<StatusWord>{StatusWord{}, PcscError{PcscErrorCode::ResponseTooShort}};
+	else return Result<StatusWord>{StatusWord(resp[resp.size() - 2], resp[resp.size() - 1]), PcscError{}};
 }

@@ -2,7 +2,7 @@
 #define CARDTOPOLOGY_H
 
 #include "../CardDataTypes.h"
-#include <stdexcept>
+#include "Result.h"
 
 // ════════════════════════════════════════════════════════════════════════════════
 // CardLayoutTopology - Pure Card Layout Information

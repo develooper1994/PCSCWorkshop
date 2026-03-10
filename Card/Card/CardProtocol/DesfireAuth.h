@@ -119,13 +119,13 @@ Result<void> DesfireAuth::tryAuthenticate(DesfireSession& session,
 
     // Step 1: Send auth cmd, receive ek(RndB)
     auto r1 = transmit(buildAuthCmd(keyNo, keyType));
-    if (!r1) { session.reset(); return {r1.error}; }
-    auto e1 = evaluateAuthSW(r1.value, SW2_AF);
+    if (!r1) { session.reset(); return {r1.error()}; }
+    auto e1 = evaluateAuthSW(r1.unwrap(), SW2_AF);
     if (!e1.ok()) { session.reset(); return {e1}; }
 
     size_t expected = DesfireCrypto::nonceSize(keyType);
-    if (r1.value.size() - 2 != expected) { session.reset(); return {{ErrorCode::InvalidData}}; }
-    BYTEV encRndB(r1.value.begin(), r1.value.begin() + expected);
+    if (r1.unwrap().size() - 2 != expected) { session.reset(); return {{PcscErrorCode::InvalidData}}; }
+    BYTEV encRndB(r1.unwrap().begin(), r1.unwrap().begin() + expected);
 
     // Step 2: Decrypt, build payload
     size_t bs = DesfireCrypto::blockSize(keyType);
@@ -136,16 +136,15 @@ Result<void> DesfireAuth::tryAuthenticate(DesfireSession& session,
 
     // Step 3: Send payload, receive ek(rotL(RndA))
     auto r2 = transmit(buildAdditionalFrame(payload));
-    if (!r2) { session.reset(); return {r2.error}; }
-    auto e2 = evaluateAuthSW(r2.value, SW2_OK);
+    if (!r2) { session.reset(); return {r2.error()}; }
+    auto e2 = evaluateAuthSW(r2.unwrap(), SW2_OK);
     if (!e2.ok()) { session.reset(); return {e2}; }
 
-    if (r2.value.size() - 2 != expected) { session.reset(); return {{ErrorCode::InvalidData}}; }
-    BYTEV encRndArot(r2.value.begin(), r2.value.begin() + expected);
-
+    if (r2.unwrap().size() - 2 != expected) { session.reset(); return {{PcscErrorCode::InvalidData}}; }
+    BYTEV encRndArot(r2.unwrap().begin(), r2.unwrap().begin() + expected);
     BYTEV iv3(payload.end() - bs, payload.end());
     bool ok = DesfireCrypto::verifyAuthResponse(encRndArot, rndA, key, keyType, iv3);
-    if (!ok) { session.reset(); return {{ErrorCode::DesfireAuthMismatch}}; }
+    if (!ok) { session.reset(); return {{PcscErrorCode::DesfireAuthMismatch}}; }
 
     session.authenticated = true;
     session.authKeyNo = keyNo;

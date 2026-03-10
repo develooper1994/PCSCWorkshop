@@ -1,6 +1,6 @@
 #include "DesfireSecureMessaging.h"
 #include "BlockCipher.h"
-#include <stdexcept>
+#include "Result.h"
 #include <cstring>
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -9,8 +9,10 @@
 
 BYTEV DesfireSecureMessaging::calculateCMAC(DesfireSession& session,
                                              const BYTEV& data) {
-    if (session.sessionKey.empty())
-        throw std::runtime_error("SecureMessaging: no session key");
+    if (session.sessionKey.empty()) {
+        PcscError::make(PcscErrorCode::NotAuthenticated, "SecureMessaging: no session key").throwIfError();
+        return {};
+    }
 
     // CMAC with current session key
     BYTEV fullMAC = crypto::block::cmacAes128(session.sessionKey, data);
@@ -90,7 +92,9 @@ BYTEV DesfireSecureMessaging::unwrapResponse(DesfireSession& session,
         BYTEV expectedMAC = truncateCMAC(fullMAC);
 
         if (receivedMAC != expectedMAC) {
-            throw std::runtime_error("SecureMessaging: CMAC verification failed");
+            PcscError::make(PcscErrorCode::DesfireAuthMismatch,
+                "SecureMessaging: CMAC verification failed").throwIfError();
+            return {};
         }
 
         return pureData;

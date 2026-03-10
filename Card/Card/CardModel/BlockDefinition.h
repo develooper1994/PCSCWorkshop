@@ -2,8 +2,8 @@
 #define BLOCKDEFINITION_H
 
 #include "../CardDataTypes.h"
+#include "Result.h"
 #include <cstring>
-#include <stdexcept>
 
 // ════════════════════════════════════════════════════════════════════════════════
 // Block Definition - Zero-Copy Union for Different Block Types
@@ -63,7 +63,8 @@ struct MifareBlock {
     // From BYTEV (if size == 16)
     explicit MifareBlock(const BYTEV& vec) {
         if (vec.size() != 16) {
-            throw std::invalid_argument("Block must be 16 bytes");
+            PcscError::make(PcscErrorCode::InvalidData, "Block must be 16 bytes").throwIfError();
+            return;
         }
         std::memcpy(raw, vec.data(), 16);
     }

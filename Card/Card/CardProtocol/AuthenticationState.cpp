@@ -1,5 +1,6 @@
 #include "AuthenticationState.h"
 #include "../CardModel/CardMemoryLayout.h"
+#include "Result.h"
 #include <iostream>
 #include <algorithm>
 
@@ -19,11 +20,12 @@ AuthenticationState::AuthenticationState(const CardMemoryLayout& cardMemory,
 // ════════════════════════════════════════════════════════════════════════════════
 
 void AuthenticationState::markAuthenticated(int sector, KeyType kt) {
-    if (!isValidSector(sector)) {
-        throw std::out_of_range("Invalid sector");
-    }
-    
-    if (cachingEnabled_) {
+	if (!isValidSector(sector)) {
+		PcscError::make(PcscErrorCode::InvalidData,
+			"Invalid sector: " + std::to_string(sector)).throwIfError();
+		return;
+	}
+    else if (cachingEnabled_) {
         sessions_[sector] = AuthSession(sector, kt, defaultTimeout_);
     }
 }

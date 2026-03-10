@@ -4,9 +4,9 @@
 #include "../CardDataTypes.h"
 #include "BlockDefinition.h"
 #include "PageDefinition.h"
+#include "Result.h"
 #include <array>
 #include <cstring>
-#include <stdexcept>
 
 // ════════════════════════════════════════════════════════════════════════════════
 // CardMemoryLayout - Zero-Copy Union for Complete Card Memory
@@ -290,7 +290,10 @@ struct CardMemoryLayout {
 
     MifareBlock& getBlock(int index) {
         if (index < 0 || index >= totalBlocks()) {
-            throw std::out_of_range("Block index out of range");
+            PcscError::make(PcscErrorCode::InvalidData,
+                "Block index out of range: " + std::to_string(index)).throwIfError();
+            static MifareBlock dummy;
+            return dummy;
         }
         switch (cardType) {
             case CardType::MifareClassic4K:  return data.card4K.blocks[index];
@@ -301,7 +304,10 @@ struct CardMemoryLayout {
 
     const MifareBlock& getBlock(int index) const {
         if (index < 0 || index >= totalBlocks()) {
-            throw std::out_of_range("Block index out of range");
+			PcscError::make(PcscErrorCode::InvalidData,
+                "Block index out of range: " + std::to_string(index)).throwIfError();
+            static const MifareBlock dummy;
+            return dummy;
         }
         switch (cardType) {
             case CardType::MifareClassic4K:  return data.card4K.blocks[index];

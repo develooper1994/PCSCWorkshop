@@ -294,9 +294,17 @@ public:
     Result<bool>           tryReadSector(int sector);
     Result<BYTEV>          tryReadBlock(int block);
     Result<void>           tryWriteBlock(int block, const BYTE data[16]);
+    Result<void>           tryWriteBlock(int block, const BYTEV& data);
     Result<void>           tryAuthenticate(int sector);
     Result<TrailerConfig>  tryReadTrailer(int sector);
     Result<void>           tryWriteTrailer(int sector, const TrailerConfig& config);
+
+    // Access Bits
+    Result<SectorAccessConfig> tryGetAccessConfig(int sector) const;
+    Result<void>               trySetAccessConfig(int sector, const SectorAccessConfig& config);
+    Result<void>               trySetSectorMode(int sector, SectorMode mode);
+    Result<DataBlockPermission> tryGetDataPermission(int sector, int blockIndex = 0) const;
+    Result<TrailerPermission>   tryGetTrailerPermission(int sector) const;
 
     // DESFire
     Result<DesfireVersionInfo>        tryDiscoverCard();

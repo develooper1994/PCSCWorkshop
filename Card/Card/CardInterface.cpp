@@ -5,6 +5,7 @@
 #include "CardProtocol/AccessControl.h"
 #include "CardProtocol/KeyManagement.h"
 #include "CardProtocol/AuthenticationState.h"
+#include "Result.h"
 #include <iostream>
 #include <iomanip>
 
@@ -36,10 +37,15 @@ CardInterface::CardInterface(bool is4K)
 // ════════════════════════════════════════════════════════════════════════════════
 
 void CardInterface::loadMemory(const BYTE* data, size_t size) {
-    if (isDesfire())
-        throw std::logic_error("DESFire: use DesfireMemoryLayout, not loadMemory()");
+    if (isDesfire()) {
+		PcscError::make(PcscErrorCode::NotDesfire,
+            "DESFire: use DesfireMemoryLayout, not loadMemory()").throwIfError();
+        return;
+    }
     if (size != memory_->memorySize()) {
-        throw std::invalid_argument("Invalid memory size for card type");
+		PcscError::make(PcscErrorCode::InvalidData,
+            "Invalid memory size for card type").throwIfError();
+        return;
     }
     std::memcpy(memory_->getRawMemory(), data, size);
 }
@@ -53,8 +59,11 @@ CardMemoryLayout& CardInterface::getMemoryMutable() {
 }
 
 BYTEV CardInterface::exportMemory() const {
-    if (isDesfire())
-        throw std::logic_error("DESFire: no flat memory export");
+    if (isDesfire()) {
+		PcscError::make(PcscErrorCode::NotDesfire,
+            "DESFire: no flat memory export").throwIfError();
+        return {};
+    }
     const BYTE* rawPtr = memory_->getRawMemory();
     size_t size = memory_->memorySize();
     return BYTEV(rawPtr, rawPtr + size);
@@ -286,13 +295,15 @@ KEYBYTES CardInterface::getUID() const {
 // ════════════════════════════════════════════════════════════════════════════════
 
 const DesfireMemoryLayout& CardInterface::getDesfireMemory() const {
-    if (!desfire_)
-        throw std::logic_error("Not a DESFire card");
+    if (!desfire_) {
+		PcscError::make(PcscErrorCode::NotDesfire, "Not a DESFire card").throwIfError();
+    }
     return *desfire_;
 }
 
 DesfireMemoryLayout& CardInterface::getDesfireMemoryMutable() {
-    if (!desfire_)
-        throw std::logic_error("Not a DESFire card");
+    if (!desfire_) {
+		PcscError::make(PcscErrorCode::NotDesfire, "Not a DESFire card").throwIfError();
+    }
     return *desfire_;
 }

@@ -45,10 +45,11 @@ void Reader::setLE(BYTE le) noexcept { pImpl->LE = le; }
 // ============================================================
 BYTEV Reader::padToBlock(const BYTE* data, size_t dataLen) const {
 	if (dataLen > getLE()) {
-		std::stringstream ss;
-		ss << "Data size (" << dataLen << " bytes) exceeds block size ("
-		   << static_cast<int>(getLE()) << " bytes)";
-		throw std::invalid_argument(ss.str());
+		std::string detail = "Data size (" + std::to_string(dataLen)
+			+ " bytes) exceeds block size ("
+			+ std::to_string(static_cast<int>(getLE())) + " bytes)";
+		PcscError::make(PcscErrorCode::InvalidData, std::move(detail)).throwIfError();
+		return {};
 	}
 	BYTEV tmp(getLE(), 0x00);
 	std::memcpy(tmp.data(), data, dataLen);
@@ -60,12 +61,12 @@ BYTEV Reader::padToBlock(const BYTE* data, size_t dataLen) const {
 // ============================================================
 Result<ReaderResponse> Reader::tryTransmit(const BYTEV& apdu) {
 	if (!pcsc().isConnected())
-		return {ReaderResponse{}, {ErrorCode::NotConnected}};
+		return {ReaderResponse{}, {PcscErrorCode::NotConnected}};
 
 	auto raw = pcsc().transmit(apdu);
 
 	if (raw.size() < 2)
-		return {ReaderResponse{}, {ErrorCode::ResponseTooShort}};
+		return {ReaderResponse{}, {PcscErrorCode::ResponseTooShort}};
 
 	auto sw = pcsc().getStatusWords(raw);
 	BYTEV data(raw.begin(), raw.end() - 2);
@@ -76,21 +77,21 @@ Result<BYTEV> Reader::tryReadPage(BYTE page, const BYTEV* customApdu) {
 	auto apdu = customApdu ? *customApdu
 						   : PcscCommands::readBinary(page, getLE());
 	auto result = tryTransmit(apdu);
-	if (!result) return {BYTEV{}, result.error};
+	if (!result) return {BYTEV{}, result.error()};
 
-	auto err = PcscCommands::evaluateRead(result.value.sw);
+	auto err = PcscCommands::evaluateRead(result.unwrap().sw);
 	if (!err.ok()) return {BYTEV{}, err};
 
-	return {std::move(result.value.data), PcscError{}};
+	return {std::move(result.unwrap().data), PcscError{}};
 }
 
 Result<void> Reader::tryWritePage(BYTE page, const BYTE* data, const BYTEV* customApdu) {
 	auto apdu = customApdu ? *customApdu
 						   : PcscCommands::updateBinary(page, data, getLE());
 	auto result = tryTransmit(apdu);
-	if (!result) return {result.error};
+	if (!result) return {result.error()};
 
-	return {PcscCommands::evaluateWrite(result.value.sw)};
+	return {PcscCommands::evaluateWrite(result.unwrap().sw)};
 }
 
 Result<void> Reader::tryClearPage(BYTE page) {
@@ -101,17 +102,17 @@ Result<void> Reader::tryClearPage(BYTE page) {
 Result<void> Reader::tryLoadKey(const BYTE* key, KeyStructure ks, BYTE keyNumber) {
 	auto apdu = PcscCommands::loadKey(mapKeyStructure(ks), keyNumber, key);
 	auto result = tryTransmit(apdu);
-	if (!result) return {result.error};
+	if (!result) return {result.error()};
 
-	return {PcscCommands::evaluateLoadKey(result.value.sw)};
+	return {PcscCommands::evaluateLoadKey(result.unwrap().sw)};
 }
 
 Result<void> Reader::tryAuth(BYTE blockNumber, KeyType keyType, BYTE keyNumber) {
 	auto apdu = PcscCommands::authLegacy(blockNumber, mapKeyKind(keyType), keyNumber);
 	auto result = tryTransmit(apdu);
-	if (!result) return {result.error};
+	if (!result) return {result.error()};
 
-	return {PcscCommands::evaluateAuth(result.value.sw)};
+	return {PcscCommands::evaluateAuth(result.unwrap().sw)};
 }
 
 Result<void> Reader::tryAuthNew(BYTE blockNumber, KeyType keyType, BYTE keyNumber) {
@@ -123,9 +124,9 @@ Result<void> Reader::tryAuthNew(BYTE blockNumber, KeyType keyType, BYTE keyNumbe
 Result<void> Reader::tryAuthNew(const BYTE data[5]) {
 	auto apdu = PcscCommands::authGeneral(data);
 	auto result = tryTransmit(apdu);
-	if (!result) return {result.error};
+	if (!result) return {result.error()};
 
-	return {PcscCommands::evaluateAuth(result.value.sw)};
+	return {PcscCommands::evaluateAuth(result.unwrap().sw)};
 }
 
 // ============================================================
@@ -232,8 +233,8 @@ BYTEV Reader::readAll(BYTE startPage) {
 	BYTE page = startPage;
 	while (true) {
 		auto result = tryReadPage(page);
-		if (!result || result.value.empty()) break;
-		out.insert(out.end(), result.value.begin(), result.value.end());
+		if (!result || result.unwrap().empty()) break;
+		out.insert(out.end(), result.unwrap().begin(), result.unwrap().end());
 		++page;
 	}
 	return out;

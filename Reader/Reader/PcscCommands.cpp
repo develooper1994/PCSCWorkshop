@@ -64,32 +64,32 @@ BYTEV PcscCommands::escape(const BYTEV& data) {
 
 PcscError PcscCommands::evaluateRead(const StatusWord& sw) {
 	if (sw.isSuccess()) return {};
-	if (sw.isAuthSentinel()) return {ErrorCode::AuthRequired, sw};
+	if (sw.isAuthSentinel()) return {PcscErrorCode::AuthRequired, sw};
 	auto err = PcscError::fromStatusWord(sw);
-	if (err.code == ErrorCode::Unknown) err.code = ErrorCode::ReadFailed;
+	if (err.code == PcscErrorCode::Unknown) err.code = PcscErrorCode::ReadFailed;
 	return err;
 }
 
 PcscError PcscCommands::evaluateWrite(const StatusWord& sw) {
 	if (sw.isSuccess()) return {};
-	if (sw.isAuthSentinel()) return {ErrorCode::AuthRequired, sw};
+	if (sw.isAuthSentinel()) return {PcscErrorCode::AuthRequired, sw};
 	auto err = PcscError::fromStatusWord(sw);
-	if (err.code == ErrorCode::Unknown) err.code = ErrorCode::WriteFailed;
+	if (err.code == PcscErrorCode::Unknown) err.code = PcscErrorCode::WriteFailed;
 	return err;
 }
 
 PcscError PcscCommands::evaluateLoadKey(const StatusWord& sw) {
 	if (sw.isSuccess()) return {};
 	auto err = PcscError::fromStatusWord(sw);
-	if (err.code == ErrorCode::AuthRequired || err.code == ErrorCode::Unknown)
-		err.code = ErrorCode::LoadKeyFailed;
+	if (err.code == PcscErrorCode::AuthRequired || err.code == PcscErrorCode::Unknown)
+		err.code = PcscErrorCode::LoadKeyFailed;
 	return err;
 }
 
 PcscError PcscCommands::evaluateAuth(const StatusWord& sw) {
 	if (sw.isSuccess() || sw.isAuthSentinel()) return {};
 	auto err = PcscError::fromStatusWord(sw);
-	if (err.code == ErrorCode::Unknown) err.code = ErrorCode::AuthFailed;
+	if (err.code == PcscErrorCode::Unknown) err.code = PcscErrorCode::AuthFailed;
 	return err;
 }
 
@@ -115,12 +115,18 @@ void PcscCommands::checkAuth(const StatusWord& sw) {
 
 void PcscCommands::checkExpected(const StatusWord& sw, uint16_t expected,
 								 const std::string& context) {
-	if (toCode(sw) != expected) {
-		StatusWord exp = fromCode(expected);
-		throw pcsc::ReaderError(
-			context + ": beklenen " + exp.toHexFormatted() +
-			", alinan " + describeStatus(sw));
-	}
+	evaluateExpected(sw, expected, context).throwIfError();
+}
+
+PcscError PcscCommands::evaluateExpected(const StatusWord& sw, uint16_t expected,
+										 const std::string& context) {
+	if (toCode(sw) == expected) return {};
+	StatusWord exp = fromCode(expected);
+	std::string detail = context + ": beklenen " + exp.toHexFormatted()
+		+ ", alinan " + describeStatus(sw);
+	auto err = PcscError::fromStatusWord(sw);
+	err.detail = std::move(detail);
+	return err;
 }
 
 // ============================================================

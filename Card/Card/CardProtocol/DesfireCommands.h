@@ -238,16 +238,16 @@ BYTEV DesfireCommands::transceive(TransmitFn&& transmit, const BYTEV& cmd) {
 template<typename TryTransmitFn>
 Result<BYTEV> DesfireCommands::tryTransceive(TryTransmitFn&& transmit, const BYTEV& cmd) {
     auto txResult = transmit(cmd);
-    if (!txResult) return {BYTEV{}, txResult.error};
-    auto err = evaluateResponse(txResult.value);
+    if (!txResult) return {BYTEV{}, txResult.error()};
+    auto err = evaluateResponse(txResult.unwrap());
     if (!err.ok()) return {BYTEV{}, err};
-    BYTEV result = extractData(txResult.value);
-    while (hasMore(txResult.value)) {
+    BYTEV result = extractData(txResult.unwrap());
+    while (hasMore(txResult.unwrap())) {
         txResult = transmit(additionalFrame());
-        if (!txResult) return {BYTEV{}, txResult.error};
-        err = evaluateResponse(txResult.value);
+        if (!txResult) return {BYTEV{}, txResult.error()};
+        err = evaluateResponse(txResult.unwrap());
         if (!err.ok()) return {BYTEV{}, err};
-        BYTEV chunk = extractData(txResult.value);
+        BYTEV chunk = extractData(txResult.unwrap());
         result.insert(result.end(), chunk.begin(), chunk.end());
     }
     return {std::move(result), PcscError{}};
@@ -265,32 +265,32 @@ template<typename TryTransmitFn>
 Result<DesfireVersionInfo> DesfireCommands::tryParseGetVersion(TryTransmitFn&& transmit) {
     DesfireVersionInfo vi;
     auto r1 = transmit(getVersion());
-    if (!r1) return {vi, r1.error};
-    auto e1 = evaluateResponse(r1.value);
+    if (!r1) return {vi, r1.error()};
+    auto e1 = evaluateResponse(r1.unwrap());
     if (!e1.ok()) return {vi, e1};
-    BYTEV d1 = extractData(r1.value);
+    BYTEV d1 = extractData(r1.unwrap());
     if (d1.size() >= 7) {
         vi.hwVendorID = d1[0]; vi.hwType = d1[1]; vi.hwSubType = d1[2];
         vi.hwMajorVer = d1[3]; vi.hwMinorVer = d1[4];
         vi.hwStorageSize = d1[5]; vi.hwProtocol = d1[6];
     }
-    if (!hasMore(r1.value)) return {vi, PcscError{}};
+    if (!hasMore(r1.unwrap())) return {vi, PcscError{}};
     auto r2 = transmit(additionalFrame());
-    if (!r2) return {vi, r2.error};
-    auto e2 = evaluateResponse(r2.value);
+    if (!r2) return {vi, r2.error()};
+    auto e2 = evaluateResponse(r2.unwrap());
     if (!e2.ok()) return {vi, e2};
-    BYTEV d2 = extractData(r2.value);
+    BYTEV d2 = extractData(r2.unwrap());
     if (d2.size() >= 7) {
         vi.swVendorID = d2[0]; vi.swType = d2[1]; vi.swSubType = d2[2];
         vi.swMajorVer = d2[3]; vi.swMinorVer = d2[4];
         vi.swStorageSize = d2[5]; vi.swProtocol = d2[6];
     }
-    if (!hasMore(r2.value)) return {vi, PcscError{}};
+    if (!hasMore(r2.unwrap())) return {vi, PcscError{}};
     auto r3 = transmit(additionalFrame());
-    if (!r3) return {vi, r3.error};
-    auto e3 = evaluateResponse(r3.value);
+    if (!r3) return {vi, r3.error()};
+    auto e3 = evaluateResponse(r3.unwrap());
     if (!e3.ok()) return {vi, e3};
-    BYTEV d3 = extractData(r3.value);
+    BYTEV d3 = extractData(r3.unwrap());
     if (d3.size() >= 14) {
         std::memcpy(vi.uid, d3.data(), 7);
         std::memcpy(vi.batchNo, d3.data() + 7, 5);

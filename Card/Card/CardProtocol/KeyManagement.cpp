@@ -1,5 +1,6 @@
 #include "KeyManagement.h"
 #include "../CardModel/CardMemoryLayout.h"
+#include "Result.h"
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
@@ -21,7 +22,8 @@ void KeyManagement::registerKey(KeyType kt, const KEYBYTES& key,
                                 KeyStructure structure, BYTE slot,
                                 const std::string& name) {
     if (!isValidKey(key)) {
-        throw std::invalid_argument("Invalid key format");
+        PcscError::make(PcscErrorCode::InvalidData, "Invalid key format").throwIfError();
+        return;
     }
     
     keys_[kt][slot] = makeKeyInfo(key, structure, slot, name);
@@ -42,12 +44,16 @@ void KeyManagement::registerKey(KeyType kt, const BYTE key[6],
 const KEYBYTES& KeyManagement::getKey(KeyType kt, BYTE slot) const {
     auto ktIt = keys_.find(kt);
     if (ktIt == keys_.end()) {
-        throw std::runtime_error("Key type not found");
+        PcscError::make(PcscErrorCode::InvalidData, "Key type not found").throwIfError();
+        static const KEYBYTES empty{};
+        return empty;
     }
     
     auto slotIt = ktIt->second.find(slot);
     if (slotIt == ktIt->second.end()) {
-        throw std::runtime_error("Slot not found for key type");
+        PcscError::make(PcscErrorCode::InvalidData, "Slot not found for key type").throwIfError();
+        static const KEYBYTES empty{};
+        return empty;
     }
     
     return slotIt->second.key;
@@ -56,12 +62,16 @@ const KEYBYTES& KeyManagement::getKey(KeyType kt, BYTE slot) const {
 const KeyInfo& KeyManagement::getKeyInfo(KeyType kt, BYTE slot) const {
     auto ktIt = keys_.find(kt);
     if (ktIt == keys_.end()) {
-        throw std::runtime_error("Key type not found");
+        PcscError::make(PcscErrorCode::InvalidData, "Key type not found").throwIfError();
+        static const KeyInfo empty{};
+        return empty;
     }
     
     auto slotIt = ktIt->second.find(slot);
     if (slotIt == ktIt->second.end()) {
-        throw std::runtime_error("Slot not found for key type");
+        PcscError::make(PcscErrorCode::InvalidData, "Slot not found for key type").throwIfError();
+        static const KeyInfo empty{};
+        return empty;
     }
     
     return slotIt->second;
@@ -78,10 +88,12 @@ bool KeyManagement::hasKey(KeyType kt) const {
 }
 
 const KEYBYTES& KeyManagement::getDefaultKey(KeyType kt) const {
-    auto ktIt = keys_.find(kt);
-    if (ktIt == keys_.end()) {
-        throw std::runtime_error("Key type not found");
-    }
+auto ktIt = keys_.find(kt);
+if (ktIt == keys_.end()) {
+    PcscError::make(PcscErrorCode::InvalidData, "Key type not found").throwIfError();
+    static const KEYBYTES empty{};
+    return empty;
+}
     
     BYTE defaultSlot = getDefaultSlot(kt);
     return ktIt->second.at(defaultSlot).key;
@@ -229,7 +241,8 @@ const MifareBlock& KeyManagement::getTrailer(int sector) const {
 BYTE KeyManagement::getDefaultSlot(KeyType kt) const {
     auto ktIt = keys_.find(kt);
     if (ktIt == keys_.end() || ktIt->second.empty()) {
-        throw std::runtime_error("No keys registered for this type");
+        PcscError::make(PcscErrorCode::InvalidData, "No keys registered for this type").throwIfError();
+        return 0;
     }
     return ktIt->second.begin()->first;
 }

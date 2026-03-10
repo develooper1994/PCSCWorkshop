@@ -3,9 +3,9 @@
 
 #include "../CardDataTypes.h"
 #include "BlockDefinition.h"
+#include "Result.h"
 #include <array>
 #include <cstring>
-#include <stdexcept>
 #include <string>
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -201,8 +201,11 @@ struct SectorAccessConfig {
     BYTE gpb = 0x69;                  // General Purpose Byte (byte 9)
 
     DataBlockPermission dataPermission(int blockIndex) const {
-        if (blockIndex < 0 || blockIndex > 2)
-            throw std::out_of_range("blockIndex must be 0-2");
+        if (blockIndex < 0 || blockIndex > 2) {
+            PcscError::make(PcscErrorCode::InvalidData,
+                "blockIndex must be 0-2, got " + std::to_string(blockIndex)).throwIfError();
+            return DataBlockPermission::fromCondition(dataBlock[0]);
+        }
         return DataBlockPermission::fromCondition(dataBlock[blockIndex]);
     }
 
