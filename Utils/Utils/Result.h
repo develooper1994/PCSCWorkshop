@@ -501,7 +501,8 @@ public:
 	}
 
 	const PcscError& error() const {
-		return ok() ? PcscError::make(PcscErrorCode::Success) : std::get<PcscError>(data);
+		static const PcscError success = PcscError::make(PcscErrorCode::Success);
+		return ok() ? success : std::get<PcscError>(data);
 	}
 
 	template<typename F>
@@ -531,7 +532,8 @@ public:
 
 	void unwrap() const { err.throwIfError(); }
 	const PcscError& error() const {
-		return ok() ? PcscError::make(PcscErrorCode::Success) : err;
+		static const PcscError success = PcscError::make(PcscErrorCode::Success);
+		return ok() ? success : err;
 	}
 };
 

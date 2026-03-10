@@ -29,7 +29,7 @@ enum class LogCategory {
 	Card = 5
 };
 
-// Log Türleri (birbirinden baðýmsýz açýlýp kapatýlabilir)
+// Log TÃ¼rleri (birbirinden baÄŸÄ±msÄ±z aÃ§Ä±lÄ±p kapatÄ±labilir)
 enum class LogType {
 	Error = 0,
 	Warning = 1,
@@ -39,11 +39,11 @@ enum class LogType {
 
 class Log {
 public:
-	// Singleton instance'ýna eriþim
+	// Singleton instance'Ä±na eriÅŸim
 	static Log& getInstance();
 
 	// ============================================================
-	// Global Log Seviyesi Ayarlarý
+	// Global Log Seviyesi AyarlarÄ±
 	// ============================================================
 
 	// Genel log seviyesini ayarla (Off, Error, Warning, Info, Debug)
@@ -53,42 +53,42 @@ public:
 	LogLevel getLogLevel() const;
 
 	// ============================================================
-	// Baðýmsýz Log Türü Kontrolleri
+	// BaÄŸÄ±msÄ±z Log TÃ¼rÃ¼ Kontrolleri
 	// ============================================================
 
-	// Belirli bir log türünü aç/kapat
+	// Belirli bir log tÃ¼rÃ¼nÃ¼ aÃ§/kapat
 	void enableLogType(LogType type, bool enable = true);
 	void disableLogType(LogType type);
 	void toggleLogType(LogType type);
 
-	// Belirli bir log türünün açýk olup olmadýðýný kontrol et
+	// Belirli bir log tÃ¼rÃ¼nÃ¼n aÃ§Ä±k olup olmadÄ±ÄŸÄ±nÄ± kontrol et
 	bool isLogTypeEnabled(LogType type) const;
 
-	// Tüm log türlerini aç
+	// TÃ¼m log tÃ¼rlerini aÃ§
 	void enableAllLogTypes();
 
-	// Tüm log türlerini kapat
+	// TÃ¼m log tÃ¼rlerini kapat
 	void disableAllLogTypes();
 
 	// ============================================================
-	// Kategori Bazýnda Kontrol
+	// Kategori BazÄ±nda Kontrol
 	// ============================================================
 
-	// Belirli bir kategoriye ait logu aç/kapat
+	// Belirli bir kategoriye ait logu aÃ§/kapat
 	void enableCategory(LogCategory category, bool enable = true);
 	void disableCategory(LogCategory category);
 
 	// Belirli bir kategoriye ait logu kontrol et
 	bool isCategoryEnabled(LogCategory category) const;
 
-	// Tüm kategorileri aç
+	// TÃ¼m kategorileri aÃ§
 	void enableAllCategories();
 
-	// Tüm kategorileri kapat
+	// TÃ¼m kategorileri kapat
 	void disableAllCategories();
 
 	// ============================================================
-	// Hazýr Kontrol Fonksiyonlarý
+	// HazÄ±r Kontrol FonksiyonlarÄ±
 	// ============================================================
 
 	bool isDebugEnabled() const;
@@ -102,48 +102,55 @@ public:
 	bool isErrorEnabledForCategory(LogCategory category) const;
 
 	// ============================================================
-	// Log Fonksiyonlarý
+	// Log FonksiyonlarÄ±
 	// ============================================================
 
 	void debug(const std::string& message, LogCategory category = LogCategory::General);
 	void info(const std::string& message, LogCategory category = LogCategory::General);
 	void warning(const std::string& message, LogCategory category = LogCategory::General);
 	void error(const std::string& message, LogCategory category = LogCategory::General);
+	void log(LogType type, const std::string& message, LogCategory category, std::ostream& out);
 
 	// ============================================================
-	// Konfigürasyon
+	// KonfigÃ¼rasyon
 	// ============================================================
 
-	// Varsayýlan ayarlarý yükle
+	// VarsayÄ±lan ayarlarÄ± yÃ¼kle
 	void resetToDefaults();
 
-	// Tüm ayarlarý konsola yazdýr
+	// TÃ¼m ayarlarÄ± konsola yazdÄ±r
 	void printSettings() const;
 
 private:
 	Log();
 	~Log() = default;
+	Log(bool useColors = false): m_logLevel(LogLevel::Debug), m_useColors(useColors){}
 
-	// Copy ve move iþlemleri engelle
+	// Copy ve move iÅŸlemleri engelle
 	Log(const Log&) = delete;
 	Log& operator=(const Log&) = delete;
 	Log(Log&&) = delete;
 
 	// Helper fonksiyonlar
 	std::string getCategoryName(LogCategory category) const;
+	const char* getColor(LogType type) const;
+	const char* resetColor();
+	std::string getTimestamp();
+	std::string getThreadId();
 	std::string getLogTypeName(LogType type) const;
 	std::string getLogLevelName(LogLevel level) const;
 	bool shouldLog(LogType type, LogCategory category) const;
 
-	// Internal unlocked helpers - deadlock'u önlemek için
-	// UYARI: Bu fonksiyonlar zaten kilitlenmiþ baðlamda çaðrýlmalýdýr
+	// Internal unlocked helpers - deadlock'u Ã¶nlemek iÃ§in
+	// UYARI: Bu fonksiyonlar zaten kilitlenmiÅŸ baÄŸlamda Ã§aÄŸrÄ±lmalÄ±dÄ±r
 	void enableAllLogTypesUnlocked();
 	void disableAllLogTypesUnlocked();
 	void enableAllCategoriesUnlocked();
 	void disableAllCategoriesUnlocked();
 
 	// Member variables
-	LogLevel m_logLevel;
+	LogLevel m_logLevel{LogLevel::Info}; // VarsayÄ±lan log seviyesi baÅŸlatÄ±ldÄ±
+	bool m_useColors = false;
 	std::unordered_map<int, bool> m_enabledLogTypes;      // LogType -> enabled
 	std::unordered_map<int, bool> m_enabledCategories;    // LogCategory -> enabled
 
@@ -187,7 +194,7 @@ private:
 	} \
 } while(false)
 
-// Kýsa isim makrolarý
+// KÄ±sa isim makrolarÄ±
 #define LOG_PCSC_DEBUG(msg) LOG_DEBUG_CAT(msg, pcsc::LogCategory::PCSC)
 #define LOG_PCSC_INFO(msg) LOG_INFO_CAT(msg, pcsc::LogCategory::PCSC)
 #define LOG_PCSC_WARNING(msg) LOG_WARNING_CAT(msg, pcsc::LogCategory::PCSC)

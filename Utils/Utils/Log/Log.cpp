@@ -2,21 +2,23 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
+#include <ctime>
+#include <sstream>
 
 namespace pcsc {
 
 Log& Log::getInstance() {
-	static Log instance;
+	static Log instance(true);
 	return instance;
 }
 
 Log::Log() : m_logLevel(LogLevel::Debug) {
-	// Varsayýlan olarak tüm log türleri ve kategoriler açýk
+	// VarsayÄ±lan olarak tÃ¼m log tÃ¼rleri ve kategoriler aÃ§Ä±k
 	resetToDefaults();
 }
 
 // ============================================================
-// Global Log Seviyesi Ayarlarý
+// Global Log Seviyesi AyarlarÄ±
 // ============================================================
 
 void Log::setLogLevel(LogLevel level) {
@@ -30,7 +32,7 @@ LogLevel Log::getLogLevel() const {
 }
 
 // ============================================================
-// Baðýmsýz Log Türü Kontrolleri
+// BaÄŸÄ±msÄ±z Log TÃ¼rÃ¼ Kontrolleri
 // ============================================================
 
 void Log::enableLogType(LogType type, bool enable) {
@@ -70,16 +72,16 @@ void Log::disableAllLogTypes() {
 	}
 }
 
-// Internal helper - lock olmaksýzýn tüm türleri etkinleþtir
-// UYARI: Sadece zaten kilitlenmiþ baðlamda kullan
+// Internal helper - lock olmaksÄ±zÄ±n tÃ¼m tÃ¼rleri etkinleÅŸtir
+// UYARI: Sadece zaten kilitlenmiÅŸ baÄŸlamda kullan
 void Log::enableAllLogTypesUnlocked() {
 	for (int i = 0; i < 4; ++i) {
 		m_enabledLogTypes[i] = true;
 	}
 }
 
-// Internal helper - lock olmaksýzýn tüm türleri devre dýþý býrak
-// UYARI: Sadece zaten kilitlenmiþ baðlamda kullan
+// Internal helper - lock olmaksÄ±zÄ±n tÃ¼m tÃ¼rleri devre dÄ±ÅŸÄ± bÄ±rak
+// UYARI: Sadece zaten kilitlenmiÅŸ baÄŸlamda kullan
 void Log::disableAllLogTypesUnlocked() {
 	for (int i = 0; i < 4; ++i) {
 		m_enabledLogTypes[i] = false;
@@ -87,7 +89,7 @@ void Log::disableAllLogTypesUnlocked() {
 }
 
 // ============================================================
-// Kategori Bazýnda Kontrol
+// Kategori BazÄ±nda Kontrol
 // ============================================================
 
 void Log::enableCategory(LogCategory category, bool enable) {
@@ -119,16 +121,16 @@ void Log::disableAllCategories() {
 	}
 }
 
-// Internal helper - lock olmaksýzýn tüm kategorileri etkinleþtir
-// UYARI: Sadece zaten kilitlenmiþ baðlamda kullan
+// Internal helper - lock olmaksÄ±zÄ±n tÃ¼m kategorileri etkinleÅŸtir
+// UYARI: Sadece zaten kilitlenmiÅŸ baÄŸlamda kullan
 void Log::enableAllCategoriesUnlocked() {
 	for (int i = 0; i < 6; ++i) {
 		m_enabledCategories[i] = true;
 	}
 }
 
-// Internal helper - lock olmaksýzýn tüm kategorileri devre dýþý býrak
-// UYARI: Sadece zaten kilitlenmiþ baðlamda kullan
+// Internal helper - lock olmaksÄ±zÄ±n tÃ¼m kategorileri devre dÄ±ÅŸÄ± bÄ±rak
+// UYARI: Sadece zaten kilitlenmiÅŸ baÄŸlamda kullan
 void Log::disableAllCategoriesUnlocked() {
 	for (int i = 0; i < 6; ++i) {
 		m_enabledCategories[i] = false;
@@ -136,7 +138,7 @@ void Log::disableAllCategoriesUnlocked() {
 }
 
 // ============================================================
-// Hazýr Kontrol Fonksiyonlarý
+// HazÄ±r Kontrol FonksiyonlarÄ±
 // ============================================================
 
 bool Log::isDebugEnabled() const {
@@ -176,40 +178,52 @@ bool Log::isErrorEnabledForCategory(LogCategory category) const {
 }
 
 // ============================================================
-// Log Fonksiyonlarý
+// Log FonksiyonlarÄ±
 // ============================================================
 
-void Log::debug(const std::string& message, LogCategory category) {
-	if (!shouldLog(LogType::Debug, category)) return;
-	std::lock_guard<std::mutex> lock(m_mutex);
-	std::cout << "[DEBUG][" << getCategoryName(category) << "] " << message << std::endl;
-}
+void Log::debug(const std::string& message, LogCategory category) { log(LogType::Debug, message, category, std::cout); }
 
-void Log::info(const std::string& message, LogCategory category) {
-	if (!shouldLog(LogType::Info, category)) return;
-	std::lock_guard<std::mutex> lock(m_mutex);
-	std::cout << "[INFO][" << getCategoryName(category) << "] " << message << std::endl;
-}
+void Log::info(const std::string& message, LogCategory category) { log(LogType::Info, message, category, std::cout); }
 
-void Log::warning(const std::string& message, LogCategory category) {
-	if (!shouldLog(LogType::Warning, category)) return;
-	std::lock_guard<std::mutex> lock(m_mutex);
-	std::cout << "[WARNING][" << getCategoryName(category) << "] " << message << std::endl;
-}
+void Log::warning(const std::string& message, LogCategory category) { log(LogType::Warning, message, category, std::cout); }
 
-void Log::error(const std::string& message, LogCategory category) {
-	if (!shouldLog(LogType::Error, category)) return;
+void Log::error(const std::string& message, LogCategory category) { log(LogType::Error, message, category, std::cerr); }
+
+void Log::log(LogType type, const std::string& message, LogCategory category, std::ostream& out) {
+	if (!shouldLog(type, category)) return;
 	std::lock_guard<std::mutex> lock(m_mutex);
-	std::cerr << "[ERROR][" << getCategoryName(category) << "] " << message << std::endl;
+	out << getColor(type)
+	    << "[" << getTimestamp() << "]"
+	    << "[TID:" << getThreadId() << "]"
+	    << "[" << getCategoryName(category) << "]"
+	    << "[";
+
+	switch (type) {
+		case LogType::Debug:
+			out << "DEBUG";
+			break;
+		case LogType::Info:
+			out << "INFO";
+			break;
+		case LogType::Warning:
+			out << "WARNING";
+			break;
+		case LogType::Error:
+			out << "ERROR";
+			break;
+	}
+
+	out << "] " << message << resetColor() << std::endl;
 }
 
 // ============================================================
-// Konfigürasyon
+// KonfigÃ¼rasyon
 // ============================================================
 
 void Log::resetToDefaults() {
 	std::lock_guard<std::mutex> lock(m_mutex);
 	m_logLevel = LogLevel::Debug;
+	m_useColors = false;
 	enableAllLogTypesUnlocked();
 	enableAllCategoriesUnlocked();
 }
@@ -218,6 +232,7 @@ void Log::printSettings() const {
 	std::lock_guard<std::mutex> lock(m_mutex);
 	std::cout << "\n========== LOG SETTINGS ==========\n";
 	std::cout << "Global Log Level: " << getLogLevelName(m_logLevel) << "\n\n";
+	std::cout << "Use Colors: " << (m_useColors ? "Yes" : "No") << "\n\n";
 	
 	std::cout << "Log Types:\n";
 	for (int i = 0; i < 4; ++i) {
@@ -253,6 +268,45 @@ std::string Log::getCategoryName(LogCategory category) const {
 	}
 }
 
+const char* Log::getColor(LogType type) const {
+	switch (type) {
+		case LogType::Debug: return "\033[36m"; // Cyan
+		case LogType::Info: return "\033[32m"; // Green
+		case LogType::Warning: return "\033[33m"; // Yellow
+		case LogType::Error: return "\033[31m"; // Red
+		default: return "\033[0m"; // Reset
+	}
+}
+
+const char* Log::resetColor() { return m_useColors ? "\033[0m" : ""; }
+
+std::string Log::getTimestamp() {
+	auto now = std::chrono::system_clock::now();
+	auto in_time_t = std::chrono::system_clock::to_time_t(now);
+	auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+	              now.time_since_epoch()) %
+	          1000;
+
+	std::tm tm_snapshot;
+
+#if defined(_WIN32) || defined(_WIN64)
+	localtime_s(&tm_snapshot, &in_time_t); // Windows thread-safe
+#else
+	localtime_r(&in_time_t, &tm_snapshot); // Linux/Unix thread-safe
+#endif
+
+	std::ostringstream ss;
+	ss << std::put_time(&tm_snapshot, "%Y-%m-%d %H:%M:%S")
+	   << '.' << std::setw(3) << std::setfill('0') << ms.count();
+	return ss.str();
+}
+
+std::string Log::getThreadId() {
+	std::ostringstream ss;
+	ss << std::this_thread::get_id();
+	return ss.str();
+}
+
 std::string Log::getLogTypeName(LogType type) const {
 	switch (type) {
 		case LogType::Error: return "Error";
@@ -277,19 +331,19 @@ std::string Log::getLogLevelName(LogLevel level) const {
 bool Log::shouldLog(LogType type, LogCategory category) const {
 	std::lock_guard<std::mutex> lock(m_mutex);
 	
-	// Log level kontrolü
+	// Log level kontrolÃ¼
 	int typeLevel = static_cast<int>(type);
 	if (m_logLevel < static_cast<LogLevel>(typeLevel)) {
 		return false;
 	}
 	
-	// Log type kontrolü
+	// Log type kontrolÃ¼
 	auto typeIt = m_enabledLogTypes.find(typeLevel);
 	if (typeIt != m_enabledLogTypes.end() && !typeIt->second) {
 		return false;
 	}
 	
-	// Kategori kontrolü
+	// Kategori kontrolÃ¼
 	auto catIt = m_enabledCategories.find(static_cast<int>(category));
 	if (catIt != m_enabledCategories.end() && !catIt->second) {
 		return false;

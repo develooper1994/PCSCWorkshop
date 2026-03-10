@@ -22,22 +22,22 @@
 struct MifareBlock {
     // Anonymous union for different block interpretations
     union {
-        BYTE raw[16];                           // Raw 16-byte access
+        BYTE raw[16]{};                           // Raw 16-byte access
 
         struct {
-            BYTE data[16];                      // Generic data block
+            BYTE data[16]{};                      // Generic data block
         } data;
 
         struct {
-            BYTE uid[4];                        // Unique ID
-            BYTE bcc;                           // Block Check Character
-            BYTE manufacturerData[11];          // Vendor-specific
+            BYTE uid[4]{};                        // Unique ID
+            BYTE bcc{};                           // Block Check Character
+            BYTE manufacturerData[11]{};          // Vendor-specific
         } manufacturer;
 
         struct {
-            BYTE keyA[6];                       // Authentication Key A
-            BYTE accessBits[4];                 // C1 C2 C3 + GPB
-            BYTE keyB[6];                       // Authentication Key B
+            BYTE keyA[6]{};                       // Authentication Key A
+            BYTE accessBits[4]{};                 // C1 C2 C3 + GPB
+            BYTE keyB[6]{};                       // Authentication Key B
         } trailer;
     };
 
