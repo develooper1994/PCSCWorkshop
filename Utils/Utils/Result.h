@@ -191,9 +191,9 @@ public:
 	}
 };
 
-#define TRY(expr) ({ auto _r = (expr); if(!_r) return decltype(_r)::Err(_r.error()); _r.unwrap(); })
+// #define TRY(expr) ({ auto _r = (expr); if(!_r) return decltype(_r)::Err(_r.error()); _r.unwrap(); }) // GCC/CLANG specific
 template<typename R>
-constexpr auto Try(R&& result) {
+constexpr auto TRY(R&& result) {
 	return result ? result.unwrap() : typename std::decay_t<R>::template Err(result.error()); // Başarısızsa aynı tipin Err'ini döndür
 }
 

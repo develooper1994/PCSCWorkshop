@@ -61,75 +61,78 @@ BYTEV PcscCommands::escape(const BYTEV& data) {
 // ============================================================
 // Response Evaluation — Exception-free
 // ============================================================
-PcscError PcscCommands::evaluateRead(const StatusWord& sw) {
-	if (sw.isSuccess()) return {};
-	else if (sw.isAuthSentinel()) return {PcscErrorCode::AuthRequired, {}, sw};
+Result<void, PcscError> PcscCommands::evaluateRead(const StatusWord& sw)
+{
+	if (sw.isSuccess()) return Result<void, PcscError>::Ok();
+	else if (sw.isAuthSentinel())
+		return Result<void, PcscError>::Err(PcscError::from(PcscErrorCode::AuthRequired, {}, sw));
 	auto err = fromStatusWord(sw);
 	if (err.code == PcscErrorCode::Unknown) err.code = PcscErrorCode::ReadFailed;
-	return err;
+	return Result<void, PcscError>::Err(err);
 }
 
-PcscError PcscCommands::evaluateWrite(const StatusWord& sw)
+Result<void, PcscError> PcscCommands::evaluateWrite(const StatusWord& sw)
 {
-	if (sw.isSuccess()) return PcscError::make(PcscErrorCode::Success, {}, sw);
+	if (sw.isSuccess()) return Result<void, PcscError>::Ok();
 	else if (sw.isAuthSentinel())
-		return PcscError::from(AuthError::AuthRequired, "", sw);
+		return Result<void, PcscError>::Err(PcscError::from(PcscErrorCode::AuthRequired, {}, sw));
 
 	auto err = fromStatusWord(sw);
 
 	if (err.code == PcscErrorCode::Unknown) err.code = PcscErrorCode::WriteFailed;
-	return err;
+	return Result<void, PcscError>::Err(err);
 }
 
-PcscError PcscCommands::evaluateLoadKey(const StatusWord& sw) {
-	if (sw.isSuccess()) return {};
+// değiştir: PcscError -> std::optional<PcscError>
+Result<void, PcscError> PcscCommands::evaluateLoadKey(const StatusWord& sw) {
+	if (sw.isSuccess()) return Result<void, PcscError>::Ok();
 	auto err = fromStatusWord(sw);
 	if (err.code == PcscErrorCode::AuthRequired || err.code == PcscErrorCode::Unknown)
 		err.code = PcscErrorCode::LoadKeyFailed;
-	return err;
+	return Result<void, PcscError>::Err(err);
 }
 
-PcscError PcscCommands::evaluateAuth(const StatusWord& sw) {
-	if (sw.isSuccess() || sw.isAuthSentinel()) return {};
+Result<void, PcscError> PcscCommands::evaluateAuth(const StatusWord& sw) {
+	if (sw.isSuccess()) return Result<void, PcscError>::Ok();
+	else if (sw.isAuthSentinel())
+		return Result<void, PcscError>::Err(PcscError::from(AuthError::AuthRequired, {}, sw));
 	auto err = fromStatusWord(sw);
 	if (err.code == PcscErrorCode::Unknown) err.code = PcscErrorCode::AuthFailed;
-	return err;
+	return Result<void, PcscError>::Err(err);
 }
 
 // ============================================================
 // Response Validation — Throwing (evaluate + throwIfError)
 // ============================================================
 
-void PcscCommands::checkRead(const StatusWord& sw) {
-	evaluateRead(sw).throwIfError();
-}
+void PcscCommands::checkRead(const StatusWord& sw) { evaluateRead(sw).error().throwIfError(); }
 
-void PcscCommands::checkWrite(const StatusWord& sw) {
-	evaluateWrite(sw).throwIfError();
-}
+void PcscCommands::checkWrite(const StatusWord& sw) { evaluateWrite(sw).error().throwIfError(); }
 
 void PcscCommands::checkLoadKey(const StatusWord& sw) {
-	evaluateLoadKey(sw).throwIfError();
+	evaluateLoadKey(sw).error().throwIfError();
 }
 
 void PcscCommands::checkAuth(const StatusWord& sw) {
-	evaluateAuth(sw).throwIfError();
+	evaluateAuth(sw).error().throwIfError();
 }
 
 void PcscCommands::checkExpected(const StatusWord& sw, uint16_t expected,
 								 const std::string& context) {
-	evaluateExpected(sw, expected, context).throwIfError();
+	evaluateExpected(sw, expected, context).error().throwIfError();
 }
 
-PcscError PcscCommands::evaluateExpected(const StatusWord& sw, uint16_t expected,
-										 const std::string& context) {
-	if (toCode(sw) == expected) return {};
+Result<void, PcscError> PcscCommands::evaluateExpected(const StatusWord& sw, uint16_t expected,
+													   const std::string& context)
+{
+	if (toCode(sw) == expected)
+		return Result<void, PcscError>::Ok();
 	StatusWord exp = fromCode(expected);
 	std::string detail = context + ": beklenen " + exp.toHexFormatted()
 		+ ", alinan " + describeStatus(sw);
 	auto err = fromStatusWord(sw);
 	err.detail = std::move(detail);
-	return err;
+	return Result<void, PcscError>::Err(err);
 }
 
 // ============================================================

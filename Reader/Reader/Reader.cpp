@@ -61,16 +61,16 @@ BYTEV Reader::padToBlock(const BYTE* data, size_t dataLen) const {
 // ============================================================
 Result<ReaderResponse, PcscError> Reader::tryTransmit(const BYTEV& apdu) {
 	if (!pcsc().isConnected())
-		return {{PcscErrorCode::NotConnected}};
+		return Result<ReaderResponse, PcscError>::Err(PcscError::from(PcscErrorCode::NotConnected, {}, {}));
 
 	auto raw = pcsc().transmit(apdu);
 
 	if (raw.size() < 2)
-		return {{PcscErrorCode::ResponseTooShort}};
+		return Result<ReaderResponse, PcscError>::Err(PcscError::from(PcscErrorCode::ResponseTooShort, {}, {}));
 
 	auto sw = pcsc().getStatusWords(raw);
 	BYTEV data(raw.begin(), raw.end() - 2);
-	return {ReaderResponse{std::move(data), sw}};
+	return Result<ReaderResponse, PcscError>::Ok(ReaderResponse{std::move(data), sw});
 }
 
 PcscResultByteVector Reader::tryReadPage(BYTE page, const BYTEV* customApdu)
@@ -78,12 +78,12 @@ PcscResultByteVector Reader::tryReadPage(BYTE page, const BYTEV* customApdu)
 	auto apdu = customApdu ? *customApdu
 						   : PcscCommands::readBinary(page, getLE());
 	auto result = tryTransmit(apdu);
-	if (!result) return {result.error()};
+	if (!result) return PcscResultByteVector::Err(result.error());
 
 	auto err = PcscCommands::evaluateRead(result.unwrap().sw);
-	if (!err.ok()) return {err};
+	if (!err.is_ok()) return PcscResultByteVector::Err(err.error());
 
-	return {std::move(result.unwrap().data)};
+	return PcscResultByteVector::Ok(std::move(result.unwrap().data));
 }
 
 PcscResult Reader::tryWritePage(BYTE page, const BYTE* data, const BYTEV* customApdu)
@@ -105,19 +105,20 @@ PcscResult Reader::tryClearPage(BYTE page)
 PcscResult Reader::tryLoadKey(const BYTE* key, KeyStructure ks, BYTE keyNumber)
 {
 	auto apdu = PcscCommands::loadKey(mapKeyStructure(ks), keyNumber, key);
-	auto result = tryTransmit(apdu);
-	if (!result) return {result.error()};
+	auto tx = tryTransmit(apdu);
+	if (!tx) return {tx.error()};
 
-	return {PcscCommands::evaluateLoadKey(result.unwrap().sw)};
+	auto ret = PcscCommands::evaluateLoadKey(tx.unwrap().sw);
+	return ret;
 }
 
 PcscResult Reader::tryAuth(BYTE blockNumber, KeyType keyType, BYTE keyNumber)
 {
 	auto apdu = PcscCommands::authLegacy(blockNumber, mapKeyKind(keyType), keyNumber);
 	auto result = tryTransmit(apdu);
-	if (!result) return {result.error()};
+	if (!result) return {PcscError::from(PcscErrorCode::NotConnected, {}, {})};
 
-	return {PcscCommands::evaluateAuth(result.unwrap().sw)};
+	return PcscCommands::evaluateAuth(result.unwrap().sw);
 }
 
 PcscResult Reader::tryAuthNew(BYTE blockNumber, KeyType keyType, BYTE keyNumber)
@@ -133,7 +134,8 @@ PcscResult Reader::tryAuthNew(const BYTE data[5])
 	auto result = tryTransmit(apdu);
 	if (!result) return {result.error()};
 
-	return {PcscCommands::evaluateAuth(result.unwrap().sw)};
+	auto ret = PcscCommands::evaluateAuth(result.unwrap().sw);
+	return ret;
 }
 
 // ============================================================

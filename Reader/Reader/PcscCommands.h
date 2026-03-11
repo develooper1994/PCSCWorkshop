@@ -208,11 +208,11 @@ public:
 	// Response Evaluation — Exception-free (PcscError döner, throw etmez)
 	// ══════════════════════════════════════════════════════════════════════════
 
-	static PcscError evaluateRead(const StatusWord& sw);
-	static PcscError evaluateWrite(const StatusWord& sw);
-	static PcscError evaluateLoadKey(const StatusWord& sw);
-	static PcscError evaluateAuth(const StatusWord& sw);
-	static PcscError evaluateExpected(const StatusWord& sw, uint16_t expected,
+	static Result<void, PcscError> evaluateRead(const StatusWord& sw);
+	static Result<void, PcscError> evaluateWrite(const StatusWord& sw);
+	static Result<void, PcscError> evaluateLoadKey(const StatusWord& sw);
+	static Result<void, PcscError> evaluateAuth(const StatusWord& sw);
+	static Result<void, PcscError> evaluateExpected(const StatusWord& sw, uint16_t expected,
 									 const std::string& context);
 
 	// ══════════════════════════════════════════════════════════════════════════

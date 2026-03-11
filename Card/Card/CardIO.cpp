@@ -82,17 +82,18 @@ void CardIO::ensureAuth(int sector, AuthPurpose purpose)
 
 Result<void, PcscError> CardIO::tryEnsureAuth(int sector, AuthPurpose purpose)
 {
-    if (card_.isUltralight()) return {PcscError{}};
+    if (card_.isUltralight()) return Result<void, PcscError>::Err(PcscError::from(PcscErrorCode::NotDesfire, {}, {}));
 
     if (sector == lastAuthSector_) {
-        if (!isMultiKey()) return {PcscError{}};
+        if (!isMultiKey()) return Result<void, PcscError>::Err(PcscError::from(PcscErrorCode::Unknown, {}, {}));
         const KeyInfo& lastKey = findKey(lastAuthKT_);
-        if (canKeyPerform(lastKey, sector, purpose)) return {PcscError{}};
+		if (canKeyPerform(lastKey, sector, purpose)) return Result<void, PcscError>::Err(PcscError::from(DesfireError::AuthMismatch, {}, {}));
     }
 
     const KeyInfo& chosen = chooseKey(sector, purpose);
     auto result = tryDoAuth(sector, chosen);
-    if (result.Ok()) return result;
+	auto is_ok = result.is_ok();
+	if (is_ok) return result;
 
     if (isMultiKey()) {
         for (const auto& ki : keys_) {
@@ -127,7 +128,7 @@ Result<void, PcscError> CardIO::tryDoAuth(int sector, const KeyInfo& ki)
 
     lastAuthSector_ = sector;
     lastAuthKT_     = ki.kt;
-    return {PcscError{}};
+	return Result<void, PcscError>::Ok();
 }
 
 void CardIO::ensureKeyLoaded(const KeyInfo& ki)
@@ -238,7 +239,7 @@ Result<int, PcscError> CardIO::tryReadCard() {
 
     for (int s = 0; s < totalSectors; ++s) {
         auto authResult = tryEnsureAuth(s);
-        if (!authResult) { invalidateAuth(); continue; }
+        if (!authResult.is_ok()) { invalidateAuth(); continue; }
 
         int first = card_.getFirstBlockOfSector(s);
         int last  = card_.getLastBlockOfSector(s);
@@ -367,15 +368,14 @@ TrailerConfig CardIO::readTrailer(int sector) {
 
 Result<TrailerConfig, PcscError> CardIO::tryReadTrailer(int sector) {
     if (card_.isDesfire())
-		return {{PcscErrorCode::NotDesfire}};
+		return Result<TrailerConfig, PcscError>::Err(PcscError::from(PcscErrorCode::NotDesfire, {}, {}));
 
     int trailerBlock = card_.getTrailerBlockOfSector(sector);
     auto authResult = tryEnsureAuth(sector);
-	if (!authResult) return {authResult.error()};
-
+	if (!authResult) return Result<TrailerConfig, PcscError>::Err(authResult.error());
     auto rr = reader_.tryReadPage(static_cast<BYTE>(trailerBlock));
-    if (!rr) return {rr.error()};
-    else if (rr.unwrap().size() < 16) return {{PcscErrorCode::ReadFailed}};
+    if (!rr) return Result<TrailerConfig, PcscError>::Err(rr.error());
+    else if (rr.unwrap().size() < 16) return Result<TrailerConfig, PcscError>::Err(PcscError::from(PcscErrorCode::ReadFailed, {}, {}));
     CardMemoryLayout& mem = card_.getMemoryMutable();
     std::memcpy(mem.getRawMemory() + trailerBlock * 16, rr.unwrap().data(), 16);
 
