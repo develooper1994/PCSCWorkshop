@@ -61,26 +61,29 @@ BYTEV PcscCommands::escape(const BYTEV& data) {
 // ============================================================
 // Response Evaluation — Exception-free
 // ============================================================
-
 PcscError PcscCommands::evaluateRead(const StatusWord& sw) {
 	if (sw.isSuccess()) return {};
-	if (sw.isAuthSentinel()) return {PcscErrorCode::AuthRequired, sw};
-	auto err = PcscError::fromStatusWord(sw);
+	else if (sw.isAuthSentinel()) return {PcscErrorCode::AuthRequired, {}, sw};
+	auto err = fromStatusWord(sw);
 	if (err.code == PcscErrorCode::Unknown) err.code = PcscErrorCode::ReadFailed;
 	return err;
 }
 
-PcscError PcscCommands::evaluateWrite(const StatusWord& sw) {
-	if (sw.isSuccess()) return {};
-	if (sw.isAuthSentinel()) return {PcscErrorCode::AuthRequired, sw};
-	auto err = PcscError::fromStatusWord(sw);
+PcscError PcscCommands::evaluateWrite(const StatusWord& sw)
+{
+	if (sw.isSuccess()) return PcscError::make(PcscErrorCode::Success, {}, sw);
+	else if (sw.isAuthSentinel())
+		return PcscError::from(AuthError::AuthRequired, "", sw);
+
+	auto err = fromStatusWord(sw);
+
 	if (err.code == PcscErrorCode::Unknown) err.code = PcscErrorCode::WriteFailed;
 	return err;
 }
 
 PcscError PcscCommands::evaluateLoadKey(const StatusWord& sw) {
 	if (sw.isSuccess()) return {};
-	auto err = PcscError::fromStatusWord(sw);
+	auto err = fromStatusWord(sw);
 	if (err.code == PcscErrorCode::AuthRequired || err.code == PcscErrorCode::Unknown)
 		err.code = PcscErrorCode::LoadKeyFailed;
 	return err;
@@ -88,7 +91,7 @@ PcscError PcscCommands::evaluateLoadKey(const StatusWord& sw) {
 
 PcscError PcscCommands::evaluateAuth(const StatusWord& sw) {
 	if (sw.isSuccess() || sw.isAuthSentinel()) return {};
-	auto err = PcscError::fromStatusWord(sw);
+	auto err = fromStatusWord(sw);
 	if (err.code == PcscErrorCode::Unknown) err.code = PcscErrorCode::AuthFailed;
 	return err;
 }
@@ -124,7 +127,7 @@ PcscError PcscCommands::evaluateExpected(const StatusWord& sw, uint16_t expected
 	StatusWord exp = fromCode(expected);
 	std::string detail = context + ": beklenen " + exp.toHexFormatted()
 		+ ", alinan " + describeStatus(sw);
-	auto err = PcscError::fromStatusWord(sw);
+	auto err = fromStatusWord(sw);
 	err.detail = std::move(detail);
 	return err;
 }

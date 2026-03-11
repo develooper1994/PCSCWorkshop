@@ -303,22 +303,26 @@ BYTEV DesfireCommands::extractData(const BYTEV& response) {
 }
 
 void DesfireCommands::checkResponse(const BYTEV& response, const char* context) {
-    evaluateResponse(response).throwIfError();
+    evaluateResponse(response).error().throwIfError();
 }
 
-PcscError DesfireCommands::evaluateResponse(const BYTEV& response) {
+Result<StatusWord, PcscError> DesfireCommands::evaluateResponse(const BYTEV& response)
+{
     if (response.size() < 2)
-        return {PcscErrorCode::ResponseTooShort};
+		return PcscError{PcscErrorCode::ResponseTooShort};
     BYTE sw1 = response[response.size() - 2];
     BYTE sw2 = response[response.size() - 1];
     if (sw1 == SW1 && (sw2 == OK || sw2 == MORE))
-        return {};
+		return StatusWord{};
     StatusWord sw(sw1, sw2);
-    if (sw2 == AUTH_ERR) return {PcscErrorCode::DesfireAuthMismatch, sw};
-    if (sw2 == PERM_ERR) return {PcscErrorCode::DesfirePermissionDenied, sw};
-    if (sw2 == NO_APP)   return {PcscErrorCode::DesfireAppNotFound, sw};
-    if (sw2 == NO_FILE)  return {PcscErrorCode::DesfireFileNotFound, sw};
-    return {PcscErrorCode::DesfireError, sw};
+	if (sw2 == AUTH_ERR) return Result<StatusWord, PcscError>::Err(PcscError::from(PcscErrorCode::DesfireAuthMismatch, "", sw));
+	else if (sw2 == PERM_ERR)
+		return Result<StatusWord, PcscError>::Err(PcscError::from(PcscErrorCode::DesfirePermissionDenied, "", sw));
+	else if (sw2 == NO_APP)
+		return Result<StatusWord, PcscError>::Err(PcscError::from(PcscErrorCode::DesfireAppNotFound, "", sw));
+	else if (sw2 == NO_FILE)
+		return Result<StatusWord, PcscError>::Err(PcscError::from(PcscErrorCode::DesfireFileNotFound, "", sw));
+	else return Result<StatusWord, PcscError>::Err(PcscError::from(PcscErrorCode::DesfireError, "", sw));
 }
 
 // Template implementations are in DesfireCommands.h

@@ -1,4 +1,4 @@
-﻿#ifndef PCSC_WORKSHOP1_READER_H
+#ifndef PCSC_WORKSHOP1_READER_H
 #define PCSC_WORKSHOP1_READER_H
 
 #include "PCSC.h"
@@ -114,15 +114,14 @@ public:
 
 	// ── Exception-free alternatifler (Result<T> döner) ────────────────────
 
-	Result<ReaderResponse> tryTransmit(const BYTEV& apdu);
-	Result<BYTEV>          tryReadPage(BYTE page, const BYTEV* customApdu = nullptr);
-	Result<void>           tryWritePage(BYTE page, const BYTE* data, const BYTEV* customApdu = nullptr);
-	Result<void>           tryClearPage(BYTE page);
-	Result<void>           tryLoadKey(const BYTE* key, KeyStructure ks, BYTE keyNumber);
-	Result<void>           tryAuth(BYTE blockNumber, KeyType keyType, BYTE keyNumber);
-	Result<void>           tryAuthNew(BYTE blockNumber, KeyType keyType, BYTE keyNumber);
-	Result<void>           tryAuthNew(const BYTE data[5]);
-
+	Result<ReaderResponse, PcscError> tryTransmit(const BYTEV& apdu);
+	PcscResultByteVector tryReadPage(BYTE page, const BYTEV* customApdu = nullptr);
+	PcscResult tryWritePage(BYTE page, const BYTE* data, const BYTEV* customApdu = nullptr);
+	PcscResult tryClearPage(BYTE page);
+	PcscResult tryLoadKey(const BYTE* key, KeyStructure ks, BYTE keyNumber);
+	PcscResult tryAuth(BYTE blockNumber, KeyType keyType, BYTE keyNumber);
+	PcscResult tryAuthNew(BYTE blockNumber, KeyType keyType, BYTE keyNumber);
+	PcscResult tryAuthNew(const BYTE data[5]);
 	// ── Configuration ─────────────────────────────────────────────────────
 
 	BYTE getLE() const noexcept;

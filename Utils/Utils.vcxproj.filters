@@ -21,6 +21,9 @@
     <Filter Include="Log">
       <UniqueIdentifier>{9a89cffd-fd9f-4bae-bbf8-97398f98eece}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Result">
+      <UniqueIdentifier>{4990284b-d52a-45ac-8723-d3713d6b45c8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils\PcscUtils.h">
@@ -50,14 +53,26 @@
     <ClInclude Include="Utils\Types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\Result.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\Platform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Utils\ArrayUtils.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Result.h">
+      <Filter>Result</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\PcscError.h">
+      <Filter>Result</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\BasicError.h">
+      <Filter>Result</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\PcscErrorCode.h">
+      <Filter>Result</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\ErrorTraits.h">
+      <Filter>Result</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

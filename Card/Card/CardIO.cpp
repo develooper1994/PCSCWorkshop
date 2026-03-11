@@ -80,7 +80,7 @@ void CardIO::ensureAuth(int sector, AuthPurpose purpose)
     tryEnsureAuth(sector, purpose).unwrap();
 }
 
-Result<void> CardIO::tryEnsureAuth(int sector, AuthPurpose purpose)
+Result<void, PcscError> CardIO::tryEnsureAuth(int sector, AuthPurpose purpose)
 {
     if (card_.isUltralight()) return {PcscError{}};
 
@@ -92,13 +92,13 @@ Result<void> CardIO::tryEnsureAuth(int sector, AuthPurpose purpose)
 
     const KeyInfo& chosen = chooseKey(sector, purpose);
     auto result = tryDoAuth(sector, chosen);
-    if (result.ok()) return result;
+    if (result.Ok()) return result;
 
     if (isMultiKey()) {
         for (const auto& ki : keys_) {
             if (&ki == &chosen) continue;
             result = tryDoAuth(sector, ki);
-            if (result.ok()) return result;
+            if (result.Ok()) return result;
         }
     }
 
@@ -111,7 +111,7 @@ void CardIO::doAuth(int sector, const KeyInfo& ki)
     tryDoAuth(sector, ki).unwrap();
 }
 
-Result<void> CardIO::tryDoAuth(int sector, const KeyInfo& ki)
+Result<void, PcscError> CardIO::tryDoAuth(int sector, const KeyInfo& ki)
 {
     int trailer = card_.getTrailerBlockOfSector(sector);
 
@@ -205,7 +205,7 @@ void CardIO::authenticate(int sector)
     tryAuthenticate(sector).unwrap();
 }
 
-Result<void> CardIO::tryAuthenticate(int sector)
+Result<void, PcscError> CardIO::tryAuthenticate(int sector)
 {
     invalidateAuth();
     return tryEnsureAuth(sector);
@@ -228,8 +228,8 @@ void CardIO::authenticate(int sector, KeyType kt, BYTE slot)
 
 int CardIO::readCard() { return tryReadCard().unwrap(); }
 
-Result<int> CardIO::tryReadCard() {
-    if (card_.isDesfire()) return {0, PcscError{}};
+Result<int, PcscError> CardIO::tryReadCard() {
+    if (card_.isDesfire()) return {0};
 
     int totalSectors = card_.getTotalSectors();
     int okCount = 0;
@@ -253,23 +253,22 @@ Result<int> CardIO::tryReadCard() {
     }
 
     card_.loadMemory(rawBuf.data(), memSize);
-    return {okCount, PcscError{}};
+    return {okCount};
 }
 
 bool CardIO::readSector(int sector) {
     auto r = tryReadSector(sector);
-    return r.ok();
+    return r.is_ok();
 }
 
-Result<bool> CardIO::tryReadSector(int sector)
+Result<bool, PcscError> CardIO::tryReadSector(int sector)
 {
-    if (card_.isDesfire()) return {false, PcscError{}};
+    if (card_.isDesfire()) return {false};
 
     auto authResult = tryEnsureAuth(sector);
-	if (!authResult)
-	{
+	if (!authResult) {
 		invalidateAuth();
-		return {false, authResult.error()};
+		return {authResult.error()};
 	}
 
     int first = card_.getFirstBlockOfSector(sector);
@@ -286,7 +285,7 @@ Result<bool> CardIO::tryReadSector(int sector)
         else
             allOk = false;
     }
-    return {allOk, PcscError{}};
+    return {allOk};
 }
 
 BYTEV CardIO::readBlock(int block)
@@ -294,11 +293,11 @@ BYTEV CardIO::readBlock(int block)
     return tryReadBlock(block).unwrap();
 }
 
-Result<BYTEV> CardIO::tryReadBlock(int block)
+Result<BYTEV, PcscError> CardIO::tryReadBlock(int block)
 {
     int sector = card_.getSectorForBlock(block);
     auto authResult = tryEnsureAuth(sector);
-    if (!authResult) return {BYTEV{}, authResult.error()};
+    if (!authResult) return {authResult.error()};
 
     auto rr = reader_.tryReadPage(static_cast<BYTE>(block));
     if (!rr) return rr;
@@ -319,7 +318,7 @@ void CardIO::writeBlock(int block, const BYTE data[16])
     tryWriteBlock(block, data).unwrap();
 }
 
-Result<void> CardIO::tryWriteBlock(int block, const BYTE data[16])
+Result<void, PcscError> CardIO::tryWriteBlock(int block, const BYTE data[16])
 {
     if (card_.isManufacturerBlock(block))
         return {{PcscErrorCode::ManufacturerBlock}};
@@ -351,7 +350,7 @@ void CardIO::writeBlock(int block, const BYTEV& data)
     tryWriteBlock(block, data).unwrap();
 }
 
-Result<void> CardIO::tryWriteBlock(int block, const BYTEV& data)
+Result<void, PcscError> CardIO::tryWriteBlock(int block, const BYTEV& data)
 {
     if (data.size() < 16)
         return {PcscError::make(PcscErrorCode::InvalidData,
@@ -366,30 +365,30 @@ Result<void> CardIO::tryWriteBlock(int block, const BYTEV& data)
 TrailerConfig CardIO::readTrailer(int sector) {
     return tryReadTrailer(sector).unwrap(); }
 
-Result<TrailerConfig> CardIO::tryReadTrailer(int sector) {
+Result<TrailerConfig, PcscError> CardIO::tryReadTrailer(int sector) {
     if (card_.isDesfire())
-		return {TrailerConfig{}, {PcscErrorCode::NotDesfire}};
+		return {{PcscErrorCode::NotDesfire}};
 
     int trailerBlock = card_.getTrailerBlockOfSector(sector);
     auto authResult = tryEnsureAuth(sector);
-	if (!authResult) return {TrailerConfig{}, authResult.error()};
+	if (!authResult) return {authResult.error()};
 
     auto rr = reader_.tryReadPage(static_cast<BYTE>(trailerBlock));
-    if (!rr) return {TrailerConfig{}, rr.error()};
-    else if (rr.unwrap().size() < 16) return {TrailerConfig{}, {PcscErrorCode::ReadFailed}};
+    if (!rr) return {rr.error()};
+    else if (rr.unwrap().size() < 16) return {{PcscErrorCode::ReadFailed}};
     CardMemoryLayout& mem = card_.getMemoryMutable();
     std::memcpy(mem.getRawMemory() + trailerBlock * 16, rr.unwrap().data(), 16);
 
     MifareBlock blk;
     std::memcpy(blk.raw, rr.unwrap().data(), 16);
-    return {TrailerConfig::fromBlock(blk), PcscError{}};
+    return {TrailerConfig::fromBlock(blk)};
 }
 
 void CardIO::writeTrailer(int sector, const TrailerConfig& config) {
     tryWriteTrailer(sector, config).unwrap();
 }
 
-Result<void> CardIO::tryWriteTrailer(int sector, const TrailerConfig& config) {
+Result<void, PcscError> CardIO::tryWriteTrailer(int sector, const TrailerConfig& config) {
 	if (card_.isDesfire())
 		return {{PcscErrorCode::NotDesfire}};
 	else if (!config.isValid())
@@ -417,16 +416,16 @@ SectorAccessConfig CardIO::getAccessConfig(int sector) const
     return tryGetAccessConfig(sector).unwrap();
 }
 
-Result<SectorAccessConfig> CardIO::tryGetAccessConfig(int sector) const
+Result<SectorAccessConfig, PcscError> CardIO::tryGetAccessConfig(int sector) const
 {
     if (card_.isDesfire())
-		return {SectorAccessConfig{}, {PcscErrorCode::NotDesfire}};
+		return {{PcscErrorCode::NotDesfire}};
 
     const MifareBlock& trailer = card_.getBlock(
         card_.getTrailerBlockOfSector(sector));
     ACCESSBYTES ab;
     std::memcpy(ab.data(), trailer.trailer.accessBits, 4);
-    return {AccessBitsCodec::decode(ab), PcscError{}};
+    return {AccessBitsCodec::decode(ab)};
 }
 
 void CardIO::setAccessConfig(int sector, const SectorAccessConfig& config)
@@ -434,7 +433,7 @@ void CardIO::setAccessConfig(int sector, const SectorAccessConfig& config)
     trySetAccessConfig(sector, config).unwrap();
 }
 
-Result<void> CardIO::trySetAccessConfig(int sector, const SectorAccessConfig& config)
+Result<void, PcscError> CardIO::trySetAccessConfig(int sector, const SectorAccessConfig& config)
 {
     if (card_.isDesfire())
 		return {{PcscErrorCode::NotDesfire}};
@@ -451,7 +450,7 @@ void CardIO::setSectorMode(int sector, SectorMode mode)
     trySetSectorMode(sector, mode).unwrap();
 }
 
-Result<void> CardIO::trySetSectorMode(int sector, SectorMode mode)
+Result<void, PcscError> CardIO::trySetSectorMode(int sector, SectorMode mode)
 {
     if (card_.isDesfire())
 		return {{PcscErrorCode::NotDesfire}};
@@ -463,13 +462,13 @@ DataBlockPermission CardIO::getDataPermission(int sector, int blockIndex) const
     return tryGetDataPermission(sector, blockIndex).unwrap();
 }
 
-Result<DataBlockPermission> CardIO::tryGetDataPermission(int sector, int blockIndex) const
+Result<DataBlockPermission, PcscError> CardIO::tryGetDataPermission(int sector, int blockIndex) const
 {
     if (card_.isDesfire())
-		return {DataBlockPermission{}, {PcscErrorCode::NotDesfire}};
+		return {{PcscErrorCode::NotDesfire}};
     auto cfgResult = tryGetAccessConfig(sector);
-    if (!cfgResult) return {DataBlockPermission{}, cfgResult.error()};
-	return {cfgResult.unwrap().dataPermission(blockIndex), PcscError{}};
+    if (!cfgResult) return {cfgResult.error()};
+	return {cfgResult.unwrap().dataPermission(blockIndex)};
 }
 
 TrailerPermission CardIO::getTrailerPermission(int sector) const
@@ -477,13 +476,13 @@ TrailerPermission CardIO::getTrailerPermission(int sector) const
     return tryGetTrailerPermission(sector).unwrap();
 }
 
-Result<TrailerPermission> CardIO::tryGetTrailerPermission(int sector) const
+Result<TrailerPermission, PcscError> CardIO::tryGetTrailerPermission(int sector) const
 {
     if (card_.isDesfire())
-		return {TrailerPermission{}, {PcscErrorCode::NotDesfire}};
+		return {{PcscErrorCode::NotDesfire}};
     auto cfgResult = tryGetAccessConfig(sector);
-	if (!cfgResult) return {TrailerPermission{}, cfgResult.error()};
-	return {cfgResult.unwrap().trailerPermission(), PcscError{}};
+	if (!cfgResult) return {cfgResult.error()};
+	return {cfgResult.unwrap().trailerPermission()};
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -500,7 +499,7 @@ std::vector<TrailerConfig> CardIO::saveAllTrailers()
 
     for (int s = 0; s < totalSectors; ++s) {
         auto r = tryReadTrailer(s);
-        configs.push_back(r.ok() ? r.unwrap() : TrailerConfig::factoryDefault());
+        configs.push_back(r.is_ok() ? r.unwrap() : TrailerConfig::factoryDefault());
     }
     return configs;
 }
@@ -534,20 +533,24 @@ BYTEV CardIO::desfireTransmit(const BYTEV& apdu) {
     return reader_.transmit(apdu).raw();
 }
 
-Result<BYTEV> CardIO::tryDesfireTransmit(const BYTEV& apdu) {
+Result<BYTEV, PcscError> CardIO::tryDesfireTransmit(const BYTEV& apdu) {
     auto result = reader_.tryTransmit(apdu);
-    if (!result) return {BYTEV{}, result.error()};
-    return {result.unwrap().raw(), PcscError{}};
+    if (!result) return {result.error()};
+    return {result.unwrap().raw()};
 }
 
-Result<void> CardIO::desfireExec(const BYTEV& apdu) {
-    auto tx = tryDesfireTransmit(apdu);
-    if (!tx) return {tx.error()};
-    return {DesfireCommands::evaluateResponse(tx.unwrap())};
+Result<void, PcscError> CardIO::desfireExec(const BYTEV& apdu)
+{
+	auto tx = tryDesfireTransmit(apdu);
+	if (!tx) return tx.error();
+
+	auto ev = DesfireCommands::evaluateResponse(tx.unwrap());
+	if (!ev) return ev.error();
+	else return {};
 }
 
-Result<BYTEV> CardIO::desfireQuery(const BYTEV& apdu) {
-    auto tx = [this](const BYTEV& a) -> Result<BYTEV> { return tryDesfireTransmit(a); };
+Result<BYTEV, PcscError> CardIO::desfireQuery(const BYTEV& apdu) {
+    auto tx = [this](const BYTEV& a) -> Result<BYTEV, PcscError> { return tryDesfireTransmit(a); };
     return DesfireCommands::tryTransceive(tx, apdu);
 }
 
@@ -557,9 +560,9 @@ Result<BYTEV> CardIO::desfireQuery(const BYTEV& apdu) {
 
 DesfireVersionInfo CardIO::discoverCard() { return tryDiscoverCard().unwrap(); }
 
-Result<DesfireVersionInfo> CardIO::tryDiscoverCard() {
-    if (!card_.isDesfire()) return {DesfireVersionInfo{}, {PcscErrorCode::NotDesfire}};
-    auto tx = [this](const BYTEV& a) -> Result<BYTEV> { return tryDesfireTransmit(a); };
+Result<DesfireVersionInfo, PcscError> CardIO::tryDiscoverCard() {
+    if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
+    auto tx = [this](const BYTEV& a) -> Result<BYTEV, PcscError> { return tryDesfireTransmit(a); };
     auto r = DesfireCommands::tryParseGetVersion(tx);
     if (!r) return r;
     card_.getDesfireMemoryMutable().initFromVersion(r.unwrap());
@@ -568,7 +571,7 @@ Result<DesfireVersionInfo> CardIO::tryDiscoverCard() {
 
 void CardIO::selectApplication(const DesfireAID& aid) { trySelectApplication(aid).unwrap(); }
 
-Result<void> CardIO::trySelectApplication(const DesfireAID& aid) {
+Result<void, PcscError> CardIO::trySelectApplication(const DesfireAID& aid) {
     if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     auto r = desfireExec(DesfireCommands::selectApplication(aid));
     if (!r) return r;
@@ -582,48 +585,48 @@ void CardIO::authenticateDesfire(const BYTEV& key, BYTE keyNo, DesfireKeyType ke
     tryAuthenticateDesfire(key, keyNo, keyType).unwrap();
 }
 
-Result<void> CardIO::tryAuthenticateDesfire(const BYTEV& key, BYTE keyNo, DesfireKeyType keyType) {
+Result<void, PcscError> CardIO::tryAuthenticateDesfire(const BYTEV& key, BYTE keyNo, DesfireKeyType keyType) {
     if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     if (!desfireSession_)
         desfireSession_ = std::make_unique<DesfireSession>();
     DesfireAuth auth;
-    auto tx = [this](const BYTEV& a) -> Result<BYTEV> { return tryDesfireTransmit(a); };
+    auto tx = [this](const BYTEV& a) -> Result<BYTEV, PcscError> { return tryDesfireTransmit(a); };
     return auth.tryAuthenticate(*desfireSession_, key, keyNo, keyType, tx);
 }
 
 std::vector<DesfireAID> CardIO::getApplicationIDs() { return tryGetApplicationIDs().unwrap(); }
 
-Result<std::vector<DesfireAID>> CardIO::tryGetApplicationIDs() {
-    if (!card_.isDesfire()) return {std::vector<DesfireAID>{}, {PcscErrorCode::NotDesfire}};
+Result<std::vector<DesfireAID>, PcscError> CardIO::tryGetApplicationIDs() {
+    if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     auto r = desfireQuery(DesfireCommands::getApplicationIDs());
-    if (!r) return {std::vector<DesfireAID>{}, r.error()};
-    return {DesfireCommands::parseApplicationIDs(r.unwrap()), PcscError{}};
+    if (!r) return {r.error()};
+    return {DesfireCommands::parseApplicationIDs(r.unwrap())};
 }
 
 std::vector<BYTE> CardIO::getFileIDs() { return tryGetFileIDs().unwrap(); }
 
-Result<std::vector<BYTE>> CardIO::tryGetFileIDs() {
-    if (!card_.isDesfire()) return {std::vector<BYTE>{}, {PcscErrorCode::NotDesfire}};
+Result<std::vector<BYTE>, PcscError> CardIO::tryGetFileIDs() {
+    if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     auto r = desfireQuery(DesfireCommands::getFileIDs());
-    if (!r) return {std::vector<BYTE>{}, r.error()};
-    return {DesfireCommands::parseFileIDs(r.unwrap()), PcscError{}};
+    if (!r) return {r.error()};
+    return {DesfireCommands::parseFileIDs(r.unwrap())};
 }
 
 DesfireFileSettings CardIO::getFileSettings(BYTE fileNo) { return tryGetFileSettings(fileNo).unwrap(); }
 
-Result<DesfireFileSettings> CardIO::tryGetFileSettings(BYTE fileNo) {
-    if (!card_.isDesfire()) return {DesfireFileSettings{}, {PcscErrorCode::NotDesfire}};
+Result<DesfireFileSettings, PcscError> CardIO::tryGetFileSettings(BYTE fileNo) {
+    if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     auto r = desfireQuery(DesfireCommands::getFileSettings(fileNo));
-    if (!r) return {DesfireFileSettings{}, r.error()};
-    return {DesfireCommands::parseFileSettings(r.unwrap()), PcscError{}};
+    if (!r) return {r.error()};
+    return {DesfireCommands::parseFileSettings(r.unwrap())};
 }
 
 BYTEV CardIO::readFileData(BYTE fileNo, uint32_t offset, uint32_t length) {
     return tryReadFileData(fileNo, offset, length).unwrap();
 }
 
-Result<BYTEV> CardIO::tryReadFileData(BYTE fileNo, uint32_t offset, uint32_t length) {
-    if (!card_.isDesfire()) return {BYTEV{}, {PcscErrorCode::NotDesfire}};
+Result<BYTEV, PcscError> CardIO::tryReadFileData(BYTE fileNo, uint32_t offset, uint32_t length) {
+    if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     return desfireQuery(DesfireCommands::readData(fileNo, offset, length));
 }
 
@@ -631,7 +634,7 @@ void CardIO::writeFileData(BYTE fileNo, uint32_t offset, const BYTEV& data) {
     tryWriteFileData(fileNo, offset, data).unwrap();
 }
 
-Result<void> CardIO::tryWriteFileData(BYTE fileNo, uint32_t offset, const BYTEV& data) {
+Result<void, PcscError> CardIO::tryWriteFileData(BYTE fileNo, uint32_t offset, const BYTEV& data) {
     if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     return desfireExec(DesfireCommands::writeData(fileNo, offset, data));
 }
@@ -640,8 +643,8 @@ BYTEV CardIO::readRecords(BYTE fileNo, uint32_t offset, uint32_t count) {
     return tryReadRecords(fileNo, offset, count).unwrap();
 }
 
-Result<BYTEV> CardIO::tryReadRecords(BYTE fileNo, uint32_t offset, uint32_t count) {
-    if (!card_.isDesfire()) return {BYTEV{}, {PcscErrorCode::NotDesfire}};
+Result<BYTEV, PcscError> CardIO::tryReadRecords(BYTE fileNo, uint32_t offset, uint32_t count) {
+    if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     return desfireQuery(DesfireCommands::readRecords(fileNo, offset, count));
 }
 
@@ -649,18 +652,18 @@ void CardIO::appendRecord(BYTE fileNo, const BYTEV& recordData) {
     tryAppendRecord(fileNo, recordData).unwrap();
 }
 
-Result<void> CardIO::tryAppendRecord(BYTE fileNo, const BYTEV& recordData) {
+Result<void, PcscError> CardIO::tryAppendRecord(BYTE fileNo, const BYTEV& recordData) {
     if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     return desfireExec(DesfireCommands::appendRecord(fileNo, recordData));
 }
 
 size_t CardIO::getFreeMemory() { return tryGetFreeMemory().unwrap(); }
 
-Result<size_t> CardIO::tryGetFreeMemory() {
-    if (!card_.isDesfire()) return {0, {PcscErrorCode::NotDesfire}};
+Result<size_t, PcscError> CardIO::tryGetFreeMemory() {
+    if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     auto r = desfireQuery(DesfireCommands::getFreeMemory());
-    if (!r) return {0, r.error()};
-    return {DesfireCommands::parseFreeMemory(r.unwrap()), PcscError{}};
+    if (!r) return {r.error()};
+    return {DesfireCommands::parseFreeMemory(r.unwrap())};
 }
 
 bool CardIO::isDesfireAuthenticated() const {
@@ -681,14 +684,14 @@ void CardIO::createApplication(const DesfireAID& aid, BYTE keySettings,
                                 BYTE maxKeys, DesfireKeyType keyType) {
     tryCreateApplication(aid, keySettings, maxKeys, keyType).unwrap();
 }
-Result<void> CardIO::tryCreateApplication(const DesfireAID& aid, BYTE keySettings,
+Result<void, PcscError> CardIO::tryCreateApplication(const DesfireAID& aid, BYTE keySettings,
                                            BYTE maxKeys, DesfireKeyType keyType) {
     if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     return desfireExec(DesfireCommands::createApplication(aid, keySettings, maxKeys, keyType));
 }
 
 void CardIO::deleteApplication(const DesfireAID& aid) { tryDeleteApplication(aid).unwrap(); }
-Result<void> CardIO::tryDeleteApplication(const DesfireAID& aid) {
+Result<void, PcscError> CardIO::tryDeleteApplication(const DesfireAID& aid) {
     if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     return desfireExec(DesfireCommands::deleteApplication(aid));
 }
@@ -697,7 +700,7 @@ void CardIO::createStdDataFile(BYTE fileNo, DesfireCommMode comm,
                                 const DesfireAccessRights& access, uint32_t fileSize) {
     tryCreateStdDataFile(fileNo, comm, access, fileSize).unwrap();
 }
-Result<void> CardIO::tryCreateStdDataFile(BYTE fileNo, DesfireCommMode comm,
+Result<void, PcscError> CardIO::tryCreateStdDataFile(BYTE fileNo, DesfireCommMode comm,
                                            const DesfireAccessRights& access, uint32_t fileSize) {
     if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     return desfireExec(DesfireCommands::createStdDataFile(fileNo, comm, access, fileSize));
@@ -709,7 +712,7 @@ void CardIO::createValueFile(BYTE fileNo, DesfireCommMode comm,
                               bool limitedCredit) {
     tryCreateValueFile(fileNo, comm, access, lower, upper, value, limitedCredit).unwrap();
 }
-Result<void> CardIO::tryCreateValueFile(BYTE fileNo, DesfireCommMode comm,
+Result<void, PcscError> CardIO::tryCreateValueFile(BYTE fileNo, DesfireCommMode comm,
                                          const DesfireAccessRights& access,
                                          int32_t lower, int32_t upper, int32_t value,
                                          bool limitedCredit) {
@@ -723,7 +726,7 @@ void CardIO::createLinearRecordFile(BYTE fileNo, DesfireCommMode comm,
                                      uint32_t recordSize, uint32_t maxRecords) {
     tryCreateLinearRecordFile(fileNo, comm, access, recordSize, maxRecords).unwrap();
 }
-Result<void> CardIO::tryCreateLinearRecordFile(BYTE fileNo, DesfireCommMode comm,
+Result<void, PcscError> CardIO::tryCreateLinearRecordFile(BYTE fileNo, DesfireCommMode comm,
                                                 const DesfireAccessRights& access,
                                                 uint32_t recordSize, uint32_t maxRecords) {
 	if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
@@ -732,45 +735,45 @@ Result<void> CardIO::tryCreateLinearRecordFile(BYTE fileNo, DesfireCommMode comm
 }
 
 void CardIO::deleteFile(BYTE fileNo) { tryDeleteFile(fileNo).unwrap(); }
-Result<void> CardIO::tryDeleteFile(BYTE fileNo) {
+Result<void, PcscError> CardIO::tryDeleteFile(BYTE fileNo) {
     if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     return desfireExec(DesfireCommands::deleteFile(fileNo));
 }
 
 void CardIO::creditValue(BYTE fileNo, int32_t value) { tryCreditValue(fileNo, value).unwrap(); }
-Result<void> CardIO::tryCreditValue(BYTE fileNo, int32_t value) {
+Result<void, PcscError> CardIO::tryCreditValue(BYTE fileNo, int32_t value) {
     if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     return desfireExec(DesfireCommands::credit(fileNo, value));
 }
 
 void CardIO::debitValue(BYTE fileNo, int32_t value) { tryDebitValue(fileNo, value).unwrap(); }
-Result<void> CardIO::tryDebitValue(BYTE fileNo, int32_t value) {
+Result<void, PcscError> CardIO::tryDebitValue(BYTE fileNo, int32_t value) {
     if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     return desfireExec(DesfireCommands::debit(fileNo, value));
 }
 
 void CardIO::commitTransaction() { tryCommitTransaction().unwrap(); }
-Result<void> CardIO::tryCommitTransaction() {
+Result<void, PcscError> CardIO::tryCommitTransaction() {
     if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     return desfireExec(DesfireCommands::commitTransaction());
 }
 
 void CardIO::abortTransaction() { tryAbortTransaction().unwrap(); }
-Result<void> CardIO::tryAbortTransaction() {
+Result<void, PcscError> CardIO::tryAbortTransaction() {
     if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     return desfireExec(DesfireCommands::abortTransaction());
 }
 
 BYTE CardIO::getKeyVersion(BYTE keyNo) { return tryGetKeyVersion(keyNo).unwrap(); }
-Result<BYTE> CardIO::tryGetKeyVersion(BYTE keyNo) {
-    if (!card_.isDesfire()) return {0, {PcscErrorCode::NotDesfire}};
+Result<BYTE, PcscError> CardIO::tryGetKeyVersion(BYTE keyNo) {
+    if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     auto r = desfireQuery(DesfireCommands::getKeyVersion(keyNo));
-    if (!r) return {0, r.error()};
-    return {r.unwrap().empty() ? BYTE(0) : r.unwrap()[0], PcscError{}};
+    if (!r) return {{r.error()}};
+    return {r.unwrap().empty() ? BYTE(0) : r.unwrap()[0]};
 }
 
 void CardIO::formatPICC() { tryFormatPICC().unwrap(); }
-Result<void> CardIO::tryFormatPICC() {
+Result<void, PcscError> CardIO::tryFormatPICC() {
     if (!card_.isDesfire()) return {{PcscErrorCode::NotDesfire}};
     return desfireExec(DesfireCommands::formatPICC());
 }

@@ -115,15 +115,19 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Utils\BasicError.h" />
     <ClInclude Include="Utils\CardUtils.h" />
     <ClInclude Include="Utils\Exceptions\GenericExceptions.h" />
     <ClInclude Include="Utils\Log\Log.h" />
+    <ClInclude Include="Utils\PcscError.h" />
+    <ClInclude Include="Utils\PcscErrorCode.h" />
     <ClInclude Include="Utils\PcscUtils.h" />
     <ClInclude Include="Utils\Platform.h" />
     <ClInclude Include="Utils\Result.h" />
     <ClInclude Include="Utils\StatusWordHandler.h" />
     <ClInclude Include="Utils\Tests\ACR1281U\ACR1281UReaderTestHelpers.h" />
     <ClInclude Include="Utils\Tests\ACR1281U\ACR1281UReaderTests.h" />
+    <ClInclude Include="Utils\ErrorTraits.h" />
     <ClInclude Include="Utils\Types.h" />
     <ClInclude Include="Utils\Utils.h" />
     <ClInclude Include="Utils\ArrayUtils.h" />

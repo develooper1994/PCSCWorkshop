@@ -290,46 +290,45 @@ public:
     // ────────────────────────────────────────────────────────────────────────────
 
     // Mifare Classic
-    Result<int>            tryReadCard();
-    Result<bool>           tryReadSector(int sector);
-    Result<BYTEV>          tryReadBlock(int block);
-    Result<void>           tryWriteBlock(int block, const BYTE data[16]);
-    Result<void>           tryWriteBlock(int block, const BYTEV& data);
-    Result<void>           tryAuthenticate(int sector);
-    Result<TrailerConfig>  tryReadTrailer(int sector);
-    Result<void>           tryWriteTrailer(int sector, const TrailerConfig& config);
+    Result<int, PcscError>            tryReadCard();
+    Result<bool, PcscError>           tryReadSector(int sector);
+    Result<BYTEV, PcscError>          tryReadBlock(int block);
+    Result<void, PcscError>           tryWriteBlock(int block, const BYTE data[16]);
+    Result<void, PcscError>           tryWriteBlock(int block, const BYTEV& data);
+    Result<void, PcscError>           tryAuthenticate(int sector);
+    Result<TrailerConfig, PcscError>  tryReadTrailer(int sector);
+    Result<void, PcscError>           tryWriteTrailer(int sector, const TrailerConfig& config);
 
     // Access Bits
-    Result<SectorAccessConfig> tryGetAccessConfig(int sector) const;
-    Result<void>               trySetAccessConfig(int sector, const SectorAccessConfig& config);
-    Result<void>               trySetSectorMode(int sector, SectorMode mode);
-    Result<DataBlockPermission> tryGetDataPermission(int sector, int blockIndex = 0) const;
-    Result<TrailerPermission>   tryGetTrailerPermission(int sector) const;
-
+    Result<SectorAccessConfig, PcscError> tryGetAccessConfig(int sector) const;
+    Result<void, PcscError>               trySetAccessConfig(int sector, const SectorAccessConfig& config);
+    Result<void, PcscError>               trySetSectorMode(int sector, SectorMode mode);
+    Result<DataBlockPermission, PcscError> tryGetDataPermission(int sector, int blockIndex = 0) const;
+    Result<TrailerPermission, PcscError>   tryGetTrailerPermission(int sector) const;
     // DESFire
-    Result<DesfireVersionInfo>        tryDiscoverCard();
-    Result<void>                      trySelectApplication(const DesfireAID& aid);
-    Result<void>                      tryAuthenticateDesfire(const BYTEV& key, BYTE keyNo, DesfireKeyType keyType);
-    Result<std::vector<DesfireAID>>   tryGetApplicationIDs();
-    Result<std::vector<BYTE>>         tryGetFileIDs();
-    Result<DesfireFileSettings>       tryGetFileSettings(BYTE fileNo);
-    Result<BYTEV>                     tryReadFileData(BYTE fileNo, uint32_t offset, uint32_t length);
-    Result<void>                      tryWriteFileData(BYTE fileNo, uint32_t offset, const BYTEV& data);
-    Result<size_t>                    tryGetFreeMemory();
-    Result<void>                      tryCreateApplication(const DesfireAID& aid, BYTE keySettings, BYTE maxKeys, DesfireKeyType keyType);
-    Result<void>                      tryDeleteApplication(const DesfireAID& aid);
-    Result<void>                      tryCreateStdDataFile(BYTE fileNo, DesfireCommMode comm, const DesfireAccessRights& access, uint32_t fileSize);
-    Result<void>                      tryCreateValueFile(BYTE fileNo, DesfireCommMode comm, const DesfireAccessRights& access, int32_t lower, int32_t upper, int32_t value, bool limitedCredit = false);
-    Result<void>                      tryCreateLinearRecordFile(BYTE fileNo, DesfireCommMode comm, const DesfireAccessRights& access, uint32_t recordSize, uint32_t maxRecords);
-    Result<void>                      tryDeleteFile(BYTE fileNo);
-    Result<BYTEV>                     tryReadRecords(BYTE fileNo, uint32_t offset, uint32_t count);
-    Result<void>                      tryAppendRecord(BYTE fileNo, const BYTEV& recordData);
-    Result<void>                      tryCreditValue(BYTE fileNo, int32_t value);
-    Result<void>                      tryDebitValue(BYTE fileNo, int32_t value);
-    Result<void>                      tryCommitTransaction();
-    Result<void>                      tryAbortTransaction();
-    Result<BYTE>                      tryGetKeyVersion(BYTE keyNo);
-    Result<void>                      tryFormatPICC();
+    Result<DesfireVersionInfo, PcscError>        tryDiscoverCard();
+    Result<void, PcscError>                      trySelectApplication(const DesfireAID& aid);
+    Result<void, PcscError>                      tryAuthenticateDesfire(const BYTEV& key, BYTE keyNo, DesfireKeyType keyType);
+    Result<std::vector<DesfireAID>, PcscError>   tryGetApplicationIDs();
+    Result<std::vector<BYTE>, PcscError>         tryGetFileIDs();
+    Result<DesfireFileSettings, PcscError>       tryGetFileSettings(BYTE fileNo);
+    Result<BYTEV, PcscError>                     tryReadFileData(BYTE fileNo, uint32_t offset, uint32_t length);
+    Result<void, PcscError>                      tryWriteFileData(BYTE fileNo, uint32_t offset, const BYTEV& data);
+    Result<size_t, PcscError>                    tryGetFreeMemory();
+    Result<void, PcscError>                      tryCreateApplication(const DesfireAID& aid, BYTE keySettings, BYTE maxKeys, DesfireKeyType keyType);
+    Result<void, PcscError>                      tryDeleteApplication(const DesfireAID& aid);
+    Result<void, PcscError>                      tryCreateStdDataFile(BYTE fileNo, DesfireCommMode comm, const DesfireAccessRights& access, uint32_t fileSize);
+    Result<void, PcscError>                      tryCreateValueFile(BYTE fileNo, DesfireCommMode comm, const DesfireAccessRights& access, int32_t lower, int32_t upper, int32_t value, bool limitedCredit = false);
+    Result<void, PcscError>                      tryCreateLinearRecordFile(BYTE fileNo, DesfireCommMode comm, const DesfireAccessRights& access, uint32_t recordSize, uint32_t maxRecords);
+    Result<void, PcscError>                      tryDeleteFile(BYTE fileNo);
+    Result<BYTEV, PcscError>                     tryReadRecords(BYTE fileNo, uint32_t offset, uint32_t count);
+    Result<void, PcscError>                      tryAppendRecord(BYTE fileNo, const BYTEV& recordData);
+    Result<void, PcscError>                      tryCreditValue(BYTE fileNo, int32_t value);
+    Result<void, PcscError>                      tryDebitValue(BYTE fileNo, int32_t value);
+    Result<void, PcscError>                      tryCommitTransaction();
+    Result<void, PcscError>                      tryAbortTransaction();
+    Result<BYTE, PcscError>                      tryGetKeyVersion(BYTE keyNo);
+    Result<void, PcscError>                      tryFormatPICC();
 
 private:
     Reader&        reader_;
@@ -371,8 +370,8 @@ private:
     const KeyInfo& findKey(KeyType kt) const;
     bool isMultiKey() const;
 
-    Result<void> tryEnsureAuth(int sector, AuthPurpose purpose = AuthPurpose::Read);
-    Result<void> tryDoAuth(int sector, const KeyInfo& ki);
+    Result<void, PcscError> tryEnsureAuth(int sector, AuthPurpose purpose = AuthPurpose::Read);
+    Result<void, PcscError> tryDoAuth(int sector, const KeyInfo& ki);
 
     // Classic → sector access bits, DESFire → KeyInfo::permission
     bool canKeyPerform(const KeyInfo& ki, int sector, AuthPurpose purpose) const;
@@ -382,11 +381,11 @@ private:
 
     // Raw APDU transmit through Reader
     BYTEV desfireTransmit(const BYTEV& apdu);
-    Result<BYTEV> tryDesfireTransmit(const BYTEV& apdu);
+    Result<BYTEV, PcscError> tryDesfireTransmit(const BYTEV& apdu);
 
     // DESFire helpers — reduce boilerplate
-    Result<void>  desfireExec(const BYTEV& apdu);
-    Result<BYTEV> desfireQuery(const BYTEV& apdu);
+    Result<void, PcscError>  desfireExec(const BYTEV& apdu);
+    Result<BYTEV, PcscError> desfireQuery(const BYTEV& apdu);
 };
 
 #endif // CARDIO_H

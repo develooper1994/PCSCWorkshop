@@ -67,12 +67,12 @@ public:
     BYTEV sendCommand(BYTEV cmd, bool followChaining = true) const;
 
     // ── 4b. Transport — Exception-free ──────────────────────────────────────
-    Result<BYTEV> tryTransmit(const BYTEV& cmd) const;
-    Result<BYTEV> trySendCommand(BYTEV cmd, bool followChaining = true) const;
+	PcscResultByteVector tryTransmit(const BYTEV& cmd) const;
+	PcscResultByteVector trySendCommand(BYTEV cmd, bool followChaining = true) const;
 
     // ── 5. SW ayrıştırma ────────────────────────────────────────────────────
     StatusWord getStatusWords(const BYTEV& resp) const;
-    Result<StatusWord> tryGetStatusWords(const BYTEV& resp) const;
+	PcscResultStatusWord tryGetStatusWords(const BYTEV& resp) const;
 
     // ── Handle erişimi ──────────────────────────────────────────────────────
     SCARDHANDLE handle() const;

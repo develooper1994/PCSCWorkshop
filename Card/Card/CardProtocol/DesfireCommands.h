@@ -183,15 +183,15 @@ public:
 
     // ── Response Evaluation — Exception-free ────────────────────────────────
 
-    static PcscError evaluateResponse(const BYTEV& response);
+    static Result<StatusWord, PcscError> evaluateResponse(const BYTEV& response);
 
     // ── Multi-frame receive ─────────────────────────────────────────────────
 
     template<typename TransmitFn>
-    static BYTEV transceive(TransmitFn&& transmit, const BYTEV& cmd);
+	static BYTEV transceive(TransmitFn&& transmit, const BYTEV& cmd);
 
     template<typename TryTransmitFn>
-    static Result<BYTEV> tryTransceive(TryTransmitFn&& transmit, const BYTEV& cmd);
+    static Result<BYTEV, PcscError> tryTransceive(TryTransmitFn&& transmit, const BYTEV& cmd);
 
     // ── High-level Parsing ──────────────────────────────────────────────────
 
@@ -199,7 +199,7 @@ public:
     static DesfireVersionInfo parseGetVersion(TransmitFn&& transmit);
 
     template<typename TryTransmitFn>
-    static Result<DesfireVersionInfo> tryParseGetVersion(TryTransmitFn&& transmit);
+    static Result<DesfireVersionInfo, PcscError> tryParseGetVersion(TryTransmitFn&& transmit);
 
     // Parse GetApplicationIDs response → vector of AIDs
     static std::vector<DesfireAID> parseApplicationIDs(const BYTEV& data);
@@ -228,76 +228,120 @@ private:
 // ════════════════════════════════════════════════════════════════════════════════
 
 template<typename TransmitFn>
-BYTEV DesfireCommands::transceive(TransmitFn&& transmit, const BYTEV& cmd) {
-    auto tryTx = [&](const BYTEV& apdu) -> Result<BYTEV> {
-        return {transmit(apdu), PcscError{}};
+BYTEV DesfireCommands::transceive(TransmitFn&& transmit, const BYTEV& cmd)
+{
+    auto tryTx = [&](const BYTEV& apdu) -> Result<BYTEV, PcscError> {
+		return transmit(apdu);
     };
     return tryTransceive(tryTx, cmd).unwrap();
 }
 
 template<typename TryTransmitFn>
-Result<BYTEV> DesfireCommands::tryTransceive(TryTransmitFn&& transmit, const BYTEV& cmd) {
-    auto txResult = transmit(cmd);
-    if (!txResult) return {BYTEV{}, txResult.error()};
-    auto err = evaluateResponse(txResult.unwrap());
-    if (!err.ok()) return {BYTEV{}, err};
-    BYTEV result = extractData(txResult.unwrap());
-    while (hasMore(txResult.unwrap())) {
-        txResult = transmit(additionalFrame());
-        if (!txResult) return {BYTEV{}, txResult.error()};
-        err = evaluateResponse(txResult.unwrap());
-        if (!err.ok()) return {BYTEV{}, err};
-        BYTEV chunk = extractData(txResult.unwrap());
-        result.insert(result.end(), chunk.begin(), chunk.end());
-    }
-    return {std::move(result), PcscError{}};
+Result<BYTEV, PcscError> DesfireCommands::tryTransceive(
+    TryTransmitFn&& transmit,
+    const BYTEV& cmd)
+{
+	auto txResult = transmit(cmd);
+	if (!txResult) return txResult.error();
+
+	auto resp = txResult.unwrap();
+
+	auto check = evaluateResponse(resp);
+	if (!check) return check.error();
+
+	BYTEV result = extractData(resp);
+
+	while (hasMore(resp)) {
+		txResult = transmit(additionalFrame());
+		if (!txResult)
+			return txResult.error();
+
+		resp = txResult.unwrap();
+
+		check = evaluateResponse(resp);
+		if (!check)
+			return check.error();
+
+		BYTEV chunk = extractData(resp);
+		result.insert(result.end(), chunk.begin(), chunk.end());
+	}
+
+	return result;
 }
 
 template<typename TransmitFn>
 DesfireVersionInfo DesfireCommands::parseGetVersion(TransmitFn&& transmit) {
-    auto tryTx = [&](const BYTEV& apdu) -> Result<BYTEV> {
-        return {transmit(apdu), PcscError{}};
+	auto tryTx = [&](const BYTEV& apdu) -> Result<BYTEV, PcscError>
+	{
+		return transmit(apdu);
     };
     return tryParseGetVersion(tryTx).unwrap();
 }
 
 template<typename TryTransmitFn>
-Result<DesfireVersionInfo> DesfireCommands::tryParseGetVersion(TryTransmitFn&& transmit) {
-    DesfireVersionInfo vi;
-    auto r1 = transmit(getVersion());
-    if (!r1) return {vi, r1.error()};
-    auto e1 = evaluateResponse(r1.unwrap());
-    if (!e1.ok()) return {vi, e1};
-    BYTEV d1 = extractData(r1.unwrap());
-    if (d1.size() >= 7) {
-        vi.hwVendorID = d1[0]; vi.hwType = d1[1]; vi.hwSubType = d1[2];
-        vi.hwMajorVer = d1[3]; vi.hwMinorVer = d1[4];
-        vi.hwStorageSize = d1[5]; vi.hwProtocol = d1[6];
-    }
-    if (!hasMore(r1.unwrap())) return {vi, PcscError{}};
-    auto r2 = transmit(additionalFrame());
-    if (!r2) return {vi, r2.error()};
-    auto e2 = evaluateResponse(r2.unwrap());
-    if (!e2.ok()) return {vi, e2};
-    BYTEV d2 = extractData(r2.unwrap());
-    if (d2.size() >= 7) {
-        vi.swVendorID = d2[0]; vi.swType = d2[1]; vi.swSubType = d2[2];
-        vi.swMajorVer = d2[3]; vi.swMinorVer = d2[4];
-        vi.swStorageSize = d2[5]; vi.swProtocol = d2[6];
-    }
-    if (!hasMore(r2.unwrap())) return {vi, PcscError{}};
-    auto r3 = transmit(additionalFrame());
-    if (!r3) return {vi, r3.error()};
-    auto e3 = evaluateResponse(r3.unwrap());
-    if (!e3.ok()) return {vi, e3};
-    BYTEV d3 = extractData(r3.unwrap());
-    if (d3.size() >= 14) {
-        std::memcpy(vi.uid, d3.data(), 7);
-        std::memcpy(vi.batchNo, d3.data() + 7, 5);
-        vi.productionWeek = d3[12];
-        vi.productionYear = d3[13];
-    }
-    return {vi, PcscError{}};
+Result<DesfireVersionInfo, PcscError>
+DesfireCommands::tryParseGetVersion(TryTransmitFn&& transmit)
+{
+	DesfireVersionInfo vi{};
+
+	auto r1 = transmit(getVersion());
+	if (!r1) return r1.error();
+
+	auto e1 = evaluateResponse(r1.unwrap());
+	if (!e1) return e1.error();
+
+	BYTEV d1 = extractData(r1.unwrap());
+	if (d1.size() >= 7)
+	{
+		vi.hwVendorID = d1[0];
+		vi.hwType = d1[1];
+		vi.hwSubType = d1[2];
+		vi.hwMajorVer = d1[3];
+		vi.hwMinorVer = d1[4];
+		vi.hwStorageSize = d1[5];
+		vi.hwProtocol = d1[6];
+	}
+
+	if (!hasMore(r1.unwrap()))
+		return vi;
+
+	auto r2 = transmit(additionalFrame());
+	if (!r2) return r2.error();
+
+	auto e2 = evaluateResponse(r2.unwrap());
+	if (!e2) return e2.error();
+
+	BYTEV d2 = extractData(r2.unwrap());
+	if (d2.size() >= 7)
+	{
+		vi.swVendorID = d2[0];
+		vi.swType = d2[1];
+		vi.swSubType = d2[2];
+		vi.swMajorVer = d2[3];
+		vi.swMinorVer = d2[4];
+		vi.swStorageSize = d2[5];
+		vi.swProtocol = d2[6];
+	}
+
+	if (!hasMore(r2.unwrap()))
+		return vi;
+
+	auto r3 = transmit(additionalFrame());
+	if (!r3) return r3.error();
+
+	auto e3 = evaluateResponse(r3.unwrap());
+	if (!e3) return e3.error();
+
+	BYTEV d3 = extractData(r3.unwrap());
+	if (d3.size() >= 14)
+	{
+		std::memcpy(vi.uid, d3.data(), 7);
+		std::memcpy(vi.batchNo, d3.data() + 7, 5);
+		vi.productionWeek = d3[12];
+		vi.productionYear = d3[13];
+	}
+
+	return vi;
 }
 
 #endif // DESFIRE_COMMANDS_H

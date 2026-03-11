@@ -28,7 +28,7 @@ BYTEV DesfireAuth::buildAdditionalFrame(const BYTEV& payload) {
 // ════════════════════════════════════════════════════════════════════════════════
 
 BYTEV DesfireAuth::extractEncRndB(const BYTEV& response, DesfireKeyType keyType) {
-    evaluateAuthSW(response, SW2_AF).throwIfError();
+	evaluateAuthSW(response, SW2_AF).error().throwIfError();
     size_t dataLen = response.size() - 2;
     size_t expected = DesfireCrypto::nonceSize(keyType);
     if (dataLen != expected) {
@@ -41,7 +41,7 @@ BYTEV DesfireAuth::extractEncRndB(const BYTEV& response, DesfireKeyType keyType)
 }
 
 BYTEV DesfireAuth::extractEncRndA(const BYTEV& response, DesfireKeyType keyType) {
-    evaluateAuthSW(response, SW2_OK).throwIfError();
+	evaluateAuthSW(response, SW2_OK).error().throwIfError();
     size_t dataLen = response.size() - 2;
     size_t expected = DesfireCrypto::nonceSize(keyType);
     if (dataLen != expected) {
@@ -57,15 +57,22 @@ BYTEV DesfireAuth::extractEncRndA(const BYTEV& response, DesfireKeyType keyType)
 // Non-template crypto helpers (called from template in header)
 // ════════════════════════════════════════════════════════════════════════════════
 
-PcscError DesfireAuth::evaluateAuthSW(const BYTEV& resp, BYTE expectedSW2) {
-    if (resp.size() < 2) return {PcscErrorCode::ResponseTooShort};
-    BYTE sw1 = resp[resp.size() - 2];
-    BYTE sw2 = resp[resp.size() - 1];
-    if (sw1 == SW1_OK && sw2 == expectedSW2) return {};
-    StatusWord sw(sw1, sw2);
-    if (sw2 == SW2_AE) return {PcscErrorCode::DesfireAuthMismatch, sw};
-    if (sw2 == SW2_PERM) return {PcscErrorCode::DesfirePermissionDenied, sw};
-    return {PcscErrorCode::DesfireError, sw};
+Result<StatusWord, PcscError> DesfireAuth::evaluateAuthSW(const BYTEV& resp, BYTE expectedSW2) {
+	if (resp.size() < 2)
+		return Result<StatusWord, PcscError>::Err(PcscError::from(ConnectionError::ResponseTooShort));
+
+	BYTE sw1 = resp[resp.size() - 2];
+	BYTE sw2 = resp[resp.size() - 1];
+	StatusWord sw(sw1, sw2);
+
+	if (sw1 == SW1_OK && sw2 == expectedSW2)
+		return Result<StatusWord, PcscError>::Ok(sw);
+	else if (sw2 == SW2_AE)
+		return Result<StatusWord, PcscError>::Err(PcscError::from(DesfireError::AuthMismatch, "", sw));
+	else if (sw2 == SW2_PERM)
+		return Result<StatusWord, PcscError>::Err(PcscError::from(DesfireError::PermissionDenied, "", sw));
+	else 
+		return Result<StatusWord, PcscError>::Err(PcscError::from(DesfireError::Generic, "", sw));
 }
 
 BYTEV DesfireAuth::decryptNonce(const BYTEV& encRndB, const BYTEV& key, DesfireKeyType keyType) {
