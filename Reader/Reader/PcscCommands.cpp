@@ -15,7 +15,7 @@ BYTEV PcscCommands::updateBinary(BYTE page, const BYTE* data, BYTE lc) {
 }
 
 // ============================================================
-// APDU Construction — Key / Auth
+// APDU Construction — Anahtar / Yetki
 // ============================================================
 
 BYTEV PcscCommands::loadKey(BYTE keyStructure, BYTE keyNumber,
@@ -61,44 +61,60 @@ BYTEV PcscCommands::escape(const BYTEV& data) {
 // ============================================================
 // Response Evaluation — Exception-free
 // ============================================================
-Result<void, PcscError> PcscCommands::evaluateRead(const StatusWord& sw)
+PcscResultVoid PcscCommands::evaluateRead(const StatusWord& sw)
 {
-	if (sw.isSuccess()) return Result<void, PcscError>::Ok();
-	else if (sw.isAuthSentinel())
-		return Result<void, PcscError>::Err(PcscError::from(PcscErrorCode::AuthRequired, {}, sw));
-	auto err = fromStatusWord(sw);
-	if (err.code == PcscErrorCode::Unknown) err.code = PcscErrorCode::ReadFailed;
-	return Result<void, PcscError>::Err(err);
-}
-
-Result<void, PcscError> PcscCommands::evaluateWrite(const StatusWord& sw)
-{
-	if (sw.isSuccess()) return Result<void, PcscError>::Ok();
-	else if (sw.isAuthSentinel())
-		return Result<void, PcscError>::Err(PcscError::from(PcscErrorCode::AuthRequired, {}, sw));
-
-	auto err = fromStatusWord(sw);
-
-	if (err.code == PcscErrorCode::Unknown) err.code = PcscErrorCode::WriteFailed;
-	return Result<void, PcscError>::Err(err);
-}
-
-// değiştir: PcscError -> std::optional<PcscError>
-Result<void, PcscError> PcscCommands::evaluateLoadKey(const StatusWord& sw) {
-	if (sw.isSuccess()) return Result<void, PcscError>::Ok();
-	auto err = fromStatusWord(sw);
-	if (err.code == PcscErrorCode::AuthRequired || err.code == PcscErrorCode::Unknown)
-		err.code = PcscErrorCode::LoadKeyFailed;
-	return Result<void, PcscError>::Err(err);
-}
-
-Result<void, PcscError> PcscCommands::evaluateAuth(const StatusWord& sw) {
 	if (sw.isSuccess()) return Result<void, PcscError>::Ok();
 	else if (sw.isAuthSentinel())
 		return Result<void, PcscError>::Err(PcscError::from(AuthError::AuthRequired, {}, sw));
+
 	auto err = fromStatusWord(sw);
-	if (err.code == PcscErrorCode::Unknown) err.code = PcscErrorCode::AuthFailed;
-	return Result<void, PcscError>::Err(err);
+	if (!err)
+		return PcscResultVoid::Err(std::move(err));
+	else if (std::holds_alternative<IoError>(err.kind) && (std::get<IoError>(err.kind) == IoError::Unknown))
+		err.kind = IoError::ReadFailed;
+	// Hatalı: return Result<void, PcscError>::Err(err);
+	// Düzeltme: err nesnesini kopyalamak yerine, move ile aktarın
+	return PcscResultVoid::Err(std::move(err));
+}
+
+PcscResultVoid PcscCommands::evaluateWrite(const StatusWord& sw) {
+	if (sw.isSuccess()) return PcscResultVoid::Ok();
+	else if (sw.isAuthSentinel())
+		return PcscResultVoid::Err(PcscError::from(AuthError::AuthRequired, {}, sw));
+
+	auto err = fromStatusWord(sw);
+	if (!err) return PcscResultVoid::Err(std::move(err));
+	else if (std::holds_alternative<IoError>(err.kind) && (std::get<IoError>(err.kind) == IoError::Unknown))
+		err.kind = IoError::WriteFailed;
+	return PcscResultVoid::Err(std::move(err));
+}
+
+// değiştir: PcscError -> std::optional<PcscError>
+PcscResultVoid PcscCommands::evaluateLoadKey(const StatusWord& sw) {
+	if (sw.isSuccess()) return Result<void, PcscError>::Ok();
+
+	auto err = fromStatusWord(sw);
+	if (!err) return PcscResultVoid::Err(std::move(err));
+	else if (std::holds_alternative<AuthError>(err.kind) && (std::get<AuthError>(err.kind) == AuthError::AuthRequired || std::get<AuthError>(err.kind) == AuthError::Unknown))
+		err.kind = AuthError::LoadKeyFailed;
+	// Hatalı: return Result<void, PcscError>::Err(err);
+	// Düzeltme: err nesnesini kopyalamak yerine, move ile aktarın
+	return PcscResultVoid::Err(std::move(err));
+}
+
+PcscResultVoid PcscCommands::evaluateAuth(const StatusWord& sw)
+{
+	if (sw.isSuccess()) return PcscResultVoid::Ok();
+	else if (sw.isAuthSentinel())
+		return PcscResultVoid::Err(PcscError::from(AuthError::AuthRequired, {}, sw));
+
+	auto err = fromStatusWord(sw);
+	if (!err) return PcscResultVoid::Err(std::move(err));
+	else if (std::holds_alternative<AuthError>(err.kind) && (std::get<AuthError>(err.kind) == AuthError::AuthRequired || std::get<AuthError>(err.kind) == AuthError::Unknown))
+		err.kind = AuthError::AuthFailed;
+	// Hatalı: return Result<void, PcscError>::Err(err);
+	// Düzeltme: err nesnesini kopyalamak yerine, move ile aktarın
+	return Result<void, PcscError>::Err(std::move(err));
 }
 
 // ============================================================
@@ -132,7 +148,7 @@ Result<void, PcscError> PcscCommands::evaluateExpected(const StatusWord& sw, uin
 		+ ", alinan " + describeStatus(sw);
 	auto err = fromStatusWord(sw);
 	err.detail = std::move(detail);
-	return Result<void, PcscError>::Err(err);
+	return Result<void, PcscError>::Err(std::move(err));
 }
 
 // ============================================================

@@ -290,7 +290,7 @@ struct CardMemoryLayout {
 
     MifareBlock& getBlock(int index) {
         if (index < 0 || index >= totalBlocks()) {
-            PcscError::make(PcscErrorCode::InvalidData,
+			PcscError::make(CardError::InvalidData,
                 "Block index out of range: " + std::to_string(index)).throwIfError();
             static MifareBlock dummy;
             return dummy;
@@ -304,7 +304,7 @@ struct CardMemoryLayout {
 
     const MifareBlock& getBlock(int index) const {
         if (index < 0 || index >= totalBlocks()) {
-			PcscError::make(PcscErrorCode::InvalidData,
+			PcscError::make(CardError::InvalidData,
                 "Block index out of range: " + std::to_string(index)).throwIfError();
             static const MifareBlock dummy;
             return dummy;

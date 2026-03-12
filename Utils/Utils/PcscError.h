@@ -10,96 +10,95 @@
 #include <stdexcept>
 
 // describeKind helper (variant-based message)
-inline std::string describeKind(const PcscErrorKind& k, PcscErrorCode fallback = PcscErrorCode::Unknown)
-{
-	return std::visit([&](auto&& v) -> std::string
-	                  {
+inline std::string describeKind(const PcscErrorKind& k){
+	return std::visit([&](auto&& v) -> std::string {
         using V = std::decay_t<decltype(v)>;
         if constexpr (std::is_same_v<V, std::monostate>) {
-            return describe(fallback);
+            return "Success";
         } else if constexpr (std::is_same_v<V, ConnectionError>) {
             switch (v) {
-            case ConnectionError::NotConnected: return "Not connected";
-            case ConnectionError::ResponseTooShort: return "Response too short";
-            default: return "Connection error";
+				case ConnectionError::Success: return "Success";
+				case ConnectionError::NotConnected: return "Not connected";
+				case ConnectionError::ResponseTooShort: return "Response too short";
+				case ConnectionError::Unknown: return "Unknown connection error";
+				default: return "Connection error";
             }
         } else if constexpr (std::is_same_v<V, AuthError>) {
             switch (v) {
-            case AuthError::AuthRequired: return "Authentication required";
-            case AuthError::AuthFailed: return "Authentication failed";
-            case AuthError::AuthBlocked: return "Authentication blocked";
-            case AuthError::LoadKeyFailed: return "Load key failed";
-            default: return "Auth error";
+				case AuthError::Success: return "Success";
+				case AuthError::AuthRequired: return "Authentication required";
+				case AuthError::AuthFailed: return "Authentication failed";
+				case AuthError::AuthBlocked: return "Authentication blocked";
+				case AuthError::LoadKeyFailed: return "Load key failed";
+				case AuthError::Unknown: return "Unknown authentication error";
+				default: return "Auth error";
             }
         } else if constexpr (std::is_same_v<V, IoError>) {
             switch (v) {
-            case IoError::ReadFailed: return "Read failed";
-            case IoError::WriteFailed: return "Write failed";
-            default: return "I/O error";
+				case IoError::Success: return "Success";
+				case IoError::ReadFailed: return "Read failed";
+				case IoError::WriteFailed: return "Write failed";
+				case IoError::Unknown: return "Unknown I/O error";
+				default: return "I/O error";
             }
         } else if constexpr (std::is_same_v<V, Iso7816Error>) {
             switch (v) {
-            case Iso7816Error::WrongLength: return "Wrong length";
-            case Iso7816Error::SecurityNotSatisfied: return "Security status not satisfied";
-            case Iso7816Error::ConditionsNotSatisfied: return "Conditions of use not satisfied";
-            case Iso7816Error::FileNotFound: return "File not found";
-            case Iso7816Error::IncorrectParameters: return "Incorrect parameters";
-            case Iso7816Error::InsNotSupported: return "INS not supported";
-            case Iso7816Error::ClaNotSupported: return "CLA not supported";
-            default: return "ISO7816 error";
+				case Iso7816Error::Success: return "Success";
+				case Iso7816Error::WrongLength: return "Wrong length";
+				case Iso7816Error::SecurityNotSatisfied: return "Security status not satisfied";
+				case Iso7816Error::ConditionsNotSatisfied: return "Conditions of use not satisfied";
+				case Iso7816Error::FileNotFound: return "File not found";
+				case Iso7816Error::IncorrectParameters: return "Incorrect parameters";
+				case Iso7816Error::InsNotSupported: return "INS not supported";
+				case Iso7816Error::ClaNotSupported: return "CLA not supported";
+				case Iso7816Error::Unknown: return "Unknown ISO7816 error";
+				default: return "ISO7816 error";
             }
         } else if constexpr (std::is_same_v<V, CardError>) {
             switch (v) {
-            case CardError::NotDesfire: return "Not a DESFire card";
-            case CardError::NotAuthenticated: return "Not authenticated";
-            case CardError::SessionExpired: return "Session expired";
-            case CardError::ManufacturerBlock: return "Manufacturer block protected";
-            case CardError::TrailerBlock: return "Trailer block protected";
-            case CardError::InvalidData: return "Invalid data";
-            default: return "Card error";
+				case CardError::Success: return "Success";
+				case CardError::NotDesfire: return "Not a DESFire card";
+				case CardError::NotAuthenticated: return "Not authenticated";
+				case CardError::SessionExpired: return "Session expired";
+				case CardError::ManufacturerBlock: return "Manufacturer block protected";
+				case CardError::TrailerBlock: return "Trailer block protected";
+				case CardError::InvalidData: return "Invalid data";
+				case CardError::Unknown: return "Unknown card error";
+				default: return "Card error";
             }
         } else if constexpr (std::is_same_v<V, DesfireError>) {
             switch (v) {
-            case DesfireError::Generic: return "DESFire error";
-            case DesfireError::PermissionDenied: return "DESFire permission denied";
-            case DesfireError::AppNotFound: return "DESFire application not found";
-            case DesfireError::FileNotFound: return "DESFire file not found";
-            case DesfireError::AuthMismatch: return "DESFire auth verification failed";
-            default: return "DESFire error";
+				case DesfireError::Success: return "Success";
+				case DesfireError::Generic: return "DESFire error";
+				case DesfireError::PermissionDenied: return "DESFire permission denied";
+				case DesfireError::AppNotFound: return "DESFire application not found";
+				case DesfireError::FileNotFound: return "DESFire file not found";
+				case DesfireError::AuthMismatch: return "DESFire auth verification failed";
+				case DesfireError::Unknown: return "Unknown DESFire error";
+				default: return "DESFire error";
             }
         }
-        return describe(fallback); }, k);
+        return "Unknown Error"; }, k);
 }
 
 // Define PcscError alias here to have a single point of definition and avoid
 // cyclic includes. BasicError is already included above.
-using PcscError = BasicError<PcscErrorCode, PcscErrorKind>;
+using PcscError = BasicError<PcscErrorKind>;
 
-static PcscError fromStatusWord(const StatusWord& s)
-{
-	if (s.isSuccess())
-		return PcscError::from(ConnectionError::Success, {});
-	else if (s.isAuthSentinel())
-		return PcscError::from(AuthError::AuthRequired, {});
-	else if (s.isAuthBlocked())
-		return PcscError::from(AuthError::AuthBlocked, {});
-	else if (s.isSecurityError())
-		return PcscError::from(Iso7816Error::SecurityNotSatisfied, {}, s);
-	else if (s.isWrongLength())
-		return PcscError::from(Iso7816Error::WrongLength, {}, s);
-	else if (s.isFileNotFound())
-		return PcscError::from(Iso7816Error::FileNotFound, {}, s);
-	else if (s.isIncorrectP1P2())
-		return PcscError::from(Iso7816Error::IncorrectParameters, {}, s);
-	else if (s.isINSNotSupported())
-		return PcscError::from(Iso7816Error::InsNotSupported, {}, s);
-	else if (s.isCLANotSupported())
-		return PcscError::from(Iso7816Error::ClaNotSupported, {}, s);
-	else
-		return PcscError::from(std::monostate{}, {}, s); // Hata durumunda bilinmeyen bir kod ve kind için Success (0) ve std::monostate kullan
+static PcscError fromStatusWord(const StatusWord& s) {
+	if (s.isSuccess()) return PcscError::from(ConnectionError::Success, {});
+	else if (s.isAuthSentinel()) return PcscError::from(AuthError::AuthRequired, {});
+	else if (s.isAuthBlocked()) return PcscError::from(AuthError::AuthBlocked, {});
+	else if (s.isSecurityError()) return PcscError::from(Iso7816Error::SecurityNotSatisfied, {}, s);
+	else if (s.isWrongLength()) return PcscError::from(Iso7816Error::WrongLength, {}, s);
+	else if (s.isFileNotFound()) return PcscError::from(Iso7816Error::FileNotFound, {}, s);
+	else if (s.isIncorrectP1P2()) return PcscError::from(Iso7816Error::IncorrectParameters, {}, s);
+	else if (s.isINSNotSupported()) return PcscError::from(Iso7816Error::InsNotSupported, {}, s);
+	else if (s.isCLANotSupported()) return PcscError::from(Iso7816Error::ClaNotSupported, {}, s);
+	else return PcscError::from(std::monostate{}, {}, s); // Hata durumunda bilinmeyen bir kod ve kind için Success (0) ve std::monostate kullan
 }
 
-
+/*
 // -----------------------------
 // Helpers: map Kind -> PcscErrorCode (specializations for each enum)
 // and map Code -> Kind (for backward compatibility)
@@ -210,7 +209,6 @@ inline PcscErrorCode mapKindToCode(DesfireError e)
 	}
 	return PcscErrorCode::Unknown;
 }
-
 inline PcscErrorKind mapCodeToKind(PcscErrorCode c)
 {
 	switch (c)
@@ -282,7 +280,7 @@ inline PcscErrorKind mapCodeToKind(PcscErrorCode c)
 
 
 
-/*
+
 // PcscError: artık sadece variant tabanlı modern API
 struct PcscError {
 	// iç temsil: hangi kategori hatası olduğu

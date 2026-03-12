@@ -309,20 +309,22 @@ void DesfireCommands::checkResponse(const BYTEV& response, const char* context) 
 Result<StatusWord, PcscError> DesfireCommands::evaluateResponse(const BYTEV& response)
 {
     if (response.size() < 2)
-		return PcscError{PcscErrorCode::ResponseTooShort};
+		return Result<StatusWord, PcscError>::Err(PcscError{ConnectionError::ResponseTooShort});
     BYTE sw1 = response[response.size() - 2];
     BYTE sw2 = response[response.size() - 1];
     if (sw1 == SW1 && (sw2 == OK || sw2 == MORE))
-		return StatusWord{};
+		return Result<StatusWord, PcscError>::Ok(StatusWord{});
     StatusWord sw(sw1, sw2);
-	if (sw2 == AUTH_ERR) return Result<StatusWord, PcscError>::Err(PcscError::from(PcscErrorCode::DesfireAuthMismatch, "", sw));
+	if (sw2 == AUTH_ERR)
+		return Result<StatusWord, PcscError>::Err(PcscError::from(DesfireError::AuthMismatch, "", sw));
 	else if (sw2 == PERM_ERR)
-		return Result<StatusWord, PcscError>::Err(PcscError::from(PcscErrorCode::DesfirePermissionDenied, "", sw));
+		return Result<StatusWord, PcscError>::Err(PcscError::from(DesfireError::PermissionDenied, "", sw));
 	else if (sw2 == NO_APP)
-		return Result<StatusWord, PcscError>::Err(PcscError::from(PcscErrorCode::DesfireAppNotFound, "", sw));
+		return Result<StatusWord, PcscError>::Err(PcscError::from(DesfireError::AppNotFound, "", sw));
 	else if (sw2 == NO_FILE)
-		return Result<StatusWord, PcscError>::Err(PcscError::from(PcscErrorCode::DesfireFileNotFound, "", sw));
-	else return Result<StatusWord, PcscError>::Err(PcscError::from(PcscErrorCode::DesfireError, "", sw));
+		return Result<StatusWord, PcscError>::Err(PcscError::from(DesfireError::FileNotFound, "", sw));
+	else
+		return Result<StatusWord, PcscError>::Err(PcscError::from(DesfireError::Generic, "", sw));
 }
 
 // Template implementations are in DesfireCommands.h
@@ -346,7 +348,7 @@ std::vector<BYTE> DesfireCommands::parseFileIDs(const BYTEV& data) {
 DesfireFileSettings DesfireCommands::parseFileSettings(const BYTEV& data) {
 DesfireFileSettings fs;
 if (data.size() < 7) {
-    PcscError::make(PcscErrorCode::InvalidData, "FileSettings too short").throwIfError();
+	PcscError::make(CardError::InvalidData, "FileSettings too short").throwIfError();
     return fs;
 }
 
@@ -383,9 +385,9 @@ if (data.size() < 7) {
 }
 
 size_t DesfireCommands::parseFreeMemory(const BYTEV& data) {
-if (data.size() < 3) {
-PcscError::make(PcscErrorCode::InvalidData, "FreeMem response too short").throwIfError();
-return 0;
-}
+	if (data.size() < 3) {
+		PcscError::make(CardError::InvalidData, "FreeMem response too short").throwIfError();
+		return 0;
+	}
     return static_cast<size_t>(readLE24(data.data()));
 }

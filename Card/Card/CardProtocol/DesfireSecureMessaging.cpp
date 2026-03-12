@@ -10,7 +10,7 @@
 BYTEV DesfireSecureMessaging::calculateCMAC(DesfireSession& session,
                                              const BYTEV& data) {
     if (session.sessionKey.empty()) {
-        PcscError::make(PcscErrorCode::NotAuthenticated, "SecureMessaging: no session key").throwIfError();
+		PcscError::make(CardError::NotAuthenticated, "SecureMessaging: no session key").throwIfError();
         return {};
     }
 
@@ -92,7 +92,7 @@ BYTEV DesfireSecureMessaging::unwrapResponse(DesfireSession& session,
         BYTEV expectedMAC = truncateCMAC(fullMAC);
 
         if (receivedMAC != expectedMAC) {
-            PcscError::make(PcscErrorCode::DesfireAuthMismatch,
+			PcscError::make(DesfireError::AuthMismatch,
                 "SecureMessaging: CMAC verification failed").throwIfError();
             return {};
         }

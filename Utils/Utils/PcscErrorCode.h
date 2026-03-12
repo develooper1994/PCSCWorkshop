@@ -1,5 +1,6 @@
 #ifndef PCSC_ERROR_CODE_H
 #define PCSC_ERROR_CODE_H
+
 #include <cstdint>
 #include <string>
 #include <variant>
@@ -7,6 +8,7 @@
 // -----------------------------
 // Global "legacy" PcscErrorCode (you already have this — kept for compatibility)
 // -----------------------------
+/*
 enum class PcscErrorCode : uint8_t
 {
 	Success = 0,
@@ -114,16 +116,15 @@ inline std::string describe(PcscErrorCode code)
 		return "Unknown error";
 	}
 }
+*/
 
-enum class ConnectionError : uint8_t
-{
+enum class ConnectionError : uint8_t {
 	Success = 0,
 	NotConnected,
 	ResponseTooShort,
 	Unknown = static_cast<uint8_t>(~0)
 };
-enum class AuthError : uint8_t
-{
+enum class AuthError : uint8_t {
 	Success = 0,
 	AuthRequired,
 	AuthFailed,
@@ -131,15 +132,13 @@ enum class AuthError : uint8_t
 	LoadKeyFailed,
 	Unknown = static_cast<uint8_t>(~0)
 };
-enum class IoError : uint8_t
-{
+enum class IoError : uint8_t {
 	Success = 0,
 	ReadFailed,
 	WriteFailed,
 	Unknown = static_cast<uint8_t>(~0)
 };
-enum class Iso7816Error : uint8_t
-{
+enum class Iso7816Error : uint8_t {
 	Success = 0,
 	WrongLength,
 	SecurityNotSatisfied,
@@ -150,8 +149,7 @@ enum class Iso7816Error : uint8_t
 	ClaNotSupported,
 	Unknown = static_cast<uint8_t>(~0)
 };
-enum class CardError : uint8_t
-{
+enum class CardError : uint8_t {
 	Success = 0,
 	NotDesfire,
 	NotAuthenticated,
@@ -161,8 +159,7 @@ enum class CardError : uint8_t
 	InvalidData,
 	Unknown = static_cast<uint8_t>(~0)
 };
-enum class DesfireError : uint8_t
-{
+enum class DesfireError : uint8_t {
 	Success = 0,
 	Generic,
 	PermissionDenied,
@@ -183,6 +180,7 @@ using PcscErrorKind = std::variant<
 
 // PcscError alias is defined in PcscError.h to avoid cyclic include dependencies
 
+/*
 // forward declarations for mapping functions implemented in PcscError.h
 inline PcscErrorCode mapKindToCode(ConnectionError e);
 inline PcscErrorCode mapKindToCode(AuthError e);
@@ -194,5 +192,6 @@ inline PcscErrorCode mapKindToCode(DesfireError e);
 
 // forward declaration for describeKind implemented in PcscError.h
 std::string describeKind(const PcscErrorKind& k, PcscErrorCode fallback);
+*/
 
 #endif // !PCSC_ERROR_CODE_H

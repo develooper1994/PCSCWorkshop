@@ -63,7 +63,7 @@ struct MifareBlock {
     // From BYTEV (if size == 16)
     explicit MifareBlock(const BYTEV& vec) {
         if (vec.size() != 16) {
-            PcscError::make(PcscErrorCode::InvalidData, "Block must be 16 bytes").throwIfError();
+			PcscError::make(CardError::InvalidData, "Block must be 16 bytes").throwIfError();
             return;
         }
         std::memcpy(raw, vec.data(), 16);

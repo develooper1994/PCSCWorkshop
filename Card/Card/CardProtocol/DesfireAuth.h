@@ -52,16 +52,16 @@ public:
                       DesfireKeyType keyType,
                       TransmitFn&& transmit)
     {
-        auto tryTx = [&](const BYTEV& apdu) -> Result<BYTEV, PcscError>
+        auto tryTx = [&](const BYTEV& apdu) -> PcscResult<BYTEV>
         {
-            return transmit(apdu);
+			return PcscResult<BYTEV>::Ok(transmit(apdu));
         };
         tryAuthenticate(session, key, keyNo, keyType, tryTx).unwrap();
     }
 
     // Exception-free variant
     template<typename TryTransmitFn>
-    Result<void, PcscError> tryAuthenticate(DesfireSession& session,
+	PcscResultVoid tryAuthenticate(DesfireSession& session,
                                      const BYTEV& key, BYTE keyNo,
                                      DesfireKeyType keyType,
                                      TryTransmitFn&& transmit);
@@ -113,7 +113,7 @@ public:
 // ════════════════════════════════════════════════════════════════════════════════
 
 template<typename TryTransmitFn>
-Result<void, PcscError> DesfireAuth::tryAuthenticate(DesfireSession& session,
+PcscResultVoid DesfireAuth::tryAuthenticate(DesfireSession& session,
                                         const BYTEV& key, BYTE keyNo,
                                         DesfireKeyType keyType,
                                         TryTransmitFn&& transmit) {
@@ -122,12 +122,15 @@ Result<void, PcscError> DesfireAuth::tryAuthenticate(DesfireSession& session,
 
     // Step 1: Send auth cmd, receive ek(RndB)
     auto r1 = transmit(DesfireAuth::buildAuthCmd(keyNo, keyType));
-    if (!r1) { session.reset(); return Result<void, PcscError>::Err(r1.error()); }
+    if (!r1) { session.reset(); return Result<void, PcscError>::Err(std::move(r1.error())); }
     auto e1 = evaluateAuthSW(r1.unwrap(), DesfireAuth::SW2_AF);
-    if (!e1.is_ok()) { session.reset(); return Result<void, PcscError>(e1); }
+    if (!e1.is_ok()) { session.reset(); return Result<void, PcscError>::Err(std::move(e1.error())); }
 
     size_t expected = DesfireCrypto::nonceSize(keyType);
-    if (r1.unwrap().size() - 2 != expected) { session.reset(); return Result<void, PcscError>::Err({PcscErrorCode::InvalidData}); }
+    if (r1.unwrap().size() - 2 != expected) {
+		session.reset();
+		return PcscResultVoid::Err({CardError::InvalidData});
+	}
     BYTEV encRndB(r1.unwrap().begin(), r1.unwrap().begin() + expected);
 
     // Step 2: Decrypt, build payload
@@ -139,23 +142,23 @@ Result<void, PcscError> DesfireAuth::tryAuthenticate(DesfireSession& session,
 
     // Step 3: Send payload, receive ek(rotL(RndA))
     auto r2 = transmit(buildAdditionalFrame(payload));
-    if (!r2) { session.reset(); return Result<void, PcscError>::Err(r2.error()); }
+    if (!r2) { session.reset(); return Result<void, PcscError>::Err(std::move(r2.error())); }
     auto e2 = evaluateAuthSW(r2.unwrap(), DesfireAuth::SW2_OK);
     if (!e2.is_ok()) {
         session.reset();
-		return Result<void, PcscError>::Err(PcscError::from(e2.error()));
+		return Result<void, PcscError>::Err(std::move(e2.error()));
 	}
 
     if (r2.unwrap().size() - 2 != expected) {
 		session.reset();
-		return Result<void, PcscError>::Err(PcscError::from(PcscErrorCode::InvalidData));
+		return Result<void, PcscError>::Err(PcscError::from(CardError::InvalidData));
 	}
     BYTEV encRndArot(r2.unwrap().begin(), r2.unwrap().begin() + expected);
     BYTEV iv3(payload.end() - bs, payload.end());
     bool ok = DesfireCrypto::verifyAuthResponse(encRndArot, rndA, key, keyType, iv3);
-	if (!ok)
-	{
-		session.reset(); return Result<void, PcscError>::Err(PcscError::from(PcscErrorCode::DesfireAuthMismatch));
+	if (!ok) {
+		session.reset();
+		return Result<void, PcscError>::Err(PcscError::from(DesfireError::AuthMismatch));
 	}
     session.authenticated = true;
     session.authKeyNo = keyNo;

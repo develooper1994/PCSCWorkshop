@@ -115,13 +115,13 @@ public:
 	// ── Exception-free alternatifler (Result<T> döner) ────────────────────
 
 	Result<ReaderResponse, PcscError> tryTransmit(const BYTEV& apdu);
-	PcscResultByteVector tryReadPage(BYTE page, const BYTEV* customApdu = nullptr);
-	PcscResult tryWritePage(BYTE page, const BYTE* data, const BYTEV* customApdu = nullptr);
-	PcscResult tryClearPage(BYTE page);
-	PcscResult tryLoadKey(const BYTE* key, KeyStructure ks, BYTE keyNumber);
-	PcscResult tryAuth(BYTE blockNumber, KeyType keyType, BYTE keyNumber);
-	PcscResult tryAuthNew(BYTE blockNumber, KeyType keyType, BYTE keyNumber);
-	PcscResult tryAuthNew(const BYTE data[5]);
+	PcscResultByteV tryReadPage(BYTE page, const BYTEV* customApdu = nullptr);
+	PcscResultVoid tryWritePage(BYTE page, const BYTE* data, const BYTEV* customApdu = nullptr);
+	PcscResultVoid tryClearPage(BYTE page);
+	PcscResultVoid tryLoadKey(const BYTE* key, KeyStructure ks, BYTE keyNumber);
+	PcscResultVoid tryAuth(BYTE blockNumber, KeyType keyType, BYTE keyNumber);
+	PcscResultVoid tryAuthNew(BYTE blockNumber, KeyType keyType, BYTE keyNumber);
+	PcscResultVoid tryAuthNew(const BYTE data[5]);
 	// ── Configuration ─────────────────────────────────────────────────────
 
 	BYTE getLE() const noexcept;

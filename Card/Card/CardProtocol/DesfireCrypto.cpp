@@ -111,7 +111,7 @@ BYTEV DesfireCrypto::deriveSessionKey(const BYTEV& rndA, const BYTEV& rndB,
         // AES-128 session key:
         //   SK = RndA[0..3] || RndB[0..3] || RndA[12..15] || RndB[12..15]
         if (rndA.size() < 16 || rndB.size() < 16) {
-            PcscError::make(PcscErrorCode::InvalidData, "AES nonces must be 16 bytes").throwIfError();
+			PcscError::make(CardError::InvalidData, "AES nonces must be 16 bytes").throwIfError();
             return {};
         }
         sk.insert(sk.end(), rndA.begin(),      rndA.begin() + 4);
@@ -123,7 +123,7 @@ BYTEV DesfireCrypto::deriveSessionKey(const BYTEV& rndA, const BYTEV& rndB,
         // 2K3DES session key:
         //   SK = RndA[0..3] || RndB[0..3] || RndA[4..7] || RndB[4..7]
         if (rndA.size() < 8 || rndB.size() < 8) {
-            PcscError::make(PcscErrorCode::InvalidData, "2K3DES nonces must be 8 bytes").throwIfError();
+			PcscError::make(CardError::InvalidData, "2K3DES nonces must be 8 bytes").throwIfError();
             return {};
         }
         sk.insert(sk.end(), rndA.begin(),     rndA.begin() + 4);
@@ -137,7 +137,7 @@ BYTEV DesfireCrypto::deriveSessionKey(const BYTEV& rndA, const BYTEV& rndB,
         //        RndA[6..9]  || RndB[6..9]  ||
         //        RndA[12..15]|| RndB[12..15]
         if (rndA.size() < 16 || rndB.size() < 16) {
-            PcscError::make(PcscErrorCode::InvalidData, "3K3DES nonces must be 16 bytes").throwIfError();
+			PcscError::make(CardError::InvalidData, "3K3DES nonces must be 16 bytes").throwIfError();
             return {};
         }
         sk.insert(sk.end(), rndA.begin(),      rndA.begin() + 4);
@@ -148,7 +148,7 @@ BYTEV DesfireCrypto::deriveSessionKey(const BYTEV& rndA, const BYTEV& rndB,
         sk.insert(sk.end(), rndB.begin() + 12, rndB.begin() + 16);
     }
     else {
-        PcscError::make(PcscErrorCode::InvalidData, "Unsupported key type for session key derivation").throwIfError();
+		PcscError::make(CardError::InvalidData, "Unsupported key type for session key derivation").throwIfError();
         return {};
     }
 

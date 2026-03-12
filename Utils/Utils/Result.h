@@ -10,7 +10,6 @@
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
-#include <optional>
 
 // ════════════════════════════════════════════════════════════════════════════════
 // Result — Exception-free hata yönetimi altyapısı
@@ -51,10 +50,33 @@ private:
 	std::variant<T, E> data;
 
 public:
-	Result(const T& v): data(v){}
-	Result(T&& v): data(std::move(v)){}
-	Result(const E& e): data(e){}
-	Result(E&& e): data(std::move(e)){}
+	Result() = delete;
+	Result(const Result&) = default;
+	Result(Result&&) = default;
+	Result& operator=(const Result&) = default;
+	Result& operator=(Result&&) = default;
+	~Result() = default;
+
+	explicit Result(const T& v)
+	    : data(std::in_place_type_t<T>{}, v)
+	{
+	}
+
+	explicit Result(T&& v)
+	    : data(std::in_place_type_t<T>{}, std::move(v))
+	{
+	}
+
+	explicit Result(const E& e)
+	    : data(std::in_place_type_t<E>{}, e)
+	{
+	}
+
+	explicit Result(E&& e)
+	    : data(std::in_place_type_t<E>{}, std::move(e))
+	{
+	}
+
 	// Result(T&& v, E&& e): data(std::move(v)){}
 	// Result(const T& v, const E& e): data(std::move(v)){}
 
@@ -140,15 +162,31 @@ private:
 	std::variant<std::monostate, E> data; // empty => ok
 
 public:
-	Result() = default; // ok
-	Result(const E& e): data(e){}
-	Result(E&& e): data(std::move(e)){}
+	Result() = default;
+	Result(const Result&) = default;
+	Result(Result&&) = default;
+	Result& operator=(const Result&) = default;
+	Result& operator=(Result&&) = default;
+	~Result() = default;
+
+    explicit Result(const E& e)
+	    : data(std::in_place_type_t<E>{}, e)
+	{
+	}
+
+	explicit Result(E&& e)
+	    : data(std::in_place_type_t<E>{}, std::move(e))
+	{
+	}
 
 	// allow construction from Result<U,E> to propagate errors
+	// propagate error from Result<U,E>
 	template<typename U>
-	Result(const Result<U, E>& other) {
-		if (!other.is_ok()) data = other.error();
+	Result(const Result<U, E>& other)
+	{
+		if (!other.is_ok()) data = other.error(); // assigns E alternative
 	}
+
 
 	static Result Ok() { return Result(); }
 	static Result Err(E e) { return Result(std::move(e)); }
@@ -199,11 +237,15 @@ constexpr auto TRY(R&& result) {
 
 template<typename E>
 using ResultVoid = Result<void,E>;
-using PcscResult = ResultVoid<PcscError>;
-using PcscResultString = Result<std::string, PcscError>;
-using PcscResultByteVector = Result<BYTEV, PcscError>;
-using PcscResultStatusWord = Result<StatusWord, PcscError>;
-using PcscResultGeneric = Result<std::variant<std::monostate, ConnectionError, AuthError, IoError, Iso7816Error, CardError, DesfireError>, PcscError>;
+using PcscResultVoid = ResultVoid<PcscError>;
+
+template<typename T>
+using PcscResult = Result<T, PcscError>;
+
+using PcscResultString = PcscResult<std::string>;
+using PcscResultByteV = PcscResult<BYTEV>;
+using PcscResultStatusWord = PcscResult<StatusWord>;
+using PcscResultGeneric = PcscResult<PcscErrorKind>;
 
 
 #endif // PCSC_RESULT_H

@@ -38,16 +38,16 @@ CardInterface::CardInterface(bool is4K)
 
 void CardInterface::loadMemory(const BYTE* data, size_t size) {
     if (isDesfire()) {
-		PcscError::make(PcscErrorCode::NotDesfire,
+		PcscError::make(CardError::NotDesfire,
             "DESFire: use DesfireMemoryLayout, not loadMemory()").throwIfError();
         return;
     }
-    if (size != memory_->memorySize()) {
-		PcscError::make(PcscErrorCode::InvalidData,
+    else if (size != memory_->memorySize()) {
+		PcscError::make(CardError::InvalidData,
             "Invalid memory size for card type").throwIfError();
         return;
     }
-    std::memcpy(memory_->getRawMemory(), data, size);
+    else std::memcpy(memory_->getRawMemory(), data, size);
 }
 
 const CardMemoryLayout& CardInterface::getMemory() const {
@@ -60,7 +60,7 @@ CardMemoryLayout& CardInterface::getMemoryMutable() {
 
 BYTEV CardInterface::exportMemory() const {
     if (isDesfire()) {
-		PcscError::make(PcscErrorCode::NotDesfire,
+		PcscError::make(CardError::NotDesfire,
             "DESFire: no flat memory export").throwIfError();
         return {};
     }
@@ -92,20 +92,17 @@ KEYBYTES CardInterface::getCardKey(int sector, KeyType kt) const {
 // ════════════════════════════════════════════════════════════════════════════════
 
 void CardInterface::authenticate(int sector, KeyType kt) {
-    if (isUltralight()) return;
-    if (isDesfire())    return;   // DESFire auth handled by CardIO
+	if (isUltralight() || isDesfire()) return;
     topology_->validateSector(sector);
     authState_->markAuthenticated(sector, kt);
 }
 
 bool CardInterface::isAuthenticated(int sector) const {
-    if (isUltralight()) return true;
-    return authState_->isAuthenticated(sector);
+	return isUltralight() ? true : authState_->isAuthenticated(sector);
 }
 
 bool CardInterface::isAuthenticatedWith(int sector, KeyType kt) const {
-    if (isUltralight()) return true;
-    return authState_->isAuthenticatedWith(sector, kt);
+	return isUltralight() ? true : authState_->isAuthenticatedWith(sector, kt);
 }
 
 void CardInterface::deauthenticate(int sector) {
@@ -121,23 +118,19 @@ void CardInterface::clearAuthentication() {
 // ════════════════════════════════════════════════════════════════════════════════
 
 bool CardInterface::canRead(int block, KeyType kt) const {
-    if (isUltralight() || isDesfire()) return true;
-    return accessControl_->canRead(block, kt);
+	return isUltralight() || isDesfire() ? true : accessControl_->canRead(block, kt);
 }
 
 bool CardInterface::canWrite(int block, KeyType kt) const {
-    if (isUltralight() || isDesfire()) return true;
-    return accessControl_->canWrite(block, kt);
+	return isUltralight() || isDesfire() ? true : accessControl_->canWrite(block, kt);
 }
 
 bool CardInterface::canReadDataBlocks(int sector, KeyType kt) const {
-    if (isUltralight() || isDesfire()) return true;
-    return accessControl_->canReadDataBlock(sector, kt);
+	return isUltralight() || isDesfire() ? true : accessControl_->canReadDataBlock(sector, kt);
 }
 
 bool CardInterface::canWriteDataBlocks(int sector, KeyType kt) const {
-    if (isUltralight() || isDesfire()) return true;
-    return accessControl_->canWriteDataBlock(sector, kt);
+	return isUltralight() || isDesfire() ? true : accessControl_->canWriteDataBlock(sector, kt);
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -240,11 +233,11 @@ void CardInterface::printCardInfo() const {
         case CardType::MifareDesfire:    typeName = "DESFire"; break;
         default: break;
     }
-    std::cout << "Card Type: " << typeName << "\n";
-    std::cout << "Total Memory: " << getTotalMemory() << " bytes\n";
+    std::cout << "Card Type: " << typeName << "\n"
+			  << "Total Memory: " << getTotalMemory() << " bytes\n";
     if (!isDesfire()) {
-        std::cout << "Total Blocks: " << getTotalBlocks() << "\n";
-        std::cout << "Total Sectors: " << getTotalSectors() << "\n";
+        std::cout << "Total Blocks: " << getTotalBlocks() << "\n"
+				  << "Total Sectors: " << getTotalSectors() << "\n";
     } else if (desfire_) {
         std::cout << "Applications: " << desfire_->applications.size() << "\n";
     }
@@ -296,14 +289,14 @@ KEYBYTES CardInterface::getUID() const {
 
 const DesfireMemoryLayout& CardInterface::getDesfireMemory() const {
     if (!desfire_) {
-		PcscError::make(PcscErrorCode::NotDesfire, "Not a DESFire card").throwIfError();
+		PcscError::make(CardError::NotDesfire, "Not a DESFire card").throwIfError();
     }
     return *desfire_;
 }
 
 DesfireMemoryLayout& CardInterface::getDesfireMemoryMutable() {
     if (!desfire_) {
-		PcscError::make(PcscErrorCode::NotDesfire, "Not a DESFire card").throwIfError();
+		PcscError::make(CardError::NotDesfire, "Not a DESFire card").throwIfError();
     }
     return *desfire_;
 }

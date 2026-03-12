@@ -231,7 +231,7 @@ template<typename TransmitFn>
 BYTEV DesfireCommands::transceive(TransmitFn&& transmit, const BYTEV& cmd)
 {
     auto tryTx = [&](const BYTEV& apdu) -> Result<BYTEV, PcscError> {
-		return transmit(apdu);
+		return Result<BYTEV, PcscError>::Ok(transmit(apdu));
     };
     return tryTransceive(tryTx, cmd).unwrap();
 }
@@ -242,38 +242,38 @@ Result<BYTEV, PcscError> DesfireCommands::tryTransceive(
     const BYTEV& cmd)
 {
 	auto txResult = transmit(cmd);
-	if (!txResult) return txResult.error();
+	if (!txResult) return Result<BYTEV, PcscError>::Err(std::move(txResult.error()));
 
 	auto resp = txResult.unwrap();
 
 	auto check = evaluateResponse(resp);
-	if (!check) return check.error();
+	if (!check) return Result<BYTEV, PcscError>::Err(std::move(check.error()));
 
 	BYTEV result = extractData(resp);
 
 	while (hasMore(resp)) {
 		txResult = transmit(additionalFrame());
 		if (!txResult)
-			return txResult.error();
+			return Result<BYTEV, PcscError>::Err(std::move(txResult.error()));
 
 		resp = txResult.unwrap();
 
 		check = evaluateResponse(resp);
 		if (!check)
-			return check.error();
+			return Result<BYTEV, PcscError>::Err(std::move(check.error()));
 
 		BYTEV chunk = extractData(resp);
 		result.insert(result.end(), chunk.begin(), chunk.end());
 	}
 
-	return result;
+	return Result<BYTEV, PcscError>::Ok(result);
 }
 
 template<typename TransmitFn>
 DesfireVersionInfo DesfireCommands::parseGetVersion(TransmitFn&& transmit) {
 	auto tryTx = [&](const BYTEV& apdu) -> Result<BYTEV, PcscError>
 	{
-		return transmit(apdu);
+		return Result<BYTEV, PcscError>::Ok(transmit(apdu));
     };
     return tryParseGetVersion(tryTx).unwrap();
 }
@@ -285,10 +285,10 @@ DesfireCommands::tryParseGetVersion(TryTransmitFn&& transmit)
 	DesfireVersionInfo vi{};
 
 	auto r1 = transmit(getVersion());
-	if (!r1) return r1.error();
+	if (!r1) return Result<DesfireVersionInfo, PcscError>::Err(std::move(r1.error()));
 
 	auto e1 = evaluateResponse(r1.unwrap());
-	if (!e1) return e1.error();
+	if (!e1) return Result<DesfireVersionInfo, PcscError>::Err(std::move(e1.error()));
 
 	BYTEV d1 = extractData(r1.unwrap());
 	if (d1.size() >= 7)
@@ -303,13 +303,13 @@ DesfireCommands::tryParseGetVersion(TryTransmitFn&& transmit)
 	}
 
 	if (!hasMore(r1.unwrap()))
-		return vi;
+		return Result<DesfireVersionInfo, PcscError>::Ok(vi);
 
 	auto r2 = transmit(additionalFrame());
-	if (!r2) return r2.error();
+	if (!r2) return Result<DesfireVersionInfo, PcscError>::Err(std::move(r2.error()));
 
 	auto e2 = evaluateResponse(r2.unwrap());
-	if (!e2) return e2.error();
+	if (!e2) return Result<DesfireVersionInfo, PcscError>::Err(std::move(e2.error()));
 
 	BYTEV d2 = extractData(r2.unwrap());
 	if (d2.size() >= 7)
@@ -324,13 +324,13 @@ DesfireCommands::tryParseGetVersion(TryTransmitFn&& transmit)
 	}
 
 	if (!hasMore(r2.unwrap()))
-		return vi;
+		return Result<DesfireVersionInfo, PcscError>::Ok(vi);
 
 	auto r3 = transmit(additionalFrame());
-	if (!r3) return r3.error();
+	if (!r3) return Result<DesfireVersionInfo, PcscError>::Err(std::move(r3.error()));
 
 	auto e3 = evaluateResponse(r3.unwrap());
-	if (!e3) return e3.error();
+	if (!e3) return Result<DesfireVersionInfo, PcscError>::Err(std::move(e3.error()));
 
 	BYTEV d3 = extractData(r3.unwrap());
 	if (d3.size() >= 14)
@@ -341,7 +341,7 @@ DesfireCommands::tryParseGetVersion(TryTransmitFn&& transmit)
 		vi.productionYear = d3[13];
 	}
 
-	return vi;
+	return Result<DesfireVersionInfo, PcscError>::Ok(vi);
 }
 
 #endif // DESFIRE_COMMANDS_H

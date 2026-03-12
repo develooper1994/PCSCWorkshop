@@ -32,7 +32,7 @@ BYTEV DesfireAuth::extractEncRndB(const BYTEV& response, DesfireKeyType keyType)
     size_t dataLen = response.size() - 2;
     size_t expected = DesfireCrypto::nonceSize(keyType);
     if (dataLen != expected) {
-        PcscError::make(PcscErrorCode::InvalidData,
+        PcscError::make(CardError::InvalidData,
             "Auth step 1: size mismatch (got " + std::to_string(dataLen)
             + ", expected " + std::to_string(expected) + ")").throwIfError();
         return {};
@@ -45,7 +45,7 @@ BYTEV DesfireAuth::extractEncRndA(const BYTEV& response, DesfireKeyType keyType)
     size_t dataLen = response.size() - 2;
     size_t expected = DesfireCrypto::nonceSize(keyType);
     if (dataLen != expected) {
-        PcscError::make(PcscErrorCode::InvalidData,
+		PcscError::make(CardError::InvalidData,
             "Auth step 3: size mismatch (got " + std::to_string(dataLen)
             + ", expected " + std::to_string(expected) + ")").throwIfError();
         return {};

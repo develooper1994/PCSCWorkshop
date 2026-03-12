@@ -21,7 +21,7 @@ AuthenticationState::AuthenticationState(const CardMemoryLayout& cardMemory,
 
 void AuthenticationState::markAuthenticated(int sector, KeyType kt) {
 	if (!isValidSector(sector)) {
-		PcscError::make(PcscErrorCode::InvalidData,
+		PcscError::make(CardError::InvalidData,
 			"Invalid sector: " + std::to_string(sector)).throwIfError();
 		return;
 	}

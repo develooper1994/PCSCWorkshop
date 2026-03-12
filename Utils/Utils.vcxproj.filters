@@ -71,7 +71,7 @@
     <ClInclude Include="Utils\PcscErrorCode.h">
       <Filter>Result</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\ErrorTraits.h">
+    <ClInclude Include="Utils\ErrorBuilder.h">
       <Filter>Result</Filter>
     </ClInclude>
   </ItemGroup>

@@ -202,7 +202,7 @@ struct SectorAccessConfig {
 
     DataBlockPermission dataPermission(int blockIndex) const {
         if (blockIndex < 0 || blockIndex > 2) {
-            PcscError::make(PcscErrorCode::InvalidData,
+			PcscError::make(CardError::InvalidData,
                 "blockIndex must be 0-2, got " + std::to_string(blockIndex)).throwIfError();
             return DataBlockPermission::fromCondition(dataBlock[0]);
         }
