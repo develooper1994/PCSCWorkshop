@@ -8,4 +8,3 @@ using BYTE = uint8_t;
 using BYTEV = std::vector<BYTE>;
 
 #endif // !TYPES_H
-

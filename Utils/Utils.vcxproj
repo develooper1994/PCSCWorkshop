@@ -120,6 +120,7 @@
     <ClInclude Include="Utils\ErrorBuilder.h" />
     <ClInclude Include="Utils\Exceptions\GenericExceptions.h" />
     <ClInclude Include="Utils\Log\Log.h" />
+    <ClInclude Include="Utils\MetaTypes.h" />
     <ClInclude Include="Utils\PcscError.h" />
     <ClInclude Include="Utils\PcscErrorCode.h" />
     <ClInclude Include="Utils\PcscUtils.h" />

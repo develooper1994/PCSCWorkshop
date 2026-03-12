@@ -61,12 +61,12 @@ BYTEV Reader::padToBlock(const BYTE* data, size_t dataLen) const {
 // ============================================================
 Result<ReaderResponse, PcscError> Reader::tryTransmit(const BYTEV& apdu) {
 	if (!pcsc().isConnected())
-		return Result<ReaderResponse, PcscError>::Err(PcscError::from(ConnectionError::NotConnected, {}, {}));
+		return Result<ReaderResponse, PcscError>::Err(Error<PcscError>(ConnectionError::NotConnected));
 
 	auto raw = pcsc().transmit(apdu);
 
 	if (raw.size() < 2)
-		return Result<ReaderResponse, PcscError>::Err(PcscError::from(ConnectionError::ResponseTooShort, {}, {}));
+		return Result<ReaderResponse, PcscError>::Err(Error<PcscError>(ConnectionError::ResponseTooShort));
 
 	auto sw = pcsc().getStatusWords(raw);
 	BYTEV data(raw.begin(), raw.end() - 2);

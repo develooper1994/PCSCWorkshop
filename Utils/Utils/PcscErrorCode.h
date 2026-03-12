@@ -170,13 +170,13 @@ enum class DesfireError : uint8_t {
 };
 
 using PcscErrorKind = std::variant<
-    std::monostate, // success
-    ConnectionError,
-    AuthError,
-    IoError,
-    Iso7816Error,
-    CardError,
-    DesfireError>;
+	std::monostate, // success
+	ConnectionError,
+	AuthError,
+	IoError,
+	Iso7816Error,
+	CardError,
+	DesfireError>;
 
 // PcscError alias is defined in PcscError.h to avoid cyclic include dependencies
 

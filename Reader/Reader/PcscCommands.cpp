@@ -65,7 +65,9 @@ PcscResultVoid PcscCommands::evaluateRead(const StatusWord& sw)
 {
 	if (sw.isSuccess()) return Result<void, PcscError>::Ok();
 	else if (sw.isAuthSentinel())
-		return Result<void, PcscError>::Err(PcscError::from(AuthError::AuthRequired, {}, sw));
+	{
+		return PcscResultVoid::Err(Error<PcscError>(AuthError::AuthRequired));
+	}
 
 	auto err = fromStatusWord(sw);
 	if (!err)
@@ -80,7 +82,7 @@ PcscResultVoid PcscCommands::evaluateRead(const StatusWord& sw)
 PcscResultVoid PcscCommands::evaluateWrite(const StatusWord& sw) {
 	if (sw.isSuccess()) return PcscResultVoid::Ok();
 	else if (sw.isAuthSentinel())
-		return PcscResultVoid::Err(PcscError::from(AuthError::AuthRequired, {}, sw));
+		return PcscResultVoid::Err(Error<PcscError>(AuthError::AuthRequired));
 
 	auto err = fromStatusWord(sw);
 	if (!err) return PcscResultVoid::Err(std::move(err));
@@ -106,7 +108,7 @@ PcscResultVoid PcscCommands::evaluateAuth(const StatusWord& sw)
 {
 	if (sw.isSuccess()) return PcscResultVoid::Ok();
 	else if (sw.isAuthSentinel())
-		return PcscResultVoid::Err(PcscError::from(AuthError::AuthRequired, {}, sw));
+		return PcscResultVoid::Err(Error<PcscError>(AuthError::AuthRequired));
 
 	auto err = fromStatusWord(sw);
 	if (!err) return PcscResultVoid::Err(std::move(err));

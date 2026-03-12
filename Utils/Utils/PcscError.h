@@ -12,19 +12,19 @@
 // describeKind helper (variant-based message)
 inline std::string describeKind(const PcscErrorKind& k){
 	return std::visit([&](auto&& v) -> std::string {
-        using V = std::decay_t<decltype(v)>;
-        if constexpr (std::is_same_v<V, std::monostate>) {
-            return "Success";
-        } else if constexpr (std::is_same_v<V, ConnectionError>) {
-            switch (v) {
+		using V = std::decay_t<decltype(v)>;
+		if constexpr (std::is_same_v<V, std::monostate>) {
+			return "Success";
+		} else if constexpr (std::is_same_v<V, ConnectionError>) {
+			switch (v) {
 				case ConnectionError::Success: return "Success";
 				case ConnectionError::NotConnected: return "Not connected";
 				case ConnectionError::ResponseTooShort: return "Response too short";
 				case ConnectionError::Unknown: return "Unknown connection error";
 				default: return "Connection error";
-            }
-        } else if constexpr (std::is_same_v<V, AuthError>) {
-            switch (v) {
+			}
+		} else if constexpr (std::is_same_v<V, AuthError>) {
+			switch (v) {
 				case AuthError::Success: return "Success";
 				case AuthError::AuthRequired: return "Authentication required";
 				case AuthError::AuthFailed: return "Authentication failed";
@@ -32,17 +32,17 @@ inline std::string describeKind(const PcscErrorKind& k){
 				case AuthError::LoadKeyFailed: return "Load key failed";
 				case AuthError::Unknown: return "Unknown authentication error";
 				default: return "Auth error";
-            }
-        } else if constexpr (std::is_same_v<V, IoError>) {
-            switch (v) {
+			}
+		} else if constexpr (std::is_same_v<V, IoError>) {
+			switch (v) {
 				case IoError::Success: return "Success";
 				case IoError::ReadFailed: return "Read failed";
 				case IoError::WriteFailed: return "Write failed";
 				case IoError::Unknown: return "Unknown I/O error";
 				default: return "I/O error";
-            }
-        } else if constexpr (std::is_same_v<V, Iso7816Error>) {
-            switch (v) {
+			}
+		} else if constexpr (std::is_same_v<V, Iso7816Error>) {
+			switch (v) {
 				case Iso7816Error::Success: return "Success";
 				case Iso7816Error::WrongLength: return "Wrong length";
 				case Iso7816Error::SecurityNotSatisfied: return "Security status not satisfied";
@@ -53,9 +53,9 @@ inline std::string describeKind(const PcscErrorKind& k){
 				case Iso7816Error::ClaNotSupported: return "CLA not supported";
 				case Iso7816Error::Unknown: return "Unknown ISO7816 error";
 				default: return "ISO7816 error";
-            }
-        } else if constexpr (std::is_same_v<V, CardError>) {
-            switch (v) {
+			}
+		} else if constexpr (std::is_same_v<V, CardError>) {
+			switch (v) {
 				case CardError::Success: return "Success";
 				case CardError::NotDesfire: return "Not a DESFire card";
 				case CardError::NotAuthenticated: return "Not authenticated";
@@ -65,9 +65,9 @@ inline std::string describeKind(const PcscErrorKind& k){
 				case CardError::InvalidData: return "Invalid data";
 				case CardError::Unknown: return "Unknown card error";
 				default: return "Card error";
-            }
-        } else if constexpr (std::is_same_v<V, DesfireError>) {
-            switch (v) {
+			}
+		} else if constexpr (std::is_same_v<V, DesfireError>) {
+			switch (v) {
 				case DesfireError::Success: return "Success";
 				case DesfireError::Generic: return "DESFire error";
 				case DesfireError::PermissionDenied: return "DESFire permission denied";
@@ -76,9 +76,9 @@ inline std::string describeKind(const PcscErrorKind& k){
 				case DesfireError::AuthMismatch: return "DESFire auth verification failed";
 				case DesfireError::Unknown: return "Unknown DESFire error";
 				default: return "DESFire error";
-            }
-        }
-        return "Unknown Error"; }, k);
+			}
+		}
+		return "Unknown Error"; }, k);
 }
 
 // Define PcscError alias here to have a single point of definition and avoid
@@ -86,16 +86,16 @@ inline std::string describeKind(const PcscErrorKind& k){
 using PcscError = BasicError<PcscErrorKind>;
 
 static PcscError fromStatusWord(const StatusWord& s) {
-	if (s.isSuccess()) return PcscError::from(ConnectionError::Success, {});
-	else if (s.isAuthSentinel()) return PcscError::from(AuthError::AuthRequired, {});
-	else if (s.isAuthBlocked()) return PcscError::from(AuthError::AuthBlocked, {});
-	else if (s.isSecurityError()) return PcscError::from(Iso7816Error::SecurityNotSatisfied, {}, s);
-	else if (s.isWrongLength()) return PcscError::from(Iso7816Error::WrongLength, {}, s);
-	else if (s.isFileNotFound()) return PcscError::from(Iso7816Error::FileNotFound, {}, s);
-	else if (s.isIncorrectP1P2()) return PcscError::from(Iso7816Error::IncorrectParameters, {}, s);
-	else if (s.isINSNotSupported()) return PcscError::from(Iso7816Error::InsNotSupported, {}, s);
-	else if (s.isCLANotSupported()) return PcscError::from(Iso7816Error::ClaNotSupported, {}, s);
-	else return PcscError::from(std::monostate{}, {}, s); // Hata durumunda bilinmeyen bir kod ve kind için Success (0) ve std::monostate kullan
+	if (s.isSuccess()) return PcscError::make(ConnectionError::Success, {});
+	else if (s.isAuthSentinel()) return PcscError::make(AuthError::AuthRequired, {});
+	else if (s.isAuthBlocked()) return PcscError::make(AuthError::AuthBlocked, {});
+	else if (s.isSecurityError()) return PcscError::make(Iso7816Error::SecurityNotSatisfied, {});
+	else if (s.isWrongLength()) return PcscError::make(Iso7816Error::WrongLength, {});
+	else if (s.isFileNotFound()) return PcscError::make(Iso7816Error::FileNotFound, {});
+	else if (s.isIncorrectP1P2()) return PcscError::make(Iso7816Error::IncorrectParameters, {});
+	else if (s.isINSNotSupported()) return PcscError::make(Iso7816Error::InsNotSupported, {});
+	else if (s.isCLANotSupported()) return PcscError::make(Iso7816Error::ClaNotSupported, {});
+	else return PcscError::make(std::monostate{}, {}); // Hata durumunda bilinmeyen bir kod ve kind için Success (0) ve std::monostate kullan
 }
 
 /*
@@ -381,7 +381,7 @@ struct PcscError {
 		std::string msg = message();
 
 		std::visit([&](auto&& v)
-		           {
+				   {
 			using V = std::decay_t<decltype(v)>;
 			if constexpr (std::is_same_v<V, std::monostate>) {
 				// success zaten handled

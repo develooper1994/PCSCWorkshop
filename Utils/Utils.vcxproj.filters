@@ -74,6 +74,9 @@
     <ClInclude Include="Utils\ErrorBuilder.h">
       <Filter>Result</Filter>
     </ClInclude>
+    <ClInclude Include="Utils\MetaTypes.h">
+      <Filter>Result</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Utils\Utils.cpp">
