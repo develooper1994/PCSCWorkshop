@@ -20,8 +20,8 @@
     // ── CMake Tools ─────────────────────────────────────────────────────────
     "cmake.configureOnOpen": true,
     "cmake.sourceDirectory": "${workspaceFolder}",
-    // compile_commands.json'u her build sonrası proje köküne kopyala.
-    // Linux'ta CMakeLists.txt symlink de oluşturur — ikisi çakışmaz.
+    // compile_commands.json build bittikten sonra cmake-tools tarafından
+    // proje köküne kopyalanır — IntelliSense buradan okur.
     "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
     // cmake-tools aktif preset'e göre buildDirectory'yi otomatik yönetir.
     // Aşağıdaki satır yalnızca preset seçilmediğinde fallback olarak çalışır.

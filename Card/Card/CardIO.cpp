@@ -502,7 +502,7 @@ void CardIO::restoreAllTrailers(const std::vector<TrailerConfig>& configs) {
 	if (count > totalSectors) count = totalSectors;
 
 	for (int s = 0; s < count; ++s) {
-		tryWriteTrailer(s, configs[s]); // best-effort
+		(void)tryWriteTrailer(s, configs[s]); // best-effort: hata yoksay
 	}
 }
 

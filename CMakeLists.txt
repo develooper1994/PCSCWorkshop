@@ -8,15 +8,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # IDE için compile_commands.json üret (clang-tidy, LSP vb.)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# ── compile_commands.json → proje kökünde symlink (clangd / cpptools için) ──
-if(UNIX)
-    execute_process(
-        COMMAND ${CMAKE_COMMAND} -E create_symlink
-            ${CMAKE_BINARY_DIR}/compile_commands.json
-            ${CMAKE_SOURCE_DIR}/compile_commands.json
-    )
-endif()
-
 # ── Static kütüphaneler ──────────────────────────────────────────────────────
 add_subdirectory(Utils)
 add_subdirectory(Cipher)
