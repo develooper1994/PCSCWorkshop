@@ -1,10 +1,16 @@
 {
     "recommendations": [
+        // C++ core
         "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
         "ms-vscode.cmake-tools",
+        // Syntax highlighting for CMake files
         "twxs.cmake",
-        "llvm-vs-code-extensions.vscode-clangd",
+        // clangd (daha hızlı IntelliSense - opsiyonel, cpptools ile çakışabilir)
+        // "llvm-vs-code-extensions.vscode-clangd",
+        // Format
         "xaver.clang-format",
+        // Copilot
         "github.copilot",
         "github.copilot-chat"
     ]

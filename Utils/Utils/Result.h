@@ -235,11 +235,9 @@ public:
 		return std::decay_t<decltype(CONCAT(_res2_, __LINE__))>::Err(CONCAT(_res2_, __LINE__).error()); \
 	auto VAR = CONCAT(_res2_, __LINE__).unwrap();
 
-// #define TRY(expr) ({ auto _r = (expr); if(!_r) return decltype(_r)::Err(_r.error()); _r.unwrap(); }) // GCC/CLANG specific
-template<typename R>
-constexpr auto TRY(R&& result) {
-	return result ? result.unwrap() : typename std::decay_t<R>::template Err(result.error()); // Başarısızsa aynı tipin Err'ini döndür
-}
+// TRY() helper - use PROPAGATE_IF_ERR or TRY_ASSIGN macros instead (cross-platform)
+// GCC/Clang version (not used in production code - kept for reference only)
+// #define TRY(expr) ({ auto _r = (expr); if(!_r) return decltype(_r)::Err(_r.error()); _r.unwrap(); })
 
 template<typename E>
 using ResultVoid = Result<void,E>;

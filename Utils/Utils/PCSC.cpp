@@ -171,6 +171,7 @@ const std::wstring& PCSC::readerName() const { return readerName_; }
 // ============================================================
 
 bool PCSC::connectOnce() {
+	std::string narrowName(readerName_.begin(), readerName_.end());
 #ifdef _WIN32
 	LONG rc = SCardConnect(hContext_, readerName_.c_str(),
 						   SCARD_SHARE_SHARED,
@@ -178,8 +179,7 @@ bool PCSC::connectOnce() {
 						   &hCard_, &activeProtocol_);
 #else
 	// pcsclite uses narrow strings
-	std::string narrow(readerName_.begin(), readerName_.end());
-	LONG rc = SCardConnect(hContext_, narrow.c_str(),
+	LONG rc = SCardConnect(hContext_, narrowName.c_str(),
 						   SCARD_SHARE_SHARED,
 						   SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1,
 						   &hCard_, &activeProtocol_);
@@ -189,8 +189,7 @@ bool PCSC::connectOnce() {
 		return false;
 	}
 	connected_ = true;
-	std::string narrow(readerName_.begin(), readerName_.end());
-	LOG_CONN_INFO("Connected to: " + narrow);
+	LOG_CONN_INFO("Connected to: " + narrowName);
 	return true;
 }
 

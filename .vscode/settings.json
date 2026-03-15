@@ -5,16 +5,28 @@
     "editor.insertSpaces": false,
     "editor.detectIndentation": false,
 
-    // ── C++ ─────────────────────────────────────────────────────────────────
+    // ── C/C++ (cpptools) ────────────────────────────────────────────────────
     "C_Cpp.default.cppStandard": "c++17",
     "C_Cpp.default.cStandard": "c17",
     "C_Cpp.clang_format_style": "file",
     "C_Cpp.clang_format_fallbackStyle": "Microsoft",
+    // cmake-tools'un aktif preset'ine göre IntelliSense'i besler.
+    // compile_commands.json her iki platformda proje köküne kopyalanır
+    // (CMakeLists.txt symlink / cmake.copyCompileCommands ile).
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/compile_commands.json",
+    // cmake-tools IntelliSense provider olarak kullanılsın
+    "C_Cpp.configurationProvider": "ms-vscode.cmake-tools",
 
-    // ── CMake ───────────────────────────────────────────────────────────────
+    // ── CMake Tools ─────────────────────────────────────────────────────────
     "cmake.configureOnOpen": true,
-    "cmake.buildDirectory": "${workspaceFolder}/build",
-    "cmake.generator": "Ninja",
+    "cmake.sourceDirectory": "${workspaceFolder}",
+    // compile_commands.json'u her build sonrası proje köküne kopyala.
+    // Linux'ta CMakeLists.txt symlink de oluşturur — ikisi çakışmaz.
+    "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
+    // cmake-tools aktif preset'e göre buildDirectory'yi otomatik yönetir.
+    // Aşağıdaki satır yalnızca preset seçilmediğinde fallback olarak çalışır.
+    // Linux açıldığında linux-debug, Windows'ta win-x64-debug seçilmeli.
+    "cmake.buildDirectory": "${workspaceFolder}/build/${buildType}",
 
     // ── Files ───────────────────────────────────────────────────────────────
     "files.trimTrailingWhitespace": true,
@@ -24,9 +36,15 @@
         "*.inl": "cpp"
     },
     "files.exclude": {
-        "**/build": true,
-        "**/build-release": true,
-        "**/.vs": true,
-        "**/x64": true
-    }
+        "**/build":         true,
+        "**/.vs":           true,
+        "**/x64":           true,
+        "**/ipch":          true
+    },
+
+    // ── Terminal (platform-specific shell) ──────────────────────────────────
+    "terminal.integrated.defaultProfile.linux":   "bash",
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+
+    "FSharp.suggestGitignore": false
 }

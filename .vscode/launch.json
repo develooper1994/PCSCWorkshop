@@ -1,11 +1,71 @@
 {
     "version": "0.2.0",
     "configurations": [
+        // ════════════════════════════════════════════════════════════════════
+        // LINUX — cppdbg + GDB
+        // ════════════════════════════════════════════════════════════════════
         {
-            "name": "Workshop1 (Windows MSVC)",
+            "name": "▶ Workshop1 (Linux)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/linux-debug/Workshop1/PCSC_workshop1",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "preLaunchTask": "CMake: Build Workshop1",
+            "setupCommands": [
+                { "text": "-enable-pretty-printing",        "ignoreFailures": true },
+                { "text": "-gdb-set disassembly-flavor intel", "ignoreFailures": true }
+            ]
+        },
+        {
+            "name": "▶ Tests (Linux)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/linux-debug/Tests/PCSC_tests",
+            "args": ["1"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "preLaunchTask": "CMake: Build Tests",
+            "setupCommands": [
+                { "text": "-enable-pretty-printing",        "ignoreFailures": true },
+                { "text": "-gdb-set disassembly-flavor intel", "ignoreFailures": true }
+            ]
+        },
+        {
+            "name": "▶ Tests Interactive (Linux)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/linux-debug/Tests/PCSC_tests",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "preLaunchTask": "CMake: Build Tests",
+            "setupCommands": [
+                { "text": "-enable-pretty-printing", "ignoreFailures": true }
+            ]
+        },
+        // ════════════════════════════════════════════════════════════════════
+        // WINDOWS — cppvsdbg (Visual Studio / MSVC debugger engine)
+        // Binary yolu: Visual Studio 2022 multi-config → Debug/ alt klasörü
+        // ════════════════════════════════════════════════════════════════════
+        {
+            "name": "▶ Workshop1 (Windows)",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Workshop1/Debug/PCSC_workshop1.exe",
+            "program": "${workspaceFolder}/build/win-x64-debug/Workshop1/Debug/PCSC_workshop1.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -14,11 +74,11 @@
             "preLaunchTask": "CMake: Build Workshop1"
         },
         {
-            "name": "Tests (Windows MSVC)",
+            "name": "▶ Tests (Windows)",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Tests/Debug/PCSC_tests.exe",
-            "args": [],
+            "program": "${workspaceFolder}/build/win-x64-debug/Tests/Debug/PCSC_tests.exe",
+            "args": ["1"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
@@ -26,43 +86,15 @@
             "preLaunchTask": "CMake: Build Tests"
         },
         {
-            "name": "Workshop1 (Linux GDB)",
-            "type": "cppdbg",
+            "name": "▶ Tests Interactive (Windows)",
+            "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Workshop1/PCSC_workshop1",
+            "program": "${workspaceFolder}/build/win-x64-debug/Tests/Debug/PCSC_tests.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "MIMode": "gdb",
-            "miDebuggerPath": "/usr/bin/gdb",
-            "setupCommands": [
-                {
-                    "description": "Pretty-print",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
-            "preLaunchTask": "CMake: Build Workshop1"
-        },
-        {
-            "name": "Tests (Linux GDB)",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/Tests/PCSC_tests",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "MIMode": "gdb",
-            "miDebuggerPath": "/usr/bin/gdb",
-            "setupCommands": [
-                {
-                    "description": "Pretty-print",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
+            "console": "integratedTerminal",
             "preLaunchTask": "CMake: Build Tests"
         }
     ]

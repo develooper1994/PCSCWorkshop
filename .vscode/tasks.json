@@ -1,94 +1,104 @@
 {
     "version": "2.0.0",
     "tasks": [
+        // ════════════════════════════════════════════════════════════════════
+        // Configure — platform preset seçimi otomatik
+        // ════════════════════════════════════════════════════════════════════
         {
-            "label": "CMake: Configure (Debug)",
+            "label": "CMake: Configure Debug",
             "type": "shell",
-            "command": "cmake",
-            "args": [
-                "-S", "${workspaceFolder}",
-                "-B", "${workspaceFolder}/build",
-                "-DCMAKE_BUILD_TYPE=Debug",
-                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
-            ],
+            "options": { "cwd": "${workspaceFolder}" },
             "group": "build",
-            "problemMatcher": []
+            "presentation": { "reveal": "silent", "panel": "shared" },
+            "problemMatcher": [],
+            // Platform override: Linux vs Windows preset
+            "linux":   { "command": "cmake --preset linux-debug" },
+            "windows": { "command": "cmake --preset win-x64-debug" }
         },
         {
-            "label": "CMake: Configure (Release)",
+            "label": "CMake: Configure Release",
             "type": "shell",
-            "command": "cmake",
-            "args": [
-                "-S", "${workspaceFolder}",
-                "-B", "${workspaceFolder}/build-release",
-                "-DCMAKE_BUILD_TYPE=Release",
-                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
-            ],
+            "options": { "cwd": "${workspaceFolder}" },
             "group": "build",
-            "problemMatcher": []
+            "presentation": { "reveal": "silent", "panel": "shared" },
+            "problemMatcher": [],
+            "linux":   { "command": "cmake --preset linux-release" },
+            "windows": { "command": "cmake --preset win-x64-release" }
         },
+        // ════════════════════════════════════════════════════════════════════
+        // Build All — ${command:cmake.buildDirectory} aktif preset'in
+        // build dizinini döndürür (cmake-tools extension sağlar)
+        // ════════════════════════════════════════════════════════════════════
         {
             "label": "CMake: Build All (Debug)",
             "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build", "${workspaceFolder}/build",
-                "--config", "Debug"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "problemMatcher": ["$msCompile", "$gcc"],
-            "dependsOn": "CMake: Configure (Debug)"
+            "options": { "cwd": "${workspaceFolder}" },
+            "group": { "kind": "build", "isDefault": true },
+            "presentation": { "reveal": "always", "panel": "shared" },
+            "problemMatcher": { "base": "$gcc", "fileLocation": ["absolute"] },
+            "dependsOn": "CMake: Configure Debug",
+            "linux":   { "command": "cmake --build \"${command:cmake.buildDirectory}\" --parallel $(nproc)" },
+            "windows": { "command": "cmake --build \"${command:cmake.buildDirectory}\" --parallel %NUMBER_OF_PROCESSORS%" }
         },
         {
             "label": "CMake: Build All (Release)",
             "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build", "${workspaceFolder}/build-release",
-                "--config", "Release"
-            ],
+            "options": { "cwd": "${workspaceFolder}" },
             "group": "build",
-            "problemMatcher": ["$msCompile", "$gcc"],
-            "dependsOn": "CMake: Configure (Release)"
+            "presentation": { "reveal": "always", "panel": "shared" },
+            "problemMatcher": { "base": "$gcc", "fileLocation": ["absolute"] },
+            "dependsOn": "CMake: Configure Release",
+            "linux":   { "command": "cmake --build \"${command:cmake.buildDirectory}\" --parallel $(nproc)" },
+            "windows": { "command": "cmake --build \"${command:cmake.buildDirectory}\" --parallel %NUMBER_OF_PROCESSORS%" }
         },
+        // ════════════════════════════════════════════════════════════════════
+        // Build Targets
+        // ════════════════════════════════════════════════════════════════════
         {
             "label": "CMake: Build Workshop1",
             "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build", "${workspaceFolder}/build",
-                "--config", "Debug",
-                "--target", "PCSC_workshop1"
-            ],
+            "options": { "cwd": "${workspaceFolder}" },
             "group": "build",
-            "problemMatcher": ["$msCompile", "$gcc"],
-            "dependsOn": "CMake: Configure (Debug)"
+            "presentation": { "reveal": "always", "panel": "shared" },
+            "problemMatcher": { "base": "$gcc", "fileLocation": ["absolute"] },
+            "dependsOn": "CMake: Configure Debug",
+            "linux":   { "command": "cmake --build \"${command:cmake.buildDirectory}\" --target PCSC_workshop1 --parallel $(nproc)" },
+            "windows": { "command": "cmake --build \"${command:cmake.buildDirectory}\" --target PCSC_workshop1 --parallel %NUMBER_OF_PROCESSORS%" }
         },
         {
             "label": "CMake: Build Tests",
             "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build", "${workspaceFolder}/build",
-                "--config", "Debug",
-                "--target", "PCSC_tests"
-            ],
+            "options": { "cwd": "${workspaceFolder}" },
             "group": "build",
-            "problemMatcher": ["$msCompile", "$gcc"],
-            "dependsOn": "CMake: Configure (Debug)"
+            "presentation": { "reveal": "always", "panel": "shared" },
+            "problemMatcher": { "base": "$gcc", "fileLocation": ["absolute"] },
+            "dependsOn": "CMake: Configure Debug",
+            "linux":   { "command": "cmake --build \"${command:cmake.buildDirectory}\" --target PCSC_tests --parallel $(nproc)" },
+            "windows": { "command": "cmake --build \"${command:cmake.buildDirectory}\" --target PCSC_tests --parallel %NUMBER_OF_PROCESSORS%" }
         },
+        // ════════════════════════════════════════════════════════════════════
+        // Clean / Rebuild
+        // ════════════════════════════════════════════════════════════════════
         {
             "label": "CMake: Clean",
             "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build", "${workspaceFolder}/build",
-                "--target", "clean"
-            ],
-            "problemMatcher": []
+            "options": { "cwd": "${workspaceFolder}" },
+            "group": "build",
+            "presentation": { "reveal": "silent", "panel": "shared" },
+            "problemMatcher": [],
+            "linux":   { "command": "cmake --build \"${command:cmake.buildDirectory}\" --target clean" },
+            "windows": { "command": "cmake --build \"${command:cmake.buildDirectory}\" --target clean" }
+        },
+        {
+            "label": "CMake: Rebuild All (Debug)",
+            "type": "shell",
+            "options": { "cwd": "${workspaceFolder}" },
+            "group": "build",
+            "presentation": { "reveal": "always", "panel": "shared" },
+            "problemMatcher": { "base": "$gcc", "fileLocation": ["absolute"] },
+            "dependsOn": "CMake: Configure Debug",
+            "linux":   { "command": "cmake --build \"${command:cmake.buildDirectory}\" --target clean && cmake --build \"${command:cmake.buildDirectory}\" --parallel $(nproc)" },
+            "windows": { "command": "cmake --build \"${command:cmake.buildDirectory}\" --target clean && cmake --build \"${command:cmake.buildDirectory}\" --parallel %NUMBER_OF_PROCESSORS%" }
         }
     ]
 }
