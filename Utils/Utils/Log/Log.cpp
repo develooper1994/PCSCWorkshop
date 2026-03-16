@@ -4,6 +4,7 @@
 #include <chrono>
 #include <ctime>
 #include <sstream>
+#include <thread>
 
 namespace pcsc {
 

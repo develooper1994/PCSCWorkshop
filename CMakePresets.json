@@ -1,74 +1,189 @@
 {
   "version": 6,
-  "cmakeMinimumRequired": { "major": 3, "minor": 14, "patch": 0 },
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
 
   "configurePresets": [
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // HIDDEN BASE PRESETS (inherited, not selectable)
+    // ─────────────────────────────────────────────────────────────────────────
     {
-      "name": "win-x64-debug",
-      "displayName": "Windows x64 Debug",
+      "name": "base",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "base-win",
+      "hidden": true,
+      "inherits": "base",
       "generator": "Visual Studio 17 2022",
       "architecture": "x64",
-      "binaryDir": "${sourceDir}/build/win-x64-debug",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    },
+    {
+      "name": "base-win-ninja",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "Ninja",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    },
+    {
+      "name": "base-linux",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "Ninja",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" }
+    },
+    {
+      "name": "base-macos",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "Ninja",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" }
+    },
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // WINDOWS — GRUP 1: Hızlı geliştirme / deneme-yanılma
+    //   /MDd (dynamic debug CRT)  — OpenSSL'in /MD ile uyumlu
+    //   No LTCG — hızlı link
+    //   No optimizasyon — hızlı derleme, tam debug info
+    // ─────────────────────────────────────────────────────────────────────────
+    {
+      "name": "win-debug",
+      "displayName": "Windows Debug (fast build, /MDd)",
+      "inherits": "base-win",
+      "binaryDir": "${sourceDir}/build/win-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CXX_STANDARD": "17"
-      },
-      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDebugDLL",
+        "SCARDTOOL_ENABLE_LTCG": "OFF",
+        "BUILD_TESTING": "ON"
+      }
     },
     {
-      "name": "win-x64-release",
-      "displayName": "Windows x64 Release",
-      "generator": "Visual Studio 17 2022",
-      "architecture": "x64",
-      "binaryDir": "${sourceDir}/build/win-x64-release",
+      "name": "win-relwithdebinfo",
+      "displayName": "Windows RelWithDebInfo (fast release, /MD)",
+      "inherits": "base-win",
+      "binaryDir": "${sourceDir}/build/win-relwithdebinfo",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL",
+        "SCARDTOOL_ENABLE_LTCG": "OFF",
+        "BUILD_TESTING": "ON"
+      }
+    },
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // WINDOWS — GRUP 2: Son çıktı / dağıtım
+    //   /MT (static CRT) — OpenSSL Windows pre-built ile uyumlu
+    //   LTCG (/GL + /LTCG) — bütün program optimizasyonu
+    //   Full optimization (/O2 /Ob2)
+    //   No debug info — küçük binary
+    // ─────────────────────────────────────────────────────────────────────────
+    {
+      "name": "win-release",
+      "displayName": "Windows Release (ship, /MT + LTCG)",
+      "inherits": "base-win",
+      "binaryDir": "${sourceDir}/build/win-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_CXX_STANDARD": "17"
-      },
-      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded",
+        "SCARDTOOL_ENABLE_LTCG": "ON",
+        "BUILD_TESTING": "OFF"
+      }
     },
+    {
+      "name": "win-release-ninja",
+      "displayName": "Windows Release Ninja (ship, /MT + LTCG)",
+      "inherits": "base-win-ninja",
+      "binaryDir": "${sourceDir}/build/win-release-ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded",
+        "SCARDTOOL_ENABLE_LTCG": "ON",
+        "BUILD_TESTING": "OFF"
+      }
+    },
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // LINUX
+    // ─────────────────────────────────────────────────────────────────────────
     {
       "name": "linux-debug",
       "displayName": "Linux Debug",
-      "generator": "Unix Makefiles",
+      "inherits": "base-linux",
       "binaryDir": "${sourceDir}/build/linux-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CXX_STANDARD": "17"
-      },
-      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" }
+        "BUILD_TESTING": "ON"
+      }
     },
     {
       "name": "linux-release",
       "displayName": "Linux Release",
-      "generator": "Unix Makefiles",
+      "inherits": "base-linux",
       "binaryDir": "${sourceDir}/build/linux-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_CXX_STANDARD": "17"
-      },
-      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" }
+        "BUILD_TESTING": "OFF"
+      }
+    },
+    {
+      "name": "linux-relwithdebinfo",
+      "displayName": "Linux RelWithDebInfo",
+      "inherits": "base-linux",
+      "binaryDir": "${sourceDir}/build/linux-relwithdebinfo",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "BUILD_TESTING": "ON"
+      }
+    },
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // macOS
+    // ─────────────────────────────────────────────────────────────────────────
+    {
+      "name": "macos-debug",
+      "displayName": "macOS Debug",
+      "inherits": "base-macos",
+      "binaryDir": "${sourceDir}/build/macos-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_TESTING": "ON"
+      }
+    },
+    {
+      "name": "macos-release",
+      "displayName": "macOS Release",
+      "inherits": "base-macos",
+      "binaryDir": "${sourceDir}/build/macos-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TESTING": "OFF"
+      }
     }
   ],
 
   "buildPresets": [
-    {
-      "name": "win-x64-debug",
-      "configurePreset": "win-x64-debug",
-      "configuration": "Debug"
-    },
-    {
-      "name": "win-x64-release",
-      "configurePreset": "win-x64-release",
-      "configuration": "Release"
-    },
-    {
-      "name": "linux-debug",
-      "configurePreset": "linux-debug"
-    },
-    {
-      "name": "linux-release",
-      "configurePreset": "linux-release"
-    }
+    { "name": "win-debug",           "configurePreset": "win-debug",           "configuration": "Debug" },
+    { "name": "win-relwithdebinfo",  "configurePreset": "win-relwithdebinfo",  "configuration": "RelWithDebInfo" },
+    { "name": "win-release",         "configurePreset": "win-release",         "configuration": "Release" },
+    { "name": "win-release-ninja",   "configurePreset": "win-release-ninja" },
+    { "name": "linux-debug",         "configurePreset": "linux-debug" },
+    { "name": "linux-release",       "configurePreset": "linux-release" },
+    { "name": "linux-relwithdebinfo","configurePreset": "linux-relwithdebinfo" },
+    { "name": "macos-debug",         "configurePreset": "macos-debug" },
+    { "name": "macos-release",       "configurePreset": "macos-release" }
+  ],
+
+  "testPresets": [
+    { "name": "win-debug",           "configurePreset": "win-debug",    "output": {"outputOnFailure": true} },
+    { "name": "win-relwithdebinfo",  "configurePreset": "win-relwithdebinfo", "output": {"outputOnFailure": true} },
+    { "name": "linux-debug",         "configurePreset": "linux-debug",  "output": {"outputOnFailure": true} },
+    { "name": "linux-relwithdebinfo","configurePreset": "linux-relwithdebinfo", "output": {"outputOnFailure": true} },
+    { "name": "macos-debug",         "configurePreset": "macos-debug",  "output": {"outputOnFailure": true} }
   ]
 }

@@ -1,0 +1,39 @@
+PROJECT_NAME           = "scardtool"
+PROJECT_NUMBER         = "1.0.0"
+PROJECT_BRIEF          = "PC/SC smart card command-line tool and MCP server"
+
+OUTPUT_DIRECTORY       = docs
+INPUT                  = . 
+RECURSIVE              = YES
+EXCLUDE                = Tests build docs
+
+FILE_PATTERNS          = *.h *.cpp *.md
+EXTENSION_MAPPING      = md=Markdown
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_COLORSTYLE        = LIGHT
+
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+
+HAVE_DOT               = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+CLASS_DIAGRAMS         = YES
+COLLABORATION_GRAPH    = YES
+
+QUIET                  = NO
+WARNINGS               = YES
+
+USE_MDFILE_AS_MAINPAGE = README.md
+
+PREDEFINED             = SCARDTOOL_USE_LINENOISE
+
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = YES
