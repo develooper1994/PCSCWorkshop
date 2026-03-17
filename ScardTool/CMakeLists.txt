@@ -214,6 +214,22 @@ if(SCARDTOOL_USE_LINENOISE)
         GIT_TAG master
         GIT_SHALLOW TRUE)
     FetchContent_MakeAvailable(linenoise_ng)
+    # Ensure third-party linenoise respects the global MSVC runtime selection
+    if(MSVC)
+        if(TARGET linenoise)
+            message(STATUS "Patching linenoise target to use MSVC runtime: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
+            set_target_properties(linenoise PROPERTIES
+                MSVC_RUNTIME_LIBRARY ${CMAKE_MSVC_RUNTIME_LIBRARY}
+            )
+            # Exclude vendor example executable from top-level build (avoids link/runtime mismatch)
+            if(TARGET example)
+                message(STATUS "Excluding linenoise example target from top-level build")
+                set_target_properties(example PROPERTIES EXCLUDE_FROM_ALL TRUE EXCLUDE_FROM_DEFAULT_BUILD TRUE)
+            endif()
+        else()
+            message(WARNING "linenoise target not found after FetchContent; runtime cannot be enforced")
+        endif()
+    endif()
 endif()
 
 # ── Lua 5.4 ───────────────────────────────────────────────────────────────────

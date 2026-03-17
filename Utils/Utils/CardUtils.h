@@ -7,12 +7,12 @@
 #include <sstream>
 #include <iostream>
 
-// NOTE: Namespace adý "DESFire" -> "CardUtils" olarak deðiþtirildi.
-// Eðer proje genelinde "DESFire::" kullanýmlarý varsa hepsinin de güncellenmesi gerekir.
+// NOTE: Namespace adï¿½ "DESFire" -> "CardUtils" olarak deï¿½iï¿½tirildi.
+// Eï¿½er proje genelinde "DESFire::" kullanï¿½mlarï¿½ varsa hepsinin de gï¿½ncellenmesi gerekir.
 
 // ============================================================
-// Kart komutlarý ve parse (DESFire'e özgü APDU'lar kullanýlmakla birlikte
-// fonksiyonlar genel kart/versiyon/UID iþlemleri sunar)
+// Kart komutlarï¿½ ve parse (DESFire'e ï¿½zgï¿½ APDU'lar kullanï¿½lmakla birlikte
+// fonksiyonlar genel kart/versiyon/UID iï¿½lemleri sunar)
 // ============================================================
 
 namespace CardUtils {

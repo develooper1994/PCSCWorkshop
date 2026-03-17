@@ -77,6 +77,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # IDE için compile_commands.json üret (clangd, clang-tidy, VS Code vb.)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# CMake 4.0 ile birlikte gelen yeni policy yönetimi:
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 4.0)
+    set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING
+        "Allow legacy subprojects to configure under newer CMake" FORCE)
+endif()
+
 # ── MSVC Runtime + LTCG Konfigürasyonu ───────────────────────────────────────
 #
 # Sorun: Windows'ta OpenSSL pre-built binary'leri /MT (static CRT) ile
@@ -104,6 +110,23 @@ if(MSVC)
     # Bu policy olmadan her target kendi CRT'sini seçer → uyumsuzluk.
     cmake_policy(SET CMP0091 NEW)
 
+    # Global CRT/runtime selection for all subprojects.
+    # - auto:    preserve preset or existing CMAKE_MSVC_RUNTIME_LIBRARY (default)
+    # - dynamic: force DLL CRT (/MD, /MDd) — fast iteration for Debug
+    # - static:  force static CRT (/MT, /MTd) — for final distributable
+    set(SCARDTOOL_RUNTIME "auto" CACHE STRING "CRT runtime selection: auto|dynamic|static")
+    set_property(CACHE SCARDTOOL_RUNTIME PROPERTY STRINGS auto dynamic static)
+
+    if(SCARDTOOL_RUNTIME STREQUAL "dynamic")
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" CACHE STRING "MSVC runtime library" FORCE)
+        message(STATUS "SCARDTOOL_RUNTIME=dynamic -> using DLL CRT (/MD or /MDd)")
+    elseif(SCARDTOOL_RUNTIME STREQUAL "static")
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC runtime library" FORCE)
+        message(STATUS "SCARDTOOL_RUNTIME=static -> using static CRT (/MT or /MTd)")
+    else()
+        message(STATUS "SCARDTOOL_RUNTIME=auto -> preserving CMAKE_MSVC_RUNTIME_LIBRARY or preset value")
+    endif()
+
     # LTCG (Link Time Code Generation):
     #   /GL compile flag + /LTCG linker flag.
     #   Derleyici tüm translation unit'leri birlikte optimize eder.
@@ -122,7 +145,7 @@ if(MSVC)
     if(NOT CMAKE_MSVC_RUNTIME_LIBRARY)
         # Preset kullanılmadan derleme: güvenli varsayılan /MD.
         # Dağıtım için: cmake --preset win-release
-        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
         message(STATUS "CMAKE_MSVC_RUNTIME_LIBRARY ayarlanmamış → /MD (geliştirme)")
         message(STATUS "Dağıtım için: cmake --preset win-release")
     else()

@@ -3,10 +3,6 @@
   "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
 
   "configurePresets": [
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // HIDDEN BASE PRESETS (inherited, not selectable)
-    // ─────────────────────────────────────────────────────────────────────────
     {
       "name": "base",
       "hidden": true,
@@ -44,13 +40,6 @@
       "generator": "Ninja",
       "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" }
     },
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // WINDOWS — GRUP 1: Hızlı geliştirme / deneme-yanılma
-    //   /MDd (dynamic debug CRT)  — OpenSSL'in /MD ile uyumlu
-    //   No LTCG — hızlı link
-    //   No optimizasyon — hızlı derleme, tam debug info
-    // ─────────────────────────────────────────────────────────────────────────
     {
       "name": "win-debug",
       "displayName": "Windows Debug (fast build, /MDd)",
@@ -75,14 +64,6 @@
         "BUILD_TESTING": "ON"
       }
     },
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // WINDOWS — GRUP 2: Son çıktı / dağıtım
-    //   /MT (static CRT) — OpenSSL Windows pre-built ile uyumlu
-    //   LTCG (/GL + /LTCG) — bütün program optimizasyonu
-    //   Full optimization (/O2 /Ob2)
-    //   No debug info — küçük binary
-    // ─────────────────────────────────────────────────────────────────────────
     {
       "name": "win-release",
       "displayName": "Windows Release (ship, /MT + LTCG)",
@@ -107,10 +88,6 @@
         "BUILD_TESTING": "OFF"
       }
     },
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // LINUX
-    // ─────────────────────────────────────────────────────────────────────────
     {
       "name": "linux-debug",
       "displayName": "Linux Debug",
@@ -141,10 +118,6 @@
         "BUILD_TESTING": "ON"
       }
     },
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // macOS
-    // ─────────────────────────────────────────────────────────────────────────
     {
       "name": "macos-debug",
       "displayName": "macOS Debug",

@@ -79,7 +79,7 @@ BYTE CaesarCipher::multiplier() const { return static_cast<BYTE>(pImpl->a); }
 
 BYTE CaesarCipher::shiftFromKey(const std::vector<BYTE>& key) {
     if (key.empty()) return 1;
-    // Tüm byte'larýn toplamý mod 256; sýfýrsa 1 yap (shift=0 þifreleme yapmaz)
+    // Tï¿½m byte'larï¿½n toplamï¿½ mod 256; sï¿½fï¿½rsa 1 yap (shift=0 ï¿½ifreleme yapmaz)
     unsigned s = std::accumulate(key.begin(), key.end(), 0u) & 0xFFu;
     return static_cast<BYTE>(s == 0 ? 1u : s);
 }

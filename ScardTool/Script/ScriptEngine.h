@@ -1079,8 +1079,7 @@ private:
         std::istringstream iss(raw);
         std::string cmd, varRef;
         iss >> cmd >> varRef;
-        std::string vname = (!varRef.empty() && varRef[0] == '$')
-            ? varRef.substr(1) : varRef;
+        std::string vname = (!varRef.empty() && varRef[0] == '$') ? varRef.substr(1) : varRef;
         auto bit = bufs_.find(vname);
         if (bit == bufs_.end()) {
             std::cerr << "Script error: buf_print: '" << vname << "' is not a ByteArray\n";
@@ -1090,13 +1089,21 @@ private:
         // hex dump, 16 byte per line
         for (size_t j = 0; j < buf.size(); j += 16) {
             std::printf("  %04zX  ", j);
-            for (size_t k = j; k < std::min(j + 16, buf.size()); ++k)
-                std::printf("%02X ", buf[k]);
-            // padding
-            for (size_t k = buf.size(); k < j + 16; ++k) std::printf("   ");
-            std::printf("  |");
-            for (size_t k = j; k < std::min(j + 16, buf.size()); ++k)
-                std::printf("%c", std::isprint(buf[k]) ? buf[k] : '.');
+			const size_t end = (std::min)(j + 16, buf.size());
+			for (size_t k = j; k < end; ++k) {
+				std::printf("%02hhX ", buf[k]);
+			}
+
+			// padding
+			for (size_t k = buf.size(); k < j + 16; ++k)
+				std::printf("   ");
+
+			std::printf("  |");
+
+			for (size_t k = j; k < end; ++k) {
+				unsigned char c = static_cast<unsigned char>(buf[k]);
+				std::printf("%c", std::isprint(c) ? c : '.');
+			}
             std::printf("|\n");
         }
         std::printf("  [%zu byte]\n", buf.size());
@@ -1126,8 +1133,7 @@ private:
             std::cerr << "Script error: assert_len syntax: assert_len $VAR N\n";
             return {i+1, ExitCode::InvalidArgs};
         }
-        std::string vname = (!varRef.empty() && varRef[0] == '$')
-            ? varRef.substr(1) : varRef;
+        std::string vname = (!varRef.empty() && varRef[0] == '$') ? varRef.substr(1) : varRef;
         auto expOpt = safeParseInt(expand(expStr));
         if (!expOpt.has_value()) {
             std::cerr << "Script error: assert_len: invalid expected length\n";

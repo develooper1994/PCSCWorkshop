@@ -83,7 +83,7 @@ void scardtool_set_encrypt(scardtool_ctx* ctx, int enabled,
                             const char* cipher, const char* password) {
     if (!ctx) return;
     ctx->app.flags.encrypt = (enabled != 0);
-    if (cipher)   /* parse cipher algo string */;
+    if (cipher){   /* parse cipher algo string */}
     if (password) ctx->app.flags.password = password;
 }
 

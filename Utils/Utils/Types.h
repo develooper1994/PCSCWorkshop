@@ -4,7 +4,9 @@
 #include <vector>
 #include <cstdint>
 
-using BYTE = uint8_t;
+#ifndef BYTE
+#define BYTE uint8_t
+#endif
 using BYTEV = std::vector<BYTE>;
 
 #endif // !TYPES_H
