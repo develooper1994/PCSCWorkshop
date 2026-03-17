@@ -189,7 +189,7 @@ private:
             std::ostringstream oss;
             oss << std::hex << std::uppercase << std::setfill('0') << std::setw(2) << n;
             return oss.str();
-        } catch (const std::invalid_argument& e) {
+        } catch (const std::invalid_argument&) {
             // Not decimal either
             throw std::invalid_argument("Invalid parameter '" + paramName +
                 "': '" + val + "' (expected decimal 0-255 or hex)");

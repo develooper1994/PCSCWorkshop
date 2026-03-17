@@ -2512,11 +2512,11 @@ public:
             std::map<std::string,std::vector<const ApduMacro*>> groups;
             for (auto* m : macros) groups[m->group].push_back(m);
 
-            std::cout << "\n┌─ APDU Macros " << std::string(57,'─') << "┐\n│\n";
+            std::cout << "\n┌─ APDU Macros " << ([](){ std::string r; r.reserve(57*3); for (int i=0;i<57;++i) r += u8"─"; return r; })() << "┐\n│\n";
             for (const auto& grp : std::vector<std::string>{"General","PCSC","DESFire","Ultralight","User"}) {
                 auto it = groups.find(grp);
                 if (it == groups.end() || it->second.empty()) continue;
-                std::cout << "│  " << grp << "\n│  " << std::string(69,'─') << "\n";
+                std::cout << "│  " << grp << "\n│  " << ([](){ std::string r; r.reserve(69*3); for (int i=0;i<69;++i) r += u8"─"; return r; })() << "\n";
                 for (auto* m : it->second) {
                     std::string u = m->usage();
                     std::string d = m->description;
@@ -2528,7 +2528,7 @@ public:
                 }
                 std::cout << "│\n";
             }
-            std::cout << "└" << std::string(71,'─') << "┘\n\n"
+            std::cout << u8"└" << ([](){ std::string r; r.reserve(71*3); for (int i=0;i<71;++i) r += u8"─"; return r; })() << "┘\n\n"
                       << "  Total: " << macros.size() << " macro(s)  |  "
                       << MacroRegistry::instance().userMacroCount() << " user macro(s)\n"
                       << "  Use 'explain-macro <NAME>' for detailed help\n"

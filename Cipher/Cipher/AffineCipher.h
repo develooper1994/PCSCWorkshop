@@ -31,7 +31,7 @@ public:
     BYTE a() const;
     BYTE b() const;
 
-    // Key -> a,b dˆn¸˛mleri
+    // Key -> a,b d√∂n√º≈ü√ºmlerini (compatibility)
     static BYTE aFromKey(const std::vector<BYTE>& key);
     static BYTE bFromKey(const std::vector<BYTE>& key);
 

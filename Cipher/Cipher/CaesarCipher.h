@@ -7,10 +7,10 @@
 
 class CaesarCipher : public ICipher {
 public:
-    // Do�rudan shift de�eri ile olu�tur (a=1)
+    // Construct directly with shift value (a=1)
     explicit CaesarCipher(BYTE shift);
 
-    // �ste�e ba�l� olarak multiplier (a) ve shift (b) ile olu�tur
+    // Construct with multiplier (a) and shift (b)
     explicit CaesarCipher(BYTE a, BYTE shift);
 
     // Anahtar verisinden shift hesapla (compatibility)
@@ -35,7 +35,7 @@ public:
     BYTE shift() const; // b
     BYTE multiplier() const; // a
 
-    // Anahtar -> shift d�n���m� (mevcut kodla uyumlu kalmas� i�in b�rak�ld�)
+    // Key -> shift transformation (kept for compatibility)
     static BYTE shiftFromKey(const std::vector<BYTE>& key);
 
 private:
