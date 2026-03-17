@@ -65,10 +65,10 @@
       }
     },
     {
-      "name": "win-release",
-      "displayName": "Windows Release (ship, /MT + LTCG)",
+      "name": "win-release-static",
+      "displayName": "Windows Release Static (ship, /MT + LTCG)",
       "inherits": "base-win",
-      "binaryDir": "${sourceDir}/build/win-release",
+      "binaryDir": "${sourceDir}/build/win-release-static",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded",
@@ -76,14 +76,38 @@
         "BUILD_TESTING": "OFF"
       }
     },
+	{
+      "name": "win-release-dynamic",
+      "displayName": "Windows Release Dynamic (ship, /MD + LTCG)",
+      "inherits": "base-win",
+      "binaryDir": "${sourceDir}/build/win-release-dynamic",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL",
+        "SCARDTOOL_ENABLE_LTCG": "ON",
+        "BUILD_TESTING": "OFF"
+      }
+    },
     {
-      "name": "win-release-ninja",
-      "displayName": "Windows Release Ninja (ship, /MT + LTCG)",
+      "name": "win-release-ninja-static",
+      "displayName": "Windows Release Ninja Static (ship, /MT + LTCG)",
       "inherits": "base-win-ninja",
-      "binaryDir": "${sourceDir}/build/win-release-ninja",
+      "binaryDir": "${sourceDir}/build/win-release-ninja-static",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded",
+        "SCARDTOOL_ENABLE_LTCG": "ON",
+        "BUILD_TESTING": "OFF"
+      }
+    },
+	{
+      "name": "win-release-ninja-dynamic",
+      "displayName": "Windows Release Ninja Dynamic (ship, /MD + LTCG)",
+      "inherits": "base-win-ninja",
+      "binaryDir": "${sourceDir}/build/win-release-ninja-dynamic",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL",
         "SCARDTOOL_ENABLE_LTCG": "ON",
         "BUILD_TESTING": "OFF"
       }
@@ -141,15 +165,19 @@
   ],
 
   "buildPresets": [
-    { "name": "win-debug",           "configurePreset": "win-debug",           "configuration": "Debug" },
-    { "name": "win-relwithdebinfo",  "configurePreset": "win-relwithdebinfo",  "configuration": "RelWithDebInfo" },
-    { "name": "win-release",         "configurePreset": "win-release",         "configuration": "Release" },
-    { "name": "win-release-ninja",   "configurePreset": "win-release-ninja" },
-    { "name": "linux-debug",         "configurePreset": "linux-debug" },
-    { "name": "linux-release",       "configurePreset": "linux-release" },
-    { "name": "linux-relwithdebinfo","configurePreset": "linux-relwithdebinfo" },
-    { "name": "macos-debug",         "configurePreset": "macos-debug" },
-    { "name": "macos-release",       "configurePreset": "macos-release" }
+    { "name": "win-debug",                     "configurePreset": "win-debug",                     "configuration": "Debug" },
+    { "name": "win-relwithdebinfo",            "configurePreset": "win-relwithdebinfo",            "configuration": "RelWithDebInfo" },
+
+    { "name": "win-release-static",            "configurePreset": "win-release-static",            "configuration": "Release" },
+    { "name": "win-release-dynamic",           "configurePreset": "win-release-dynamic",           "configuration": "Release" },
+    { "name": "win-release-ninja-static",      "configurePreset": "win-release-ninja-static" },
+    { "name": "win-release-ninja-dynamic",     "configurePreset": "win-release-ninja-dynamic" },
+
+    { "name": "linux-debug",                   "configurePreset": "linux-debug" },
+    { "name": "linux-release",                 "configurePreset": "linux-release" },
+    { "name": "linux-relwithdebinfo",          "configurePreset": "linux-relwithdebinfo" },
+    { "name": "macos-debug",                   "configurePreset": "macos-debug" },
+    { "name": "macos-release",                 "configurePreset": "macos-release" }
   ],
 
   "testPresets": [
