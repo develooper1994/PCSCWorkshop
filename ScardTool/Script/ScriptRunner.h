@@ -51,6 +51,12 @@ public:
     }
 
     // stdin'den çalıştır (pipe / redirect)
+    /** @brief Çok satırlı script string'ini çalıştır (C API ve test için). */
+    ExitCode runString(const std::string& script) {
+        std::istringstream ss(script);
+        return runStream(ss, "<string>");
+    }
+
     ExitCode runStdin() {
         return runStream(std::cin, "<stdin>");
     }

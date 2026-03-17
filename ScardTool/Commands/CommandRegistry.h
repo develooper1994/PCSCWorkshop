@@ -88,13 +88,29 @@ BUSYBOX-STYLE SYMLINKS
   # binary adı subcommand olarak otomatik dispatch edilir
 
 SCRIPT FORMAT (.scard)
-  #!/usr/bin/env scardtool --script   # optional shebang
+  #!/usr/bin/env scardtool   # optional shebang
   # comment
-  list-readers
-  connect -r 0
-  uid -r 0; ats -r 0                  # inline multi-command
-  send-apdu -r 0 -a 00A4040007D276000085010000
-  disconnect
+  $READER = 0                # variable assignment
+  $KEY    = FFFFFFFFFFFF
+  load-key -r $READER -k $KEY
+  uid -r $READER; ats -r $READER   # inline multi-command
+
+SCRIPT LANGUAGE QUICK REFERENCE
+  Variables    : $VAR = value        $VAR = $VAR + 1
+  Arithmetic   : + - * / %          (int64_t, overflow-safe)
+  Bit ops      : & | ^ ~ << >>
+  Literals     : 255  0xFF  0b11111111
+  Boolean      : true / false
+  Comparison   : == != < > <= >=
+  Logic        : $A > 0 && $B < 10   $A == 0 || $B == 0   not $FLAG
+  if/elif/else : if COND ... elif COND ... else ... fi
+  while loop   : while COND ... done
+  for loop     : for $V in a b c ... done
+  break/cont.  : break / continue
+  output       : echo "msg $VAR"
+  exit code    : if ok ... fi     if fail ... fi
+  stop-on-err  : set stop-on-error false
+  Full docs    : SCRIPT.md
 
 EXIT CODES
   0  Success

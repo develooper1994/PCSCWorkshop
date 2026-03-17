@@ -309,3 +309,139 @@ TEST(ScriptEngine, RealCommand_Integration) {
     EXPECT_EQ(d.executed[1], "auth --dry-run -r 0 -b 4 -t A");
     EXPECT_EQ(d.executed[2], "read --dry-run -r 0 -p 4 -l 16");
 }
+
+// ── Bit Operasyonları ─────────────────────────────────────────────────────────
+
+TEST(ScriptEngine, BitOps_AND) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    e.execute(lines({"$A = 0xFF", "$B = 0x0F", "$R = $A & $B", "cmd $R"}));
+    ASSERT_EQ(d.executed.size(), 1u);
+    EXPECT_EQ(d.executed[0], "cmd 15");
+}
+
+TEST(ScriptEngine, BitOps_OR) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    e.execute(lines({"$A = 0xF0", "$B = 0x0F", "$R = $A | $B", "cmd $R"}));
+    EXPECT_EQ(d.executed[0], "cmd 255");
+}
+
+TEST(ScriptEngine, BitOps_XOR) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    e.execute(lines({"$A = 0xFF", "$B = 0x0F", "$R = $A ^ $B", "cmd $R"}));
+    EXPECT_EQ(d.executed[0], "cmd 240");
+}
+
+TEST(ScriptEngine, BitOps_ShiftLeft) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    e.execute(lines({"$R = 1 << 4", "cmd $R"}));
+    EXPECT_EQ(d.executed[0], "cmd 16");
+}
+
+TEST(ScriptEngine, BitOps_ShiftRight) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    e.execute(lines({"$R = 256 >> 3", "cmd $R"}));
+    EXPECT_EQ(d.executed[0], "cmd 32");
+}
+
+TEST(ScriptEngine, BitOps_NOT) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    e.execute(lines({"$R = ~0", "cmd $R"}));
+    EXPECT_EQ(d.executed[0], "cmd -1");
+}
+
+TEST(ScriptEngine, BitOps_BinaryLiteral) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    e.execute(lines({"$R = 0b1010", "cmd $R"}));
+    EXPECT_EQ(d.executed[0], "cmd 10");
+}
+
+TEST(ScriptEngine, BitOps_HexLiteral) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    e.execute(lines({"$R = 0xFF", "cmd $R"}));
+    EXPECT_EQ(d.executed[0], "cmd 255");
+}
+
+// ── Overflow/Underflow Koruması ───────────────────────────────────────────────
+
+TEST(ScriptEngine, SafeArith_Overflow_NoExecute) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    // Overflow: hesaplama başarısız, orijinal ifade döner → komutu dispatch eder
+    // ama önce error yazdırır; çıktı kontrol edelim (hata mesajı stderr'e gider)
+    testing::internal::CaptureStderr();
+    e.execute(lines({"$R = 9223372036854775807 + 1", "cmd $R"}));
+    std::string err = testing::internal::GetCapturedStderr();
+    EXPECT_TRUE(err.find("overflow") != std::string::npos);
+}
+
+TEST(ScriptEngine, SafeArith_DivisionByZero) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    testing::internal::CaptureStderr();
+    e.execute(lines({"$R = 10 / 0", "cmd $R"}));
+    std::string err = testing::internal::GetCapturedStderr();
+    EXPECT_TRUE(err.find("zero") != std::string::npos);
+}
+
+TEST(ScriptEngine, SafeArith_Modulo) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    e.execute(lines({"$R = 17 % 5", "cmd $R"}));
+    EXPECT_EQ(d.executed[0], "cmd 2");
+}
+
+TEST(ScriptEngine, SafeArith_ModuloByZero) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    testing::internal::CaptureStderr();
+    e.execute(lines({"$R = 5 % 0"}));
+    std::string err = testing::internal::GetCapturedStderr();
+    EXPECT_TRUE(err.find("zero") != std::string::npos);
+}
+
+// ── Boolean Desteği ───────────────────────────────────────────────────────────
+
+TEST(ScriptEngine, Boolean_TrueLiteral) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    e.execute(lines({"$X = true", "if $X", "echo-ok", "fi"}));
+    EXPECT_TRUE(std::find(d.executed.begin(), d.executed.end(), "echo-ok") != d.executed.end());
+}
+
+TEST(ScriptEngine, Boolean_FalseLiteral) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    e.execute(lines({"$X = false", "if $X", "echo-bad", "else", "echo-ok", "fi"}));
+    EXPECT_TRUE(std::find(d.executed.begin(), d.executed.end(), "echo-ok") != d.executed.end());
+    EXPECT_TRUE(std::find(d.executed.begin(), d.executed.end(), "echo-bad") == d.executed.end());
+}
+
+TEST(ScriptEngine, Boolean_LogicalAND) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    e.execute(lines({"$A = 5", "if $A > 3 && $A < 10", "echo-ok", "fi"}));
+    EXPECT_TRUE(std::find(d.executed.begin(), d.executed.end(), "echo-ok") != d.executed.end());
+}
+
+TEST(ScriptEngine, Boolean_LogicalOR) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    e.execute(lines({"$A = 15", "if $A > 10 || $A < 5", "echo-ok", "fi"}));
+    EXPECT_TRUE(std::find(d.executed.begin(), d.executed.end(), "echo-ok") != d.executed.end());
+}
+
+TEST(ScriptEngine, Boolean_LogicalAND_ShortCircuit) {
+    TestDispatcher d;
+    auto e = makeEngine(d);
+    e.execute(lines({"$A = 1", "$B = 10", "if $A < 5 && $B > 8", "echo-ok", "fi"}));
+    EXPECT_TRUE(std::find(d.executed.begin(), d.executed.end(), "echo-ok") != d.executed.end());
+}
+

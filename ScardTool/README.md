@@ -81,11 +81,50 @@ scardtool explain-apdu "FF CA 00 00 00"
 ```
 
 ### Script Modu
+
+Tam dokümantasyon: [SCRIPT.md](SCRIPT.md)
+
 ```bash
-scardtool -f myscript.scard
-scardtool -e "list-readers; uid -r 0"
-cat script.scard | scardtool
-scardtool interactive
+scardtool -f myscript.scard           # dosyadan çalıştır
+scardtool --dry-run -f test.scard     # donanıma dokunmadan test
+scardtool -e "$S = 0; uid -r $S"      # satır içi
+cat script.scard | scardtool          # stdin
+scardtool interactive                 # interaktif shell
+```
+
+#### Script Özellikleri
+
+| Özellik | Sözdizimi | Örnek |
+|---------|-----------|-------|
+| Değişken | `$VAR = değer` | `$READER = 0` |
+| Aritmetik | `+ - * / %` | `$N = $N + 1` |
+| Bit AND/OR/XOR | `& \| ^` | `$R = 0xFF & 0x0F` |
+| Bit NOT | `~` | `$R = ~0` |
+| Kaydırma | `<< >>` | `$R = 1 << 4` |
+| Hex literal | `0xFF` | `$KEY_MASK = 0xFF` |
+| Binary literal | `0b...` | `$FLAGS = 0b1010` |
+| Boolean | `true` / `false` | `$OK = true` |
+| Mantıksal | `&& \|\| not` | `if $A > 0 && $B < 10` |
+| if/elif/else | `if COND ... fi` | — |
+| while döngü | `while COND ... done` | — |
+| for döngü | `for $V in a b ... done` | — |
+| break/continue | `break` / `continue` | — |
+| echo | `echo "msg $VAR"` | — |
+
+```scard
+#!/usr/bin/env scardtool
+$READER = 0
+$KEY    = FFFFFFFFFFFF
+$S      = 0
+while $S < 16
+    read-sector -r $READER -s $S -k $KEY
+    if ok
+        echo "sector $S: OK"
+    else
+        echo "sector $S: FAIL"
+    fi
+    $S = $S + 1
+done
 ```
 
 ## MCP Entegrasyonu

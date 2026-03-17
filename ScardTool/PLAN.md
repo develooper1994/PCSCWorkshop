@@ -161,6 +161,16 @@ PCSCWorkshop/
 
 ---
 
+## Tamamlanan Özellikler (v6)
+
+- [x] Script değişken desteği (`$READER`, `$KEY`, ...)
+- [x] Script aritmetik: `+ - * / %` (int64_t, overflow korumalı)
+- [x] Script bit işlemleri: `& | ^ ~ << >>`
+- [x] Script sayı biçimleri: ondalık, `0xFF` hex, `0b...` binary
+- [x] Script boolean: `true / false`, `&& || not`
+- [x] Script if/elif/else/fi, while/for/break/continue
+- [x] SCRIPT.md kapsamlı başvuru kılavuzu
+
 ## TODO — Yakın Vadeli
 
 - [ ] `read-sector` / `write-sector` dry-run'da cipher gösterimi (tamamlandı ✅)
@@ -176,6 +186,51 @@ cardsim — ayrı program, CardInterface üzerine PC/SC virtual reader:
 scardtool ↔ PC/SC API ↔ cardsim (sanal reader)
                               ↑
                         CardInterface (Card/ projesi)
+```
+
+## TODO — Servis Modu (Sonraki hedef)
+
+Arka planda çalışan scardtool daemon'u.
+
+### Tasarım Kararları
+
+- **Amaç:** SAM ve kart authentication'ı tek seferinde yap, bağlantıyı tut
+- **Global Context:** auth durumu, transaction, oturum bilgisi sürekli bellekte
+- **Transport:** Unix domain socket (`/run/scardtool.sock`)
+- **Protokol:** Mevcut MCP JSON-RPC → servis mod'a taşınacak
+- **stdout/stderr:** Servis modunda kapatılır; log dosyasına yazılır
+- **Dış iletişim:** Socket üzerinden JSON yanıt
+
+### SAM (Security Access Module) Entegrasyonu
+
+DESFire kartlar için SAM gerekebilir:
+- SAM ayrı bir PC/SC reader'da görünür (`list-readers` ile listelenir)
+- Auth: kart → SAM → kart zinciri, her komutta tekrar edilmemeli
+- Global context bu zinciri saklar
+
+### Platform
+
+| Platform | Transport | Service Manager |
+|----------|-----------|-----------------|
+| Linux | Unix socket | systemd unit |
+| Windows | Named pipe `\\.\pipe\scardtool` | Win32 Service (sonraki faz) |
+| macOS | Unix socket | launchd plist (sonraki faz) |
+
+### Planlanan Komutlar
+
+```bash
+scardtool --daemon              # arka planda başlat (Linux)
+scardtool --daemon-stop         # durdur
+scardtool --daemon-status       # durum
+scardtool --socket-client CMD   # socket üzerinden komut gönder
+```
+
+### Servis modunda batch TODO
+
+```
+# TODO: --batch N -- aynı scripti N karta uygula
+# Kart değişince yeni auth, aynı SAM session'ı koru
+# (kullanıcı söylemedikçe implemente etme)
 ```
 
 ## TODO — Uzak Vadeli (Sadece kullanıcı söylediğinde)
