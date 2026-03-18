@@ -1,0 +1,51 @@
+// build_info.h  —  OTOMATİK ÜRETİLMİŞ DOSYA, ELLE DEĞİŞTİRMEYİN
+// cmake/build_info.h.in şablonundan @configure_file@ ile üretilir.
+#pragma once
+
+// ── Proje sürümü ──────────────────────────────────────────────────────────────
+#define BUILD_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define BUILD_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define BUILD_VERSION_PATCH @PROJECT_VERSION_PATCH@
+#define BUILD_VERSION_STR   "@PROJECT_VERSION@"
+
+// ── Git bilgisi ───────────────────────────────────────────────────────────────
+#define BUILD_GIT_HASH      "@_GIT_HASH@"
+#define BUILD_GIT_DESCRIBE  "@_GIT_DESCRIBE@"
+
+// ── Derleme tarihi / saati ────────────────────────────────────────────────────
+// Not: __DATE__ ve __TIME__ önişlemci makrolarıdır; derleme zamanında genişler.
+#define BUILD_DATE          __DATE__
+#define BUILD_TIME          __TIME__
+
+// ── CMake yapılandırma bilgileri ──────────────────────────────────────────────
+#define BUILD_CMAKE_GENERATOR   "@CMAKE_GENERATOR@"
+#define BUILD_COMPILER_ID       "@CMAKE_CXX_COMPILER_ID@"
+#define BUILD_CXX_STANDARD      "@CMAKE_CXX_STANDARD@"
+#define BUILD_RUNTIME_TYPE      "@_RUNTIME_STATUS@"
+
+// ── Feature flag'ları ────────────────────────────────────────────────────────
+//
+//  FEATURE_CIPHER_ENABLED
+//    1  => Şifreleme desteği aktif   (-DENABLE_CIPHER=ON)
+//    0  => Şifreleme desteği kapalı  (-DENABLE_CIPHER=OFF)
+//
+#define FEATURE_CIPHER_ENABLED  @_CIPHER_DEFINE@
+
+// Tüm feature flag özetini bir string olarak tutan makro
+// (--buildinfo çıktısında göstermek için kullanılır)
+#define BUILD_FEATURES_SUMMARY \
+    "  cipher    : @_CIPHER_STATUS@\n" \
+    "  runtime   : @_RUNTIME_STATUS@\n"
+
+// ── Yardımcı makro: kapalı feature kullanılırsa derleme hatası ver ────────────
+// Kullanım:  REQUIRE_FEATURE(FEATURE_CIPHER_ENABLED, "cipher_encrypt")
+#define REQUIRE_FEATURE(_flag, _name)                                       \
+    static_assert((_flag),                                                  \
+        "\n"                                                                \
+        "  ┌────────────────────────────────────────────────────────┐\n"   \
+        "  │  DERLEME HATASI: Kapalı özellik kullanımı              │\n"   \
+        "  │  '" _name "' bu derleme için etkinleştirilmemiş.       │\n"   \
+        "  │  CMake seçeneğini açın ve yeniden derleyin:            │\n"   \
+        "  │    -DENABLE_CIPHER=ON   (şifreleme için)               │\n"   \
+        "  └────────────────────────────────────────────────────────┘\n"   \
+    )

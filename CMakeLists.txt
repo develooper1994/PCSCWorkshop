@@ -68,101 +68,32 @@
 # ══════════════════════════════════════════════════════════════════════════════
 
 cmake_minimum_required(VERSION 3.16)
-project(PCSCWorkshop VERSION 1.0 LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-# IDE için compile_commands.json üret (clangd, clang-tidy, VS Code vb.)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 # CMake 4.0 ile birlikte gelen yeni policy yönetimi:
 if(CMAKE_VERSION VERSION_GREATER_EQUAL 4.0)
     set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING
         "Allow legacy subprojects to configure under newer CMake" FORCE)
 endif()
 
-# ── MSVC Runtime + LTCG Konfigürasyonu ───────────────────────────────────────
-#
-# Sorun: Windows'ta OpenSSL pre-built binary'leri /MT (static CRT) ile
-#        derlenmiştir. MSVC varsayılan /MD (dynamic CRT) ile çakışır ve
-#        "LNK2038: mismatch detected for 'RuntimeLibrary'" hatasına yol açar.
-#
-# Çözüm: İki preset grubu (CMakePresets.json):
-#
-#   win-debug / win-relwithdebinfo:
-#     → /MD veya /MDd: dynamic CRT, küçük binary, hızlı derleme.
-#     → Geliştirme ve test için uygundur.
-#     → OpenSSL'in kendi /MD build'i gerekir (varsa).
-#
-#   win-release:
-#     → /MT: static CRT, harici runtime bağımlılığı yok.
-#     → LTCG (/GL + /LTCG): link-time optimization, ~%5-15 daha küçük/hızlı binary.
-#     → OpenSSL /MT build ile uyumlu.
-#     → Son kullanıcıya dağıtım için ideal: tek binary, VCRT kurulumu gerekmez.
-#
-# Preset olmadan manuel derleme yapılacaksa varsayılan /MD kullanılır.
-# CMAKE_MSVC_RUNTIME_LIBRARY preset'ten gelir; override edilmemelidir.
-#
-if(MSVC)
-    # CMP0091: CMAKE_MSVC_RUNTIME_LIBRARY ile CRT seçimini merkezi yönet.
-    # Bu policy olmadan her target kendi CRT'sini seçer → uyumsuzluk.
-    cmake_policy(SET CMP0091 NEW)
+project(PCSCWorkshop 
+        VERSION 1.0 
+        DESCRIPTION "PC/SC Smart Card Workshop Tool"
+        LANGUAGES CXX C
+)
 
-    # Global CRT/runtime selection for all subprojects.
-    # - auto:    preserve preset or existing CMAKE_MSVC_RUNTIME_LIBRARY (default)
-    # - dynamic: force DLL CRT (/MD, /MDd) — fast iteration for Debug
-    # - static:  force static CRT (/MT, /MTd) — for final distributable
-    set(SCARDTOOL_RUNTIME "auto" CACHE STRING "CRT runtime selection: auto|dynamic|static")
-    set_property(CACHE SCARDTOOL_RUNTIME PROPERTY STRINGS auto dynamic static)
+# ─────────────────────────────────────────────────────────────────────────────
+# Modül yolları
+# ─────────────────────────────────────────────────────────────────────────────
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-    if(SCARDTOOL_RUNTIME STREQUAL "dynamic")
-        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" CACHE STRING "MSVC runtime library" FORCE)
-        message(STATUS "SCARDTOOL_RUNTIME=dynamic -> using DLL CRT (/MD or /MDd)")
-    elseif(SCARDTOOL_RUNTIME STREQUAL "static")
-        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC runtime library" FORCE)
-        message(STATUS "SCARDTOOL_RUNTIME=static -> using static CRT (/MT or /MTd)")
-    else()
-        message(STATUS "SCARDTOOL_RUNTIME=auto -> preserving CMAKE_MSVC_RUNTIME_LIBRARY or preset value")
-    endif()
+# ─────────────────────────────────────────────────────────────────────────────
+# Merkezi compiler / linker ayarları
+# ─────────────────────────────────────────────────────────────────────────────
+include(CompilerOptions)   # cmake/CompilerOptions.cmake
 
-    # LTCG (Link Time Code Generation):
-    #   /GL compile flag + /LTCG linker flag.
-    #   Derleyici tüm translation unit'leri birlikte optimize eder.
-    #   Sadece dağıtım build'inde kullanılır (derleme süresi artar).
-    option(SCARDTOOL_ENABLE_LTCG
-        "Link Time Code Generation etkinleştir (/GL + /LTCG). Sadece dağıtım için."
-        OFF)
-
-    if(SCARDTOOL_ENABLE_LTCG)
-        set(CMAKE_CXX_FLAGS_RELEASE         "${CMAKE_CXX_FLAGS_RELEASE} /GL")
-        set(CMAKE_EXE_LINKER_FLAGS_RELEASE  "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
-        set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
-        message(STATUS "LTCG etkin: /GL + /LTCG")
-    endif()
-
-    if(NOT CMAKE_MSVC_RUNTIME_LIBRARY)
-        # Preset kullanılmadan derleme: güvenli varsayılan /MD.
-        # Dağıtım için: cmake --preset win-release
-        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-        message(STATUS "CMAKE_MSVC_RUNTIME_LIBRARY ayarlanmamış → /MD (geliştirme)")
-        message(STATUS "Dağıtım için: cmake --preset win-release")
-    else()
-        message(STATUS "MSVC Runtime: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
-    endif()
-
-    # Uyarı seviyesi ve encoding:
-    #   /W3    → standart uyarılar
-    #   /WX-   → uyarıları hata olarak işleme (third-party uyumluluğu)
-    #   /utf-8 → kaynak kod UTF-8 (Türkçe karakterler için)
-    add_compile_options(/W3 /WX- /utf-8)
-
-    # Suppress edilmiş uyarılar:
-    #   /wd4996 → deprecated POSIX fonksiyon isimleri (strdup, strcpy vb.)
-    #   /wd4244 → dönüşüm uyarıları (size_t → int gibi)
-    add_compile_options(/wd4996 /wd4244)
-endif()
+# ─────────────────────────────────────────────────────────────────────────────
+# Derleme bilgisi header'ı üret  (build_info.h)
+# ─────────────────────────────────────────────────────────────────────────────
+include(BuildInfo)         # cmake/BuildInfo.cmake
 
 # ── Alt Projeler: Kütüphaneler ────────────────────────────────────────────────
 #

@@ -39,8 +39,10 @@ Reader (static lib)    — Reader (base), ACR1281UReader, PcscCommands
 Card (static lib)      — CardIO, CardInterface, DesfireCommands, DesfireAuth
 Workshop1 (exe)        — Ana uygulama
 Tests (exe)            — Test runner
+ScardTool (exe)        — Komut satırı aracı
+ScardTool/Mcpl (exe)       — Model Context Protokol CLI aracı
 ```
-Bağımlılık yönü: `Utils ← Cipher ← Reader ← Card ← Workshop1/Tests`
+Bağımlılık yönü: `Utils ← Cipher ← Reader ← Card ← ScardTool/Tests`
 
 ## Kod Kuralları
 - **`std::function` KULLANMA.** Template, function pointer veya lambda kullan.

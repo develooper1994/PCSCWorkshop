@@ -40,6 +40,8 @@
       "generator": "Ninja",
       "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" }
     },
+
+
     {
       "name": "win-debug",
       "displayName": "Windows Debug (fast build, /MDd)",
@@ -48,6 +50,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDebugDLL",
+        "SCARDTOOL_RUNTIME": "dynamic",
         "SCARDTOOL_ENABLE_LTCG": "OFF",
         "BUILD_TESTING": "ON"
       }
@@ -60,6 +63,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL",
+        "SCARDTOOL_RUNTIME": "dynamic",
         "SCARDTOOL_ENABLE_LTCG": "OFF",
         "BUILD_TESTING": "ON"
       }
@@ -72,6 +76,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded",
+        "SCARDTOOL_RUNTIME": "static",
         "SCARDTOOL_ENABLE_LTCG": "ON",
         "BUILD_TESTING": "OFF"
       }
@@ -84,6 +89,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL",
+        "SCARDTOOL_RUNTIME": "dynamic",
         "SCARDTOOL_ENABLE_LTCG": "ON",
         "BUILD_TESTING": "OFF"
       }
@@ -96,11 +102,12 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded",
+        "SCARDTOOL_RUNTIME": "static",
         "SCARDTOOL_ENABLE_LTCG": "ON",
         "BUILD_TESTING": "OFF"
       }
     },
-	{
+	  {
       "name": "win-release-ninja-dynamic",
       "displayName": "Windows Release Ninja Dynamic (ship, /MD + LTCG)",
       "inherits": "base-win-ninja",
@@ -108,10 +115,13 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL",
+        "SCARDTOOL_RUNTIME": "dynamic",
         "SCARDTOOL_ENABLE_LTCG": "ON",
         "BUILD_TESTING": "OFF"
       }
     },
+
+
     {
       "name": "linux-debug",
       "displayName": "Linux Debug",
@@ -119,6 +129,7 @@
       "binaryDir": "${sourceDir}/build/linux-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
+        "SCARDTOOL_RUNTIME": "dynamic",
         "BUILD_TESTING": "ON"
       }
     },
@@ -129,6 +140,7 @@
       "binaryDir": "${sourceDir}/build/linux-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
+        "SCARDTOOL_RUNTIME": "dynamic",
         "BUILD_TESTING": "OFF"
       }
     },
@@ -139,6 +151,7 @@
       "binaryDir": "${sourceDir}/build/linux-relwithdebinfo",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "SCARDTOOL_RUNTIME": "dynamic",
         "BUILD_TESTING": "ON"
       }
     },
@@ -149,6 +162,7 @@
       "binaryDir": "${sourceDir}/build/macos-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
+        "SCARDTOOL_RUNTIME": "dynamic",
         "BUILD_TESTING": "ON"
       }
     },
@@ -159,6 +173,7 @@
       "binaryDir": "${sourceDir}/build/macos-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
+        "SCARDTOOL_RUNTIME": "dynamic",
         "BUILD_TESTING": "OFF"
       }
     }
