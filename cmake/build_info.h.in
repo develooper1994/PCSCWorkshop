@@ -29,12 +29,19 @@
 //    1  => Şifreleme desteği aktif   (-DENABLE_CIPHER=ON)
 //    0  => Şifreleme desteği kapalı  (-DENABLE_CIPHER=OFF)
 //
-#define FEATURE_CIPHER_ENABLED  @_CIPHER_DEFINE@
+#define FEATURE_CIPHER_ENABLED  	@_CIPHER_DEFINE@
+#define FEATURE_LINENOISE_ENABLED   @_LINENOISE_DEFINE@
+#define FEATURE_LUA_ENABLED         @_LUA_DEFINE@
+#define FEATURE_TCL_ENABLED         @_TCL_DEFINE@
+#define FEATURE_RUNTIME_STATUS   	"@_RUNTIME_STATUS@"
 
 // Tüm feature flag özetini bir string olarak tutan makro
 // (--buildinfo çıktısında göstermek için kullanılır)
 #define BUILD_FEATURES_SUMMARY \
     "  cipher    : @_CIPHER_STATUS@\n" \
+    "  linenoise : @_LINENOISE_STATUS@\n" \
+    "  lua       : @_LUA_STATUS@\n" \
+    "  tcl       : @_TCL_STATUS@\n" \
     "  runtime   : @_RUNTIME_STATUS@\n"
 
 // ── Yardımcı makro: kapalı feature kullanılırsa derleme hatası ver ────────────

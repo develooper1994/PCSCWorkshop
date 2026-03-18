@@ -52,6 +52,7 @@ GLOBAL OPTIONS
   -j, --json           JSON output (stdout)
   -v, --verbose        Verbose logging (stderr)
       --dry-run        Parse and validate without touching hardware
+  --buildinfo          Show detailed build information
   -V, --version        Show version
   -h, --help           Show this help
 

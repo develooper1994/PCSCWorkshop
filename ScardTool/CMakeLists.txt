@@ -131,6 +131,11 @@ project(scardtool LANGUAGES CXX C)
 # ── Seçenekler ────────────────────────────────────────────────────────────────
 
 # Çıktı türleri — birden fazlası aynı anda aktif olabilir
+option(
+	ENABLE_CIPHER
+	"Cipher modülünü aktif eder. Şu anda sadece DES/3DES desteklenir."
+	ON)
+
 option(BUILD_STANDALONE
     "Standalone scardtool binary üret. Embedded board ve masaüstü için."
     ON)
@@ -192,15 +197,6 @@ if(NOT BUILD_STANDALONE AND (EMBED_LUA OR EMBED_TCL))
         "EMBED_LUA/EMBED_TCL yalnızca BUILD_STANDALONE=ON ile anlamlıdır.\n"
         "Extension veya library modlarında Lua/Tcl sistem kütüphaneleri kullanılır.")
 endif()
-
-# ── Bağımlılıklar ─────────────────────────────────────────────────────────────
-
-include(FetchContent)
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Bağımlılıklar (linenoise vb.) — izole edilmiş modül
-# ─────────────────────────────────────────────────────────────────────────────
-include(DependenciesScardTool)      # cmake/DependenciesScardTool.cmake
 
 # ── Ortak include ve link ayarları ────────────────────────────────────────────
 
@@ -318,7 +314,9 @@ endfunction()
 if(BUILD_STANDALONE)
     add_executable(scardtool
         main.cpp
+        help_buildinfo.cpp
         LibApi/ScardToolLib.cpp)
+    target_link_libraries(scardtool PRIVATE build_info_headers)
     scardtool_setup(scardtool STANDALONE)
     install(TARGETS scardtool RUNTIME DESTINATION bin)
     message(STATUS "Hedef eklendi: scardtool (standalone binary)")
@@ -349,7 +347,9 @@ endif()
 if(BUILD_STATIC_LIB)
     add_library(scardtool_static STATIC
         main.cpp
+        help_buildinfo.cpp
         LibApi/ScardToolLib.cpp)
+    target_link_libraries(scardtool_static PRIVATE build_info_headers)
     scardtool_setup(scardtool_static STATIC)
 
     # OUTPUT_NAME: libscardtool.a (prefix lib otomatik eklenir)
@@ -389,7 +389,9 @@ endif()
 if(BUILD_SHARED_LIB)
     add_library(scardtool_shared SHARED
         main.cpp
+        help_buildinfo.cpp
         LibApi/ScardToolLib.cpp)
+    target_link_libraries(scardtool_shared PRIVATE build_info_headers)
     scardtool_setup(scardtool_shared SHARED)
 
     set_target_properties(scardtool_shared PROPERTIES

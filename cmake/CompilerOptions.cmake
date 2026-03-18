@@ -23,6 +23,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # IDE için compile_commands.json üret (clangd, clang-tidy, VS Code vb.)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# CIPHER feature flag'ı için derleyici tanımı
+if(NOT DEFINED ENABLE_CIPHER OR NOT ENABLE_CIPHER)
+    set(ENABLE_CIPHER ON)
+endif()
+
 # ─────────────────────────────────────────────────────────────────────────────
 # MSVC için ek yardımcı fonksiyonlar
 # - scardtool_msvc_runtime(): CRT runtime seçimi için preset'lerle uyumlu fonksiyon

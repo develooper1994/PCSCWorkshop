@@ -5,7 +5,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 #include "help_buildinfo.h"
-#include "build_info.h"
 #include "cipher_helper.h"
 
 #include <iostream>
@@ -40,7 +39,24 @@ std::string feature_status(bool enabled) {
     return enabled ? "[ ACIK  ]" : "[ KAPALI - bu derlemede kullanılamaz ]";
 }
 
-} // anonymous namespace
+/// @brief Linenoise desteğinin aktif olup olmadığını sorgular.
+constexpr bool linenoise_is_available() noexcept
+{
+    return static_cast<bool>(FEATURE_LINENOISE_ENABLED);
+}
+/// @brief Lua desteğinin aktif olup olmadığını sorgular.
+constexpr bool lua_is_available() noexcept
+{
+	return static_cast<bool>(FEATURE_LUA_ENABLED);
+}
+/// @brief Tcl desteğinin aktif olup olmadığını sorgular.
+constexpr bool tcl_is_available() noexcept
+{
+	return static_cast<bool>(FEATURE_TCL_ENABLED);
+}
+/// @brief Runtime desteğinin aktif olup olmadığını sorgular.
+constexpr const char* runtime_status() noexcept {	return FEATURE_RUNTIME_STATUS; }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 void print_help()
@@ -103,6 +119,11 @@ void print_buildinfo()
     print_separator();
     std::cout << "  Ozellik Durumu:\n";
     std::cout << "    cipher        : " << feature_status(cipher::is_available()) << '\n';
+    std::cout << "    libnoise      : " << feature_status(::linenoise_is_available()) << '\n';
+    std::cout << "    lua           : " << feature_status(::lua_is_available()) << '\n';
+    std::cout << "    tcl           : " << feature_status(::tcl_is_available()) << '\n';
+    std::cout << "    runtime       : " << std::string(::runtime_status()) << '\n';
+
     // Yeni feature flag'ları buraya eklenir
 
     print_separator();

@@ -74,8 +74,7 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL 4.0)
         "Allow legacy subprojects to configure under newer CMake" FORCE)
 endif()
 
-project(PCSCWorkshop 
-        VERSION 1.0 
+project(PCSCWorkshop
         DESCRIPTION "PC/SC Smart Card Workshop Tool"
         LANGUAGES CXX C
 )
@@ -94,6 +93,11 @@ include(CompilerOptions)   # cmake/CompilerOptions.cmake
 # Derleme bilgisi header'ı üret  (build_info.h)
 # ─────────────────────────────────────────────────────────────────────────────
 include(BuildInfo)         # cmake/BuildInfo.cmake
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Bağımlılıklar (linenoise vb.) — izole edilmiş modül
+# ─────────────────────────────────────────────────────────────────────────────
+include(Dependencies)      # cmake/Dependencies.cmake
 
 # ── Alt Projeler: Kütüphaneler ────────────────────────────────────────────────
 #

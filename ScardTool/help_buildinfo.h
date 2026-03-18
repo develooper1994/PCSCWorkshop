@@ -2,6 +2,8 @@
 #ifndef SCARD_TOOL_HELP_BUILDINFO_H
 #define SCARD_TOOL_HELP_BUILDINFO_H
 
+#include "build_info.h"
+
 /// Konsolu UTF-8 moduna geçirir (Windows'ta gerekli)
 void setup_unicode_console();
 

@@ -7,6 +7,7 @@
 #include "Modes/InteractiveMode.h"
 #include "Modes/McpMode.h"
 #include "Crypto/CardCrypto.h"
+#include "help_buildinfo.h"
 #include <iostream>
 #include <string>
 #include <filesystem>
@@ -24,11 +25,9 @@
 // Version
 // ════════════════════════════════════════════════════════════════════════════════
 
-static constexpr const char* VERSION = "1.0.0";
-
 static std::string buildInfo() {
-    return std::string("scardtool ") + VERSION +
-           " (C++17"
+    return std::string("scardtool ") + BUILD_VERSION_STR +
+           " (" BUILD_CXX_STANDARD
 #ifdef SCARDTOOL_USE_LINENOISE
            ", linenoise-ng"
 #else
@@ -49,6 +48,7 @@ static const std::vector<ArgDef> GLOBAL_DEFS = {
     {"save-session", 0,   false},
     {"help",         'h', false},
     {"version",      'V', false},
+    {"buildinfo",    0,   false},
     {"mcp",          'm', false},
     {"socket",       'K', true },
     {"script",       0,   false},
@@ -96,6 +96,8 @@ static std::optional<std::string> extractSymlinkSubcmd(const std::string& argv0)
 int main(int argc, char* argv[]) {
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
+
+	setup_unicode_console();
 
     CommandRegistry registry;
 
@@ -188,6 +190,12 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    // ── --buildinfo: show detailed build information ─────────────────────────
+    if (args.has("buildinfo")) {
+        print_buildinfo();
+        return 0;
+    }
+
     // ── App + Formatter init ──────────────────────────────────────────────────
     // Öncelik: CLI arg > Env variable > Session > Interactive
     App app;
@@ -262,7 +270,7 @@ int main(int argc, char* argv[]) {
 
     // ── Verbose: aktif env değişkenlerini logla ───────────────────────────────
     if (app.flags.verbose) {
-        app.fmt.verbose("scardtool " + std::string(VERSION));
+        app.fmt.verbose("scardtool " + std::string(BUILD_VERSION_STR));
         EnvVars::printActive();
     }
 

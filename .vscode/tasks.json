@@ -22,7 +22,12 @@
                 "-S", "${workspaceFolder}",
                 "-B", "${workspaceFolder}/build-release",
                 "-DCMAKE_BUILD_TYPE=Release",
-                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+				"-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>",
+				"-DSCARDTOOL_RUNTIME=static",
+				"-DSCARDTOOL_ENABLE_LTCG=ON",
+				"-DBUILD_TESTING=OFF",
+				"-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
             ],
             "group": "build",
             "problemMatcher": []
