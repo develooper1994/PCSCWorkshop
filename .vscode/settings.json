@@ -16,12 +16,27 @@
   "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
 
   // ── CMake ───────────────────────────────────────────────────────────────
-  "cmake.useCMakePresets": "always",
-  "cmake.buildDirectory": "${workspaceFolder}/build",
-  "cmake.generator": "Ninja",
   "cmake.configureOnOpen": true,
   "cmake.sourceDirectory": "${workspaceFolder}",
   "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
+  "cmake.useCMakePresets": "always",
+  "cmake.buildDirectory": "${workspaceFolder}/build",
+  "cmake.generator": "Ninja",
+  "cmake.showOptionsIndicator": true,
+  "cmake.statusbar.advanced": {
+    "debug": {
+      "visibility": "visible"
+    },
+    "launch": {
+      "visibility": "visible"
+    },
+    "build": {
+      "visibility": "visible"
+    },
+    "test": {
+      "visibility": "visible"
+    }
+  },
 
   // ── Files ───────────────────────────────────────────────────────────────
   "files.trimTrailingWhitespace": true,
