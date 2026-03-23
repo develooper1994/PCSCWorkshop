@@ -1,33 +1,40 @@
 {
-    // ── Editor ──────────────────────────────────────────────────────────────
-    "editor.formatOnSave": false,
-    "editor.tabSize": 4,
-    "editor.insertSpaces": false,
-    "editor.detectIndentation": false,
+  // ── Editor ──────────────────────────────────────────────────────────────
+  "editor.formatOnSave": false,
+  "editor.tabSize": 4,
+  "editor.insertSpaces": false,
+  "editor.detectIndentation": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
 
-    // ── C++ ─────────────────────────────────────────────────────────────────
-    "C_Cpp.default.cppStandard": "c++17",
-    "C_Cpp.default.cStandard": "c17",
-    "C_Cpp.clang_format_style": "file",
-    "C_Cpp.clang_format_fallbackStyle": "Microsoft",
+  // ── C++ ─────────────────────────────────────────────────────────────────
+  "C_Cpp.default.cppStandard": "c++17",
+  "C_Cpp.default.cStandard": "c17",
+  "C_Cpp.clang_format_style": "file",
+  "C_Cpp.clang_format_fallbackStyle": "Microsoft",
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
 
-    // ── CMake ───────────────────────────────────────────────────────────────
-    "cmake.configureOnOpen": true,
-    "cmake.buildDirectory": "${workspaceFolder}/build",
-    "cmake.generator": "Ninja",
+  // ── CMake ───────────────────────────────────────────────────────────────
+  "cmake.useCMakePresets": "always",
+  "cmake.buildDirectory": "${workspaceFolder}/build",
+  "cmake.generator": "Ninja",
+  "cmake.configureOnOpen": true,
+  "cmake.sourceDirectory": "${workspaceFolder}",
+  "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
 
-    // ── Files ───────────────────────────────────────────────────────────────
-    "files.trimTrailingWhitespace": true,
-    "files.insertFinalNewline": true,
-    "files.associations": {
-        "*.h": "cpp",
-		"*.hpp": "cpp",
-        "*.inl": "cpp"
-    },
-    "files.exclude": {
-        "**/build": true,
-        "**/build-release": true,
-        "**/.vs": true,
-        "**/x64": true
-    }
+  // ── Files ───────────────────────────────────────────────────────────────
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.associations": {
+    "*.h": "cpp",
+    "*.hpp": "cpp",
+    "*.inl": "cpp"
+  },
+  "files.exclude": {
+    "**/build": true,
+    "**/build-release": true,
+    "**/.vs": true,
+    "**/x64": true
+  }
 }

@@ -1,0 +1,19 @@
+# .geminiignore — Files/dirs excluded from Gemini Code Assist indexing.
+# Only exclude build artifacts and generated/binary files.
+# Source code, cmake, scripts, docs should all be visible to Gemini.
+
+build/
+build_logs/
+.cache/
+coverage_report/
+__pycache__/
+*.pyc
+*.o
+*.a
+*.so
+*.dll
+*.lib
+*.vsix
+extension/node_modules/
+extension/templates/
+.git/

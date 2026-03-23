@@ -1,0 +1,11 @@
+# .dockerignore
+build/
+bin/
+out/
+.git/
+.vscode/
+.github/
+.cursor/
+coverage_report/
+*.info
+*.cleaned

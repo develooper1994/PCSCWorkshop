@@ -8,6 +8,17 @@
 *.VC.db
 *.VC.opendb
 
+# Extension build çıktıları (generate edilir, commit edilmez)
+*.vsix
+extension/templates/
+extension/LICENSE
+extension/node_modules/
+extension/package-lock.json
+scripts/extension/templates/
+scripts/extension/LICENSE
+scripts/extension/node_modules/
+scripts/extension/package-lock.json
+
 # Build output
 [Bb]in/
 [Oo]bj/
@@ -16,6 +27,7 @@ Release*/
 x64/Debug/
 x64/Release/
 build/
+bin/
 out/
 CMakeUserPresets.json
 
@@ -25,7 +37,6 @@ CMakeFiles/
 cmake_install.cmake
 Makefile
 compile_commands.json
-*.cmake
 !CMakeLists.txt
 !CMakePresets.json
 
@@ -60,9 +71,10 @@ packages/
 _ReSharper*/
 *._ReSharper*
 
-# Others
+# System artifacts
 *.DS_Store
 Thumbs.db
+*.Zone.Identifier
 
 # Temporary files
 *.~*
@@ -75,3 +87,8 @@ GeneratedFiles/
 *.user
 *.rsuser
 *.userprefs
+
+# Geçici log dizini
+build_logs/
+# Python
+__pycache__/
